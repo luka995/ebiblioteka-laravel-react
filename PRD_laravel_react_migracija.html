@@ -1,0 +1,686 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PRD laravel react migracija</title>
+<style>body{font-family:Arial,sans-serif;max-width:1000px;margin:40px auto;padding:0 20px;line-height:1.6;color:#222}h1,h2,h3,h4{line-height:1.25}ul,ol{padding-left:24px}hr{border:none;border-top:1px solid #ddd;margin:24px 0}code{background:#f5f5f5;padding:2px 4px;border-radius:4px}p{margin:10px 0}</style>
+</head><body>
+<h1>PRD: Migracija eBiblioteka sa Symfony 2 na Laravel API + React Web</h1>
+<h2>1. Uvod</h2>
+<h3>1.1 Cilj</h3>
+<p>
+Cilj je da se postojeca aplikacija (Symfony 2 + Twig + FOSUserBundle) prevede na modernu arhitekturu:<br>
+</p>
+<ul>
+<li>Laravel API kao backend</li>
+<li>React kao web klijent</li>
+</ul>
+<p>
+uz zadrzavanje postojece poslovne logike i uvodjenje novih funkcionalnosti:<br>
+</p>
+<ul>
+<li>Razred</li>
+<li>Class (pripada razredu)</li>
+<li>Povezivanje ucenika (korisnika) sa class-om</li>
+</ul>
+<h3>1.2 Poslovni kontekst</h3>
+<p>
+Aplikacija je skolsko-bibliotecki sistem sa sledecim domenima:<br>
+</p>
+<ul>
+<li>Biblioteke i njihove konfiguracije</li>
+<li>Katalog knjiga, autori, kategorije, fizicke jedinice</li>
+<li>Pozajmice, rezervacije, istorija i clanarine</li>
+<li>Korisnici i role</li>
+<li>Statistika, izvestaji, import podataka, notifikacije</li>
+</ul>
+<h3>1.4 Terminoloski standard za novu aplikaciju</h3>
+<ul>
+<li>U Laravel API + React aplikaciji koristi se termin Fizicke jedinice.</li>
+<li>Izrazi kopija i kopije knjiga se ne koriste u novoj dokumentaciji i UI-u.</li>
+<li>Legacy nazivi (npr BookCopy, book_copies, copyInfo ruta) ostaju samo kao referenca na postojeci kod i migraciju.</li>
+</ul>
+<h3>1.3 Scope</h3>
+<p>
+U scope-u:<br>
+</p>
+<ul>
+<li>Funkcionalna migracija svih postojecih modula</li>
+<li>Nova RBAC implementacija bez Spatie paketa</li>
+<li>Nova skolska hijerarhija razred -&gt; class -&gt; ucenik + skolska godina</li>
+<li>Migracija podataka i postepeni rollout</li>
+<li>Obavezan frontend standard: React UI mora koristiti MUI komponente i Android-like (Material Design) interfejs</li>
+<li>Migracija na novu (greenfield) PostgreSQL bazu za Laravel sistem</li>
+</ul>
+<p>
+Van scope-a (za ovaj PRD):<br>
+</p>
+<ul>
+<li>Native mobile aplikacija</li>
+<li>Potpuni redesign poslovnih pravila (osim gde je eksplicitno navedeno)</li>
+</ul>
+<hr>
+<h2>2. Analiza postojece Symfony aplikacije (audit)</h2>
+<h2>2.1 Kontroleri i funkcionalni moduli (kompletna lista)</h2>
+<h3>APPB\\LibraryBundle</h3>
+<ul>
+<li>AuthorController: index, new, create, ajaxSearch, edit, update, delete</li>
+<li>BannerController: new, create</li>
+<li>BookController: index, new, ajaxSearch, edit, delete</li>
+<li>BookCopiesController: index, copyInfo, listaKopija, copies, dismiss, dismissCancel, rec_errorCopy, outofdate, unusable, deleteCopy, history, copyNew, copyCreate, copyEdit, copyUpdate, print</li>
+<li>BookCopiesConfirmedController: newAndInfo, delete</li>
+<li>CategoryController: index, new, create, edit, update, delete</li>
+<li>CityController: index, new, create, edit, update, delete</li>
+<li>DefaultController: index, loginblock, pdf, changeLocale, contact</li>
+<li>ExpenseController: index, new, create</li>
+<li>ImageController: resize</li>
+<li>ImportController: form</li>
+<li>InventarBookController: index, print, status</li>
+<li>LibraryController: index, print, new, create, edit, update, delete, activate</li>
+<li>LibrarySettingsController: index, update</li>
+<li>LogsController: index</li>
+<li>NewsController: index, publicView, view, new, create, edit, update, delete</li>
+<li>NotificationController: emailNotification</li>
+<li>PageController: index, new, create, edit, update, delete, view</li>
+<li>PublicLibraryController: index, view, category, book, search, reserve</li>
+<li>PublicUserController: index, profile, history, membership, reservations, reservationsDelete, changeData</li>
+<li>RecomendationController: index, publicView, view, new, create, edit, update, delete</li>
+<li>RegionController: index, new, create, edit, update, delete</li>
+<li>ReportTakenBooksController: index, history</li>
+<li>StatController: index, returns, revision, category, header, opterecenje, presek</li>
+<li>TagController: index, new, create, edit, update, delete</li>
+<li>UserController: addTags, removeTags, index, userprint, new, newType, create, edit, update, delete, activate, detail, logas, logback, print</li>
+</ul>
+<h3>APPB\\UserBundle</h3>
+<ul>
+<li>DefaultController: index</li>
+</ul>
+<p>
+Napomena:<br>
+</p>
+<ul>
+<li>Admin i public tokovi su mesani kroz iste bundle-ove i Twig prikaze.</li>
+<li>Dobar deo poslovne logike je u kontrolerima (debeli kontroleri), sto je bitna stavka za refaktor u Laravel service sloj.</li>
+</ul>
+<h2>2.2 Modeli i relacije (Doctrine)</h2>
+<h3>Tabele i entiteti</h3>
+<ul>
+<li>fos_user -&gt; User</li>
+<li>library -&gt; Library</li>
+<li>library_settings -&gt; LibrarySettings</li>
+<li>region -&gt; Region</li>
+<li>city -&gt; City</li>
+<li>category -&gt; Category</li>
+<li>authors -&gt; Author</li>
+<li>books -&gt; Book</li>
+<li>book_copies -&gt; BookCopy</li>
+<li>book_copies_confirmed -&gt; BookCopiesConfirmed</li>
+<li>book_history -&gt; BookHistory</li>
+<li>borrow -&gt; Borrow</li>
+<li>reservation -&gt; Reservation</li>
+<li>membership -&gt; Membership</li>
+<li>transaction -&gt; Transaction</li>
+<li>tags -&gt; Tag</li>
+<li>access_logs -&gt; Log</li>
+<li>inventar_books -&gt; InventarBook</li>
+<li>news -&gt; News</li>
+<li>recomendations -&gt; Recomendation</li>
+<li>pages -&gt; Page</li>
+<li>banners -&gt; Banner</li>
+<li>books_central -&gt; BookCentral</li>
+<li>authors_central -&gt; AuthorCentral</li>
+</ul>
+<h3>Relacije (sazetak)</h3>
+<ul>
+<li>User M:1 Library</li>
+<li>User M:N Tag (pivot user_tag)</li>
+<li>Library M:1 Region</li>
+<li>Library M:1 City</li>
+<li>LibrarySettings 1:1 Library</li>
+<li>Category M:1 Library</li>
+<li>Category M:1 Category (parent self-reference)</li>
+<li>Author M:1 Library</li>
+<li>Book M:1 Library</li>
+<li>Book M:1 Category (primary)</li>
+<li>Book M:1 Category (secondary)</li>
+<li>Book M:N Author (pivot book_authors)</li>
+<li>BookCopy M:1 Library</li>
+<li>BookCopy M:1 Book</li>
+<li>BookCopy 1:N BookCopiesConfirmed</li>
+<li>BookCopiesConfirmed M:1 Library</li>
+<li>BookCopiesConfirmed M:1 BookCopy</li>
+<li>Borrow M:1 Library</li>
+<li>Borrow M:1 Book</li>
+<li>Borrow M:1 BookCopy</li>
+<li>Borrow M:1 User</li>
+<li>Reservation M:1 Library</li>
+<li>Reservation M:1 Book</li>
+<li>Reservation M:1 BookCopy</li>
+<li>Reservation M:1 User</li>
+<li>Membership M:1 Library</li>
+<li>Membership M:1 User</li>
+<li>Transaction M:1 Library</li>
+<li>Tag M:1 Library</li>
+<li>Tag M:N User (obrnuta strana)</li>
+<li>Log M:1 User</li>
+<li>Log M:1 Library</li>
+<li>InventarBook M:1 Library</li>
+<li>BookCentral M:N AuthorCentral (pivot book_central_authors)</li>
+</ul>
+<h2>2.3 Repozitorijumi (kompletna lista i namena)</h2>
+<ul>
+<li>UserRepository</li>
+</ul>
+<p>
+  - filterDQL(...): filtriranje korisnika po barcode, imenu, email, role, tag-u, biblioteci i lock statusu<br>
+  - koristi LIKE nad poljem roles (string reprezentacija role array-a)<br>
+</p>
+<ul>
+<li>BookRepository</li>
+</ul>
+<p>
+  - bookIds(...): lista ID knjiga biblioteke<br>
+  - filterDQL, filterDQLAddBook, filterDQLPublic: pretraga knjiga<br>
+  - filterBookSearch(...): kompleksna pretraga po nazivima, autorima, kategoriji, broju primeraka<br>
+</p>
+<ul>
+<li>BookCopyRepository</li>
+</ul>
+<p>
+  - filterCopiesSearch(...): pretraga fizickih jedinica po barkodu i recError<br>
+  - confirmedBookCopiesIds(...)<br>
+  - NumberCopies, NumberDeletedCopiesBeforeFrom, NumberNotReturnedCopies...<br>
+  - ConfirmedCopies, NotFoundCopies<br>
+  - sadrzi i DQL i native SQL<br>
+</p>
+<ul>
+<li>LibraryRepository</li>
+</ul>
+<p>
+  - filterLibrary(...): filtriranje biblioteka po nazivu i deleted statusu<br>
+</p>
+<ul>
+<li>AuthorRepository</li>
+</ul>
+<p>
+  - filterDQL(...), filterColDQL(...): pretraga autora<br>
+</p>
+<ul>
+<li>TagRepository</li>
+</ul>
+<p>
+  - filterDQL(...): lista/filter tagova sa join ka biblioteci<br>
+</p>
+<ul>
+<li>BookCentralRepository</li>
+</ul>
+<p>
+  - filterBookSearch(...): pretraga centralnog kataloga knjiga/autora<br>
+</p>
+<p>
+Zakljucak analize sloja pristupa podacima:<br>
+</p>
+<ul>
+<li>Upiti su rasuti kroz kontrolere i repozitorijume</li>
+<li>Postoji mix ORM i raw SQL</li>
+<li>Potreban je jasan CQRS-lite pristup u Laravelu (Query service + Domain service)</li>
+</ul>
+<h2>2.4 Auth i role u postojecem resenju</h2>
+<ul>
+<li>Koristi se FOSUserBundle</li>
+<li>User entitet je mapiran na fos_user</li>
+<li>FOS mapiranje definise roles kao type=array (Doctrine), prakticno tekstualna serializovana vrednost u koloni roles</li>
+<li>Role hijerarhija u security.yml:</li>
+</ul>
+<p>
+  - ROLE_SUPER_ADMIN<br>
+  - ROLE_ADMIN<br>
+  - ROLE_LIBRARAIN (tipfeler u legacy kodu)<br>
+  - ROLE_ENDUSER<br>
+  - ROLE_USER (bazna)<br>
+</p>
+<p>
+Implikacije za migraciju:<br>
+</p>
+<ul>
+<li>U bazi je dozvoljen multi-role model (array), ali poslovno aplikacija radi sa malim brojem nivoa</li>
+<li>Potrebna je normalizacija role imena (Librarian umesto LIBRARAIN)</li>
+</ul>
+<h2>2.5 View logika (Twig audit)</h2>
+<p>
+Analizirani su kljucni view-ovi kako bi React sloj zadrzao iste korisnicke tokove i ponasanje interfejsa.<br>
+</p>
+<h3>Navigacija i dostupnost po roli</h3>
+<ul>
+<li>Glavni layout (<code>base.html.twig</code>) renderuje razlicite menije po roli: SUPER_ADMIN, ADMIN, LIBRARAIN, javni korisnik.</li>
+<li>Meniji mapiraju module 1:1 sa kontrolerima: Maticni podaci, Knjige, Korisnici, Finansije, Statistika, Administracija.</li>
+<li>React treba da ima role-based shell/layout i skrivanje stavki menija po istim pravilima.</li>
+</ul>
+<h3>List view pattern</h3>
+<ul>
+<li>Vecina admin ekrana koristi isti obrazac: filter forma (GET), tabela, pagination, akcije po redu.</li>
+<li>KNP paginator i sortable kolone su standard na listama (knjige, korisnici, autori, tagovi, gradovi, regioni, logovi).</li>
+<li>React ekvivalenti treba da imaju server-side pagination, sort i query param sync.</li>
+</ul>
+<h3>Fizicke jedinice (legacy BookCopy) - prikazna logika</h3>
+<ul>
+<li>Ekran liste fizickih jedinica (<code>Book/index_copy.html.twig</code>) ima filtre barkod i recError i lazy info panel po redu preko AJAX poziva (<code>appb_admin_book_copy_info</code>).</li>
+<li>Ekran fizickih jedinica po knjizi (<code>Book/copies.html.twig</code>) kombinuje:</li>
+</ul>
+<p>
+  - read-only prikaz metapodataka knjige<br>
+  - tabelu fizickih jedinica sa statusima<br>
+  - grupnu selekciju za stampu nalepnica<br>
+  - lokalnu JS listu selektovanih jedinica (localStorage helper)<br>
+</p>
+<ul>
+<li>Detalj fizicke jedinice (<code>Book/copy_info.html.twig</code>) je akcioni centar:</li>
+</ul>
+<p>
+  - edit<br>
+  - otpis/ponistavanje otpisa<br>
+  - oznaka pogresno zavedena + napomena<br>
+  - potvrda ispravnosti kroz modal i istoriju potvrda<br>
+  - istorija dogadjaja po jedinici<br>
+</p>
+<h3>Korisnicki detalj kao workflow ekran</h3>
+<ul>
+<li><code>User/detail.html.twig</code> je tab-based workflow: Podaci, Clanstvo, Rezervacije, Pozajmice.</li>
+<li>Jedan endpoint prima vise akcija kroz modal forme (membership, borrow, return, reservation_cancel).</li>
+<li>React treba da zadrzi isti UX tok, ali sa jasnim API komandama po akciji.</li>
+</ul>
+<h3>Public katalog</h3>
+<ul>
+<li>PublicLibrary view-ovi imaju breadcrumb navigaciju, pretragu po naslovu/autoru/kategoriji, karticni/tablarni prikaz knjiga i akciju rezervacije.</li>
+<li>Potrebno je zadrzati isti informativni nivo i jednostavnost toka pretrage i rezervacije.</li>
+</ul>
+<h3>Statistika i revizija</h3>
+<ul>
+<li>Revizijski izvestaj (<code>Stat/revision_report.html.twig</code>) je detaljan dokument sa sekcijama po statusu fizicke jedinice.</li>
+<li>Print/PDF tok je deo poslovnog procesa i mora ostati funkcionalno ekvivalentan u novoj aplikaciji.</li>
+</ul>
+<h3>Zakljucak view analize</h3>
+<ul>
+<li>Legacy UI koristi server-render + modal-first pattern.</li>
+<li>React treba da zadrzi:</li>
+</ul>
+<p>
+  - iste entitete i akcije,<br>
+  - iste state tranzicije,<br>
+  - isti redosled korisnickih koraka,<br>
+  - termin Fizicke jedinice u svim ekranima i izvestajima.<br>
+</p>
+<hr>
+<h2>3. Target arhitektura: Laravel API + React</h2>
+<h2>3.1 Backend (Laravel)</h2>
+<p>
+Predlog:<br>
+</p>
+<ul>
+<li>Laravel 12</li>
+<li>PostgreSQL kao ciljna baza podataka</li>
+<li>Sanctum za SPA autentikaciju (cookie + CSRF) ili JWT ako se trazi stateless</li>
+<li>API Resources za response DTO sloj</li>
+<li>Form Request validacije</li>
+<li>Policy + Gate za autorizaciju</li>
+<li>Service sloj za domensku logiku</li>
+<li>Query objekti za kompleksne statistike</li>
+</ul>
+<p>
+Slojevi:<br>
+</p>
+<ul>
+<li>Controllers (tanki)</li>
+<li>Services (domenska pravila)</li>
+<li>Repositories/Query services (slozeni upiti)</li>
+<li>Eloquent modeli + relacije</li>
+<li>Jobs (importi, izvestaji, masovne operacije)</li>
+</ul>
+<h2>3.2 Frontend (React)</h2>
+<p>
+Predlog:<br>
+</p>
+<ul>
+<li>React + Vite</li>
+<li>React Router</li>
+<li>TanStack Query za API state</li>
+<li>React Hook Form + Zod</li>
+<li>MUI (Material UI) kao obavezna UI komponentna biblioteka</li>
+<li>Material Design 3 tema i UX smernice kao primarni vizuelni pravac (interfejs kao za Android)</li>
+<li>UI po modulima:</li>
+</ul>
+<p>
+  - Admin panel<br>
+  - Public katalog<br>
+  - Korisnicki profil<br>
+</p>
+<p>
+Obavezni UI standardi:<br>
+</p>
+<ul>
+<li>Zabranjeno uvodjenje paralelnog UI framework-a za core ekranе (npr Ant Design, Bootstrap component library i sl.)</li>
+<li>Svi osnovni elementi (forma, tabela, modal, tabs, drawer, snackbar, dialog, date picker) implementiraju se kroz MUI komponente</li>
+<li>Responsivni layout i interakcije treba da prate Android/Material obrasce (hijerarhija tipografije, elevation, spacing, states)</li>
+</ul>
+<h2>3.3 Modulizacija po domenu</h2>
+<ul>
+<li>Auth &amp; Users</li>
+<li>Libraries &amp; Settings</li>
+<li>Catalog (Books, Authors, Categories, Tags)</li>
+<li>Fizicke jedinice &amp; Inventory</li>
+<li>Borrow/Return/Reservation</li>
+<li>Membership &amp; Transactions</li>
+<li>Reports &amp; Statistics</li>
+<li>CMS (News, Pages, Banner)</li>
+<li>Imports</li>
+</ul>
+<h2>3.4 Strategija baze podataka</h2>
+<ul>
+<li>Strategija je greenfield: nova aplikacija koristi novu PostgreSQL semu.</li>
+<li>Legacy baza ostaje izvor podataka samo za migraciju i verifikaciju.</li>
+<li>Migracija se radi ETL procesom iz legacy baze u novu PostgreSQL bazu (bez inplace izmene legacy seme).</li>
+<li>Tokom tranzicije radi se paralelna validacija kljucnih agregata (broj korisnika, fizickih jedinica, aktivnih pozajmica, finansijskih zapisa).</li>
+</ul>
+<hr>
+<h2>4. Novi zahtevi: Razred, Class, Ucenik</h2>
+<h2>4.1 Poslovna pravila</h2>
+<ul>
+<li>Svaki class ima razred kao enum vrednost 1-8 (bez posebne relacije na tabelu razreda)</li>
+<li>U prikazu razred mora biti mapiran i rimskim brojevima (I-VIII)</li>
+<li>Jedan class pripada tacno jednoj skolskoj godini</li>
+<li>Ucenik (korisnik sa rolom USER) pripada jednom class-u</li>
+<li>Ucenik moze promeniti class kroz vreme, uz cuvanje istorije rasporeda</li>
+<li>Class pripada biblioteci/skoli (preko library_id)</li>
+<li>Administratori biblioteke vide i menjaju samo svoje razrede/class-ove/ucenike</li>
+<li>Skolska godina se definise na nivou sistema i njom upravlja glavni admin (SUPER_ADMIN)</li>
+</ul>
+<h2>4.2 Predlog baze (Laravel)</h2>
+<h3>Nova tabela school_years</h3>
+<p>
+Kolone:<br>
+</p>
+<ul>
+<li>id</li>
+<li>name (npr 2026/2027)</li>
+<li>starts_on (date)</li>
+<li>ends_on (date)</li>
+<li>is_active</li>
+<li>created_by (FK -&gt; users.id, SUPER_ADMIN)</li>
+<li>timestamps</li>
+</ul>
+<p>
+Unikat:<br>
+</p>
+<ul>
+<li>unique(name)</li>
+</ul>
+<h3>Nova tabela classes</h3>
+<p>
+Kolone:<br>
+</p>
+<ul>
+<li>id</li>
+<li>library_id (FK -&gt; libraries.id)</li>
+<li>school_year_id (FK -&gt; school_years.id)</li>
+<li>grade (tinyint unsigned; dozvoljene vrednosti: 1-8)</li>
+<li>name (npr 1-1, I-2, 2b)</li>
+<li>teacher_name (opciono)</li>
+<li>is_active</li>
+<li>timestamps</li>
+</ul>
+<p>
+Unikat:<br>
+</p>
+<ul>
+<li>unique(library_id, school_year_id, grade, name)</li>
+</ul>
+<p>
+Prikaz razreda:<br>
+</p>
+<ul>
+<li>Backend cuva numeric vrednost 1-8</li>
+<li>Frontend prikazuje i rimski ekvivalent (1-&gt;I, 2-&gt;II, ..., 8-&gt;VIII)</li>
+<li>U formama za class razred je select sa vrednostima 1-8 i labelama tipa "1 (I)", "2 (II)" ...</li>
+</ul>
+<h3>Izmene users tabele</h3>
+<p>
+Dodati:<br>
+</p>
+<ul>
+<li>Nema direktne class kolone na users; veza ide preko student_class pivot tabele</li>
+</ul>
+<p>
+Pravilo integriteta:<br>
+</p>
+<ul>
+<li>Trenutni class korisnika dobija se iz aktivne (<code>active = true</code>) relacije u student_class tabeli</li>
+<li>Razred se ne cuva kao posebna relacija ni kolona na korisniku</li>
+</ul>
+<h3>Nova tabela student_class (junction/pivot)</h3>
+<p>
+Kolone:<br>
+</p>
+<ul>
+<li>id</li>
+<li>student_id (FK -&gt; users.id)</li>
+<li>class_id (FK -&gt; classes.id)</li>
+<li>school_year_id (FK -&gt; school_years.id)</li>
+<li>active (boolean)</li>
+<li>timestamps</li>
+</ul>
+<p>
+Unikat i integritet:<br>
+</p>
+<ul>
+<li>unique(student_id, class_id, school_year_id)</li>
+<li>Postoji najvise jedna aktivna relacija po studentu (PostgreSQL partial unique index nad <code>student_id</code> gde je <code>active = true</code>)</li>
+</ul>
+<p>
+Pravila:<br>
+</p>
+<ul>
+<li>Pri svakoj promeni class-a, prethodna aktivna relacija prelazi u <code>active = false</code>, a nova relacija postaje <code>active = true</code>.</li>
+<li>Istorija rasporeda se dobija kroz neaktivne relacije u student_class tabeli.</li>
+</ul>
+<h2>4.3 API endpointi za novi modul</h2>
+<ul>
+<li>GET /api/v1/system/school-years</li>
+<li>POST /api/v1/system/school-years</li>
+<li>PUT /api/v1/system/school-years/{id}</li>
+<li>DELETE /api/v1/system/school-years/{id}</li>
+<li>GET /api/v1/classes</li>
+<li>POST /api/v1/classes</li>
+<li>PUT /api/v1/classes/{id}</li>
+<li>DELETE /api/v1/classes/{id}</li>
+<li>POST /api/v1/classes/{id}/students/assign</li>
+<li>POST /api/v1/classes/{id}/students/unassign</li>
+<li>GET /api/v1/classes/{id}/students</li>
+</ul>
+<p>
+Autorizacija:<br>
+</p>
+<ul>
+<li>school-years endpointi: samo SUPER_ADMIN</li>
+<li>classes endpointi: SUPER_ADMIN i LIBRARY_ADMIN (scope na biblioteku)</li>
+</ul>
+<h2>4.4 React ekranI</h2>
+<ul>
+<li>Sistemski sifarnik skolskih godina (samo SUPER_ADMIN)</li>
+<li>Sifarnik class-ova</li>
+<li>U formi class-a obavezni select za skolsku godinu i select razreda (1-8 sa rimskim prikazom)</li>
+<li>Lista ucenika sa filterima: razred, class, status, tag</li>
+<li>Bulk dodela ucenika u class</li>
+</ul>
+<hr>
+<h2>5. Role model u Laravelu (bez Spatie)</h2>
+<h2>5.1 Preporuka</h2>
+<p>
+Za dati broj fiksnih rola usvaja se enum + striktno jedna rola po korisniku.<br>
+</p>
+<p>
+Role:<br>
+</p>
+<ul>
+<li>SUPER_ADMIN</li>
+<li>LIBRARY_ADMIN</li>
+<li>LIBRARIAN</li>
+<li>USER</li>
+</ul>
+<p>
+Implementacija:<br>
+</p>
+<ul>
+<li>users.role tinyint unsigned</li>
+<li>PHP backed enum UserRole:int</li>
+<li>pomocne metode hasRole(), canManageLibrary(), itd.</li>
+</ul>
+<p>
+Zasto enum (preporuka) umesto bitmap:<br>
+</p>
+<ul>
+<li>Jednostavnije odrzavanje</li>
+<li>Jasniji SQL i indeksi</li>
+<li>Uskladjeno sa realnim poslovnim modelom gde korisnik uglavnom ima jedan nivo privilegije</li>
+</ul>
+<h2>5.2 Legacy mapiranje rola</h2>
+<p>
+Mapiranje iz Symfony/FOS:<br>
+</p>
+<ul>
+<li>ROLE_SUPER_ADMIN -&gt; SUPER_ADMIN</li>
+<li>ROLE_ADMIN -&gt; LIBRARY_ADMIN</li>
+<li>ROLE_LIBRARAIN -&gt; LIBRARIAN</li>
+<li>ROLE_ENDUSER/ROLE_USER -&gt; USER</li>
+</ul>
+<hr>
+<h2>6. API specifikacija (high-level)</h2>
+<h2>6.1 Auth</h2>
+<ul>
+<li>POST /api/v1/auth/login</li>
+<li>POST /api/v1/auth/logout</li>
+<li>GET /api/v1/auth/me</li>
+<li>POST /api/v1/auth/password/reset-request</li>
+<li>POST /api/v1/auth/password/reset</li>
+</ul>
+<h2>6.2 Users</h2>
+<ul>
+<li>GET /api/v1/users</li>
+<li>POST /api/v1/users</li>
+<li>GET /api/v1/users/{id}</li>
+<li>PUT /api/v1/users/{id}</li>
+<li>DELETE /api/v1/users/{id} (soft delete)</li>
+<li>POST /api/v1/users/{id}/activate</li>
+<li>POST /api/v1/users/tags/add</li>
+<li>POST /api/v1/users/tags/remove</li>
+</ul>
+<h2>6.3 Catalog i cirkulacija</h2>
+<ul>
+<li>books, authors, categories, tags, physical-units (UI naziv: Fizicke jedinice)</li>
+<li>borrow, return, reservation</li>
+<li>user detail workflow (clanarina, zaduzenje, razduzenje, otkaz rezervacije)</li>
+</ul>
+<h2>6.4 Stats i report</h2>
+<ul>
+<li>/stats/borrows</li>
+<li>/stats/returns</li>
+<li>/stats/category</li>
+<li>/stats/revision</li>
+<li>/reports/taken-books</li>
+</ul>
+<h2>6.5 CMS</h2>
+<ul>
+<li>news, recomendations, pages, banner</li>
+</ul>
+<h2>6.6 Import i export</h2>
+<ul>
+<li>Import knjiga iz Excel formata</li>
+<li>Import korisnika iz Excel formata</li>
+<li>Import korisnika mora podrzati class podatke</li>
+<li>Ako class iz uvoza ne postoji, sistem treba da ga kreira u aktivnoj skolskoj godini (uz validaciju biblioteke i razreda 1-8)</li>
+<li>PDF eksporti moraju biti funkcionalno 1:1 ekvivalent legacy aplikaciji (raspored podataka, kljucni prikazi i izvestaji)</li>
+</ul>
+<hr>
+<h2>7. Plan migracije podataka (legacy baza -&gt; PostgreSQL)</h2>
+<h2>7.1 Koraci</h2>
+<ol>
+<li>Snapshot postojece baze</li>
+<li>Kreiranje Laravel PostgreSQL schema + migracija</li>
+<li>ETL skripte za master podatke (library, category, author, book)</li>
+<li>ETL za korisnike i role mapiranje</li>
+<li>ETL za transakcione podatke (book_copy, borrow, reservation, history, membership, transaction)</li>
+<li>ETL za tag pivot i central katalog</li>
+<li>Verifikacija integriteta i brojeva (legacy vs PostgreSQL)</li>
+<li>Pilot rollout po jednoj biblioteci</li>
+</ol>
+<h2>7.2 Kriticne tacke</h2>
+<ul>
+<li>Mapiranje razlika tipova i SQL semantike iz legacy baze ka PostgreSQL</li>
+<li>Roles konverzija iz array u enum</li>
+<li>Username prefiks obrisan... logika (legacy soft-delete)</li>
+<li>Tacnost available/total counters na knjigama</li>
+<li>Uskladjivanje deleted/locked semantike</li>
+<li>Ispravno inicijalno punjenje i dalja konzistentnost <code>student_class</code> pivot relacija i <code>active</code> statusa</li>
+<li>Pravila za automatsko kreiranje class-ova tokom importa korisnika u aktivnoj skolskoj godini</li>
+</ul>
+<hr>
+<h2>8. Nefunkcionalni zahtevi</h2>
+<ul>
+<li>Bezbednost: CSRF, rate limit, audit log</li>
+<li>Performanse: paginacija na svim listama, indeksiranje FK i search kolona</li>
+<li>Observability: structured log, exception tracking</li>
+<li>Testovi:</li>
+</ul>
+<p>
+  - Feature testovi za API<br>
+  - Unit testovi za Service sloj<br>
+  - Integracioni testovi za migraciju podataka<br>
+</p>
+<hr>
+<h2>9. Prihvatni kriterijumi</h2>
+<ul>
+<li>Svi postojeci moduli imaju API ekvivalente</li>
+<li>React pokriva admin i public tokove</li>
+<li>React frontend koristi MUI komponente i Material Design (Android-like) interfejs kao jedinstveni UI standard</li>
+<li>Korisnicke role rade po novom modelu bez Spatie</li>
+<li>Korisnik ima striktno jednu rolu (enum), bez multi-role kombinacija</li>
+<li>Postoji CRUD za class-ove i dodela razreda kroz enum polje u class-u</li>
+<li>Razred je implementiran kao enum 1-8 u tabeli class-ova, uz rimski prikaz u UI-u</li>
+<li>Skolska godina je sistemski entitet i vezana je za class kroz FK (<code>school_year_id</code>)</li>
+<li>Ucenici su povezani sa class-ovima</li>
+<li>Istorija promene class-a korisnika se cuva kroz student_class pivot tabelu i dostupna je za pregled</li>
+<li>U svakom trenutku postoji tacno jedna aktivna class relacija po korisniku</li>
+<li>Import modul podrzava knjige i korisnike (ukljucujuci class podatke)</li>
+<li>Import korisnika moze kreirati nedostajuci class u aktivnoj skolskoj godini</li>
+<li>PDF eksporti su 1:1 funkcionalno uskladjeni sa legacy sistemom</li>
+<li>Migracija podataka prolazi bez gubitka kljucnih relacija</li>
+<li>Statistike i izvestaji vracaju konzistentne rezultate</li>
+</ul>
+<hr>
+<h2>10. Predlog implementacionih faza</h2>
+<ul>
+<li>Faza 1: Auth, Users, Libraries, Roles</li>
+<li>Faza 2: Catalog (books/authors/categories/tags)</li>
+<li>Faza 3: Fizicke jedinice + Borrow/Return/Reservation + User detail workflow</li>
+<li>Faza 4: Stats/Reports + CMS + Import</li>
+<li>Faza 5: Razred/Class/Ucenik + finalna migracija</li>
+<li>Faza 6: UAT, cutover, hypercare</li>
+</ul>
+<hr>
+<h2>11. Tehnicke napomene iz analize</h2>
+<ul>
+<li>Legacy koristi FOSUserBundle i Doctrine array roles</li>
+<li>Legacy role naziv sadrzi typo ROLE_LIBRARAIN</li>
+<li>Legacy kod ima mix ORM i native SQL; kod migracije to razdvojiti na Query services</li>
+<li>Legacy kontroleri su debeli; u Laravelu logiku prebaciti u servise</li>
+</ul>
+<hr>
+<h2>12. Otvorena pitanja (za finalni backlog)</h2>
+<p>
+Zakljucene odluke:<br>
+</p>
+<ul>
+<li>Korisnik ima striktno jednu rolu (enum model).</li>
+<li>Korisnik moze menjati class kroz vreme, a istorija se cuva kroz student_class pivot relacije (active true/false).</li>
+<li>Import modul obavezno ostaje i pokriva uvoz knjiga i korisnika.</li>
+<li>Import korisnika podrzava class i automatsko kreiranje class-ova u aktivnoj skolskoj godini.</li>
+<li>PDF eksporti su obavezni i moraju biti 1:1 funkcionalno uskladjeni sa legacy aplikacijom.</li>
+</ul>
+</body></html>

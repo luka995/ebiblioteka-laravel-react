@@ -1,0 +1,14 @@
+{
+  "name": "ebiblioteka-public-assets",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "latest",
+    "laravel-vite-plugin": "latest",
+    "tailwindcss": "latest",
+    "vite": "latest"
+  }
+}

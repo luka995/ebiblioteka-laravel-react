@@ -1,0 +1,74 @@
+services:
+  php:
+    build:
+      context: ./php
+      args:
+        APP_TIMEZONE: Europe/Belgrade
+    container_name: ebiblioteka-php
+    user: "33:33"
+    working_dir: /var/www/html
+    environment:
+      TZ: Europe/Belgrade
+    volumes:
+      - ./:/var/www/html:rw
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ebiblioteka-network
+
+  nginx:
+    build:
+      context: ./nginx
+    container_name: ebiblioteka-nginx
+    ports:
+      - "81:80"
+    volumes:
+      - ./:/var/www/html:ro
+    depends_on:
+      - php
+    networks:
+      - ebiblioteka-network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: ebiblioteka-frontend
+    environment:
+      VITE_API_URL: http://localhost:81
+    ports:
+      - "3001:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - ./:/workspace
+    depends_on:
+      - nginx
+    networks:
+      - ebiblioteka-network
+
+  postgres:
+    image: postgres:16
+    container_name: ebiblioteka-postgres
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: Europe/Belgrade
+      PGTZ: Europe/Belgrade
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ebiblioteka-network
+
+networks:
+  ebiblioteka-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

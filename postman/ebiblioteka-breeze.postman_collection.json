@@ -1,0 +1,337 @@
+{
+    "info": {
+        "name": "eBiblioteka Breeze Auth",
+        "description": "Postman collection for testing Laravel Breeze auth actions (web + sanctum session).",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_postman_id": "8cc5f8f2-1bfb-4c90-a06f-e7ad2f3f7111"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "ebiblioteka-new.local"
+        },
+        {
+            "key": "name",
+            "value": "Postman Test User"
+        },
+        {
+            "key": "email",
+            "value": "postman.user@example.com"
+        },
+        {
+            "key": "password",
+            "value": "password"
+        },
+        {
+            "key": "xsrfToken",
+            "value": ""
+        },
+        {
+            "key": "resetToken",
+            "value": ""
+        },
+        {
+            "key": "verificationUrl",
+            "value": ""
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "const origin = `http://${pm.variables.get('baseUrl')}`;",
+                    "pm.request.headers.upsert({ key: 'Origin', value: origin });",
+                    "pm.request.headers.upsert({ key: 'Referer', value: origin });",
+                    "let token = pm.variables.get('xsrfToken');",
+                    "const xsrfCookie = pm.cookies.get('XSRF-TOKEN');",
+                    "if (xsrfCookie) {",
+                    "  token = decodeURIComponent(xsrfCookie);",
+                    "}",
+                    "if (token) {",
+                    "  pm.collectionVariables.set('xsrfToken', token);",
+                    "  if (pm.environment) pm.environment.set('xsrfToken', token);",
+                    "  pm.request.headers.upsert({ key: 'X-XSRF-TOKEN', value: token });",
+                    "}"
+                ]
+            }
+        }
+    ],
+    "item": [
+        {
+            "name": "01 - Get CSRF Cookie",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Referer",
+                        "value": "{{baseUrl}}"
+                    }
+                ],
+                "url": {
+                    "raw": "http://{{baseUrl}}/sanctum/csrf-cookie",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "sanctum",
+                        "csrf-cookie"
+                    ]
+                },
+                "description": "Must be called before POST auth requests to initialize XSRF cookie."
+            },
+            "event": [
+                {
+                    "listen": "test",
+                    "script": {
+                        "type": "text/javascript",
+                        "exec": [
+                            "const setCookies = pm.response.headers.all().filter(h => h.key.toLowerCase() === 'set-cookie').map(h => h.value);",
+                            "const xsrfHeader = setCookies.find(v => v.startsWith('XSRF-TOKEN='));",
+                            "pm.test('XSRF cookie received', function () {",
+                            "  pm.expect(xsrfHeader).to.not.be.undefined;",
+                            "});",
+                            "if (xsrfHeader) {",
+                            "  const encoded = xsrfHeader.split(';')[0].replace('XSRF-TOKEN=', '');",
+                            "  const token = decodeURIComponent(encoded);",
+                            "  pm.collectionVariables.set('xsrfToken', token);",
+                            "  if (pm.environment) pm.environment.set('xsrfToken', token);",
+                            "}"
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "02 - Register",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-XSRF-TOKEN",
+                        "value": "{{xsrfToken}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"name\": \"{{name}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"password_confirmation\": \"{{password}}\"\n}"
+                },
+                "url": {
+                    "raw": "http://{{baseUrl}}/register",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "register"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "03 - Login",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-XSRF-TOKEN",
+                        "value": "{{xsrfToken}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+                },
+                "url": {
+                    "raw": "http://{{baseUrl}}/login",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "login"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "04 - Current User (Sanctum)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    }
+                ],
+                "url": {
+                    "raw": "http://{{baseUrl}}/api/user",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "api",
+                        "user"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "05 - Forgot Password",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-XSRF-TOKEN",
+                        "value": "{{xsrfToken}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"email\": \"{{email}}\"\n}"
+                },
+                "url": {
+                    "raw": "http://{{baseUrl}}/forgot-password",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "forgot-password"
+                    ]
+                },
+                "description": "Reset token is logged with MAIL_MAILER=log. Copy it into collection variable resetToken."
+            }
+        },
+        {
+            "name": "06 - Reset Password",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-XSRF-TOKEN",
+                        "value": "{{xsrfToken}}"
+                    }
+                ],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"password_confirmation\": \"{{password}}\"\n}"
+                },
+                "url": {
+                    "raw": "http://{{baseUrl}}/reset-password",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "reset-password"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "07 - Send Email Verification Notification",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-XSRF-TOKEN",
+                        "value": "{{xsrfToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "http://{{baseUrl}}/email/verification-notification",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "email",
+                        "verification-notification"
+                    ]
+                },
+                "description": "Requires authenticated session cookie."
+            }
+        },
+        {
+            "name": "08 - Verify Email (signed URL)",
+            "request": {
+                "method": "GET",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    }
+                ],
+                "url": {
+                    "raw": "{{verificationUrl}}",
+                    "host": [
+                        "{{verificationUrl}}"
+                    ]
+                },
+                "description": "Set verificationUrl variable with the full signed URL from email notification before running."
+            }
+        },
+        {
+            "name": "09 - Logout",
+            "request": {
+                "method": "POST",
+                "header": [
+                    {
+                        "key": "Accept",
+                        "value": "application/json"
+                    },
+                    {
+                        "key": "X-XSRF-TOKEN",
+                        "value": "{{xsrfToken}}"
+                    }
+                ],
+                "url": {
+                    "raw": "http://{{baseUrl}}/logout",
+                    "host": [
+                        "{{baseUrl}}"
+                    ],
+                    "path": [
+                        "logout"
+                    ]
+                }
+            }
+        }
+    ]
+}
