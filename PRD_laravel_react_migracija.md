@@ -315,7 +315,7 @@ poslovna pravila, migraciju podataka i funkcionalnu verifikaciju tokom tranzicij
 Predlog:
 - Laravel 12
 - PostgreSQL kao ciljna baza podataka
-- Sanctum za SPA autentikaciju (cookie + CSRF) ili JWT ako se trazi stateless
+- Sanctum za SPA autentikaciju (session/cookie) — usvojeni izbor, detalji u sekciji 3.6
 - API Resources za response DTO sloj
 - Form Request validacije
 - Policy + Gate za autorizaciju
@@ -389,7 +389,8 @@ Odgovornosti slojeva:
 - React Hook Form upravlja zivotnim ciklusom formi i koristi uncontrolled pristup gde je moguce.
 - Zod schema validira forme i API podatke, a TypeScript tipovi se izvode iz schema.
 - Centralni Axios ili Fetch klijent standardizuje base URL, JSON zaglavlja, autentikaciju,
-  CSRF/JWT tok prema izabranoj backend strategiji i obradu gresaka.
+  CSRF cookie tok i slanje kredencijala (`credentials: 'include'`) prema Sanctum
+  session-based strategiji (sekcija 3.6), uz obradu gresaka.
 
 Standardni query/mutation obrasci:
 - `useQuery` se koristi za GET liste i detalje, na primer `GET /api/students`.
@@ -475,6 +476,113 @@ Primer za modul Ucenici:
   kao Capacitor i zato nije trenutno usvojeno resenje.
 - Ova alternativa zadrzava isti React kod i smanjuje kompleksnost odrzavanja, ali se
   uvodi tek nakon formalne promene zahteva za galeriju.
+
+## 3.6 Autentikacija: Laravel Sanctum session-based (cookie auth)
+
+### Odluka
+
+Za aplikaciju eBiblioteka autentikacija koristi **Laravel Sanctum sa session-based
+autentikacijom i HTTP-only cookies**.
+
+Ne koristi se JWT ni custom access tokens.
+
+Frontend je React SPA hostovan na drugom domenu u odnosu na Laravel API.
+
+Primer:
+
+- React: `https://admin.e-biblioteka.rs`
+- Laravel API: `https://api.e-biblioteka.rs`
+
+### Authentication flow
+
+1. Korisnik salje email/username i lozinku iz React-a.
+2. React salje login zahtev ka Laravel API-ju.
+3. Laravel validira kredencijale i kreira autentikovanu sesiju.
+4. Laravel vraca session cookie kroz `Set-Cookie`.
+5. Browser cuva cookie.
+6. React NE cita niti upravlja session cookie-jem.
+7. Browser automatski salje cookie uz naredne API zahteve.
+8. Laravel razresava autentikovanog korisnika iz sesije.
+9. React odredjuje stanje autentikacije iz API odgovora kao sto je `/api/user` ili `/api/me`.
+
+Session cookie mora biti konfigurisan kao:
+
+- `HttpOnly`
+- `Secure` u produkciji
+- odgovarajuca `SameSite` konfiguracija
+- ispravna `domain` konfiguracija za SPA/API setup
+
+### React requirements
+
+API zahtevi koji zahtevaju autentikaciju moraju slati credentials.
+
+Za `fetch`:
+
+```js
+fetch(url, {
+    credentials: 'include',
+});
+```
+
+Za Axios:
+
+```js
+axios.defaults.withCredentials = true;
+```
+
+React nikada ne sme da cita, cuva ili rucno dodaje session cookie.
+
+### Laravel requirements
+
+Koristi se Laravel Sanctum SPA/session autentikacioni mehanizam.
+
+Konfigurise se:
+
+- Sanctum stateful domains
+- session cookie domain
+- CORS
+- supports_credentials
+- HTTPS u produkciji
+
+Auth endpointi (uskladjeni sa verzionisanim namespace-om u sekciji 6.1) ukljucuju:
+
+- GET  /sanctum/csrf-cookie
+- POST /api/v1/auth/login
+- POST /api/v1/auth/logout
+- GET  /api/v1/auth/me
+
+`/api/v1/auth/me` (ekvivalent `/api/user`) koristi React za utvrdjivanje trenutno
+autentikovanog korisnika.
+
+### CORS
+
+Zato sto React i Laravel API koriste razlicite domene, Laravel mora eksplicitno
+dozvoliti React origin.
+
+Credentials moraju biti omoguceni:
+
+```
+Access-Control-Allow-Credentials: true
+```
+
+React origin mora biti eksplicitno dozvoljen; `*` se ne koristi kada su u pitanju
+credentials/cookies.
+
+### User implementation (inicijalni koraci)
+
+- User model i database migration
+- Login endpoint
+- Logout endpoint
+- Current authenticated user endpoint
+- Sanctum/session konfiguracija
+- CORS konfiguracija
+- Authentication middleware
+- React login flow
+- React authentication state / protected routes
+
+Autentikacija ostaje zasnovana na Laravel sesiji. JWT, refresh tokeni i
+localStorage-based autentikacija se ne uvode osim ako buduci zahtev to izricito
+opravda.
 
 ---
 
