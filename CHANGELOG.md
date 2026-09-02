@@ -1,5 +1,24 @@
 # Changelog
 
+## [02.09.2026] UI: Tema 2 (reference) sa theme switcher-om i ćiriličnim sadržajem
+
+### Added
+
+- **Theme switcher** (`resources/views/public/partials/theme-switch.blade.php`) — lat/cyr toggle za prebacivanje između Teme 1 (classic) i Teme 2 (reference)
+- **Reference tema** (`resources/css/reference.css`, `resources/views/themes/ref/`) — potpuno odvojen vizuelni sistem i Blade view-ovi Teme 2 (layout, nav, footer, home, project, libraries, contact) preuzeti sa prototipa
+- **PublicTheme support** (`app/Support/PublicTheme.php`) — razrešavanje aktivne teme iz query parametra, cookija (`public_theme`) i konfiguracije
+- **Cyrillic transliteracija** (`app/Support/Text.php`) — `Text::cyr()` za prevođenje latiničnih podataka u ćirilicu u referentnoj temi
+- **LibraryCatalog support** (`app/Support/LibraryCatalog.php`) — izdvojen statički katalog biblioteka sa kategorijama i knjigama
+- **Testovi Teme 2** (`tests/Feature/PublicThemeReferenceTest.php`) — provera ćiriličnog prikaza i linkova na home, catalog, library i book stranama sa `?theme=ref`
+
+### Changed
+
+- **PublicThemeMiddleware** (`app/Http/Middleware/PublicThemeMiddleware.php`) — persistor teme u cookie na osnovu `theme` query parametra; registrovan na web grupu u `bootstrap/app.php`
+- **Javni kontroleri** (`PublicHomeController.php`, `PublicProjectController.php`, `PublicLibraryController.php`) — vraćaju view preko `PublicTheme::view()` i koriste `LibraryCatalog`
+- **Nav/footer** (`resources/views/public/partials/nav.blade.php`, `footer.blade.php`, `home.blade.php`) — integrisan theme switcher, SVG logo, dinamički frontend linkovi i active stanje navigacije
+- **Classic CSS** (`resources/css/app.css`) — stilovi theme switcher-a, vidljivost na mobilnom (≤620px), DM Sans umesto DM Mono
+- **Vite ulaz** (`vite.config.js`) — dodat `resources/css/reference.css` u build ulaz
+
 ## [02.09.2026] Auth: Migracija auth ruta na /api/v1/auth sa Sanctum session autentikacijom
 
 ### Added

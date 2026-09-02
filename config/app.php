@@ -54,6 +54,10 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3001'),
+
+    'frontend_url_public' => env('FRONTEND_URL_PUBLIC', 'https://dashboard.ebiblioteka.rs'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
@@ -122,5 +126,18 @@ return [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Public Theme
+    |--------------------------------------------------------------------------
+    |
+    | Active theme for the public Blade pages. Supported values: "classic"
+    | (existing design) and "ref" (reference design prototype). The value can
+    | be overridden per request via the "theme" query parameter.
+    |
+    */
+
+    'public_theme' => env('PUBLIC_THEME', 'classic'),
 
 ];
