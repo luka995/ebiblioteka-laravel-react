@@ -1,5 +1,19 @@
 # Changelog
 
+## [02.09.2026] Frontend: React environment konfiguracija i Vite host podešavanja
+
+### Added
+
+- **Environment helper** (`frontend/src/lib/environment.ts`) — `laravelBaseUrl()` koji bira Laravel origin na osnovu hostname-a ili `VITE_LARAVEL_URL` override-a
+- **Tunnel dokumentacija** (`TUNNEL.md`) — vodič za Cloudflare named tunnel deljenje lokalnog stack-a (Laravel na `demo.ebiblioteka.rs`, React na `dashboard.ebiblioteka.rs`)
+
+### Changed
+
+- **React aplikacija** (`frontend/src/App.tsx`) — „Nazad na početnu stranicu" link koristi `laravelBaseUrl()`
+- **React stil** (`frontend/src/styles.css`) — DM Sans umesto monospace u kicker etiketi
+- **Vite dev server** (`frontend/vite.config.ts`) — `host: 0.0.0.0` i dozvoljeni hostovi za tunnel (dashboard.ebiblioteka.rs, trycloudflare.com)
+- **Frontend build** (`frontend/dist/`) — regenerisani JS/CSS asseti (`index-jrFFmw56.js`, `index-BqoD0GO7.css`) sa ažuriranim reference-ama u `index.html`
+
 ## [02.09.2026] Contact: Javna kontakt forma sa email notifikacijom
 
 ### Added

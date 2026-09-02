@@ -1,4 +1,5 @@
 import { BookOpen, LayoutDashboard, LogIn, ShieldCheck } from 'lucide-react'
+import { laravelBaseUrl } from './lib/environment'
 
 function App() {
   return (
@@ -10,7 +11,7 @@ function App() {
         <h1>Prostor za vaš<br /><em>nalog.</em></h1>
         <p className="placeholder-copy">Prijava, radni prostor biblioteke i administratorski panel biće dostupni ovde u sledećoj fazi.</p>
         <div className="placeholder-status"><ShieldCheck size={16} /> Laravel API veza je pripremljena</div>
-        <a className="placeholder-link" href="http://localhost:81/">Nazad na početnu stranicu <LogIn size={16} /></a>
+        <a className="placeholder-link" href={`${laravelBaseUrl()}/`}>Nazad na početnu stranicu <LogIn size={16} /></a>
       </div>
     </main>
   )
