@@ -1,5 +1,18 @@
 # Changelog
 
+## [02.09.2026] Contact: Javna kontakt forma sa email notifikacijom
+
+### Added
+
+- **Kontakt strana** (`resources/views/public/contact.blade.php`) — javna kontakt forma sa hero sekcijom, info karticom Akademije Filipović i formom (ime, email, organizacija, poruka)
+- **Email poruka** (`app/Mail/ContactMessage.php`, `resources/views/emails/contact-message.blade.php`) — mailable sa subject-om „Nova poruka sa eBiblioteka kontakt forme" i replyTo postavljenim na pošiljaoca
+- **Kontakt konfiguracija** (`config/contact.php`) — primalac iz `CONTACT_EMAIL` env var
+- **Testovi** (`tests/Feature/PublicContactTest.php`) — provera renderovanja stranice i slanja email poruke
+
+### Changed
+
+- **PublicContactController** (`app/Http/Controllers/PublicContactController.php`) — `create` prikazuje formu kroz `PublicTheme::view()`, `store` validira i šalje poruku na konfigurisanu adresu uz redirect sa `contact_sent` flash porukom
+
 ## [02.09.2026] UI: Tema 2 (reference) sa theme switcher-om i ćiriličnim sadržajem
 
 ### Added
