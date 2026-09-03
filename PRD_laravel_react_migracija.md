@@ -934,3 +934,37 @@ Zakljucene odluke:
 - TWA/Bubblewrap ostaje moguca alternativa samo ako se ukloni zahtev za cuvanje slika
   u sistemskoj galeriji.
 - PDF eksporti su obavezni i moraju biti 1:1 funkcionalno uskladjeni sa legacy aplikacijom.
+
+---
+
+## 13. Implementacioni dodaci — auth, role i dashboard (usvojeno 03.09.2026.)
+
+Odluke primenjene u prvoj fazi (login/forgot/reset, role model, dashboard shell):
+
+- **Javna registracija se ne implementira.** Nalog korisniku otvara superadmin ili
+  admin biblioteke iz dashboard forme (Users), u okviru biblioteke. `POST /register`
+  je uklonjen iz API-ja (`routes/auth.php`). Na javnom portalu uklonjen je CTA
+  "Kreiraj nalog"; ostaje "Prijava".
+- **Primaran jezik UI-ja je srpski na ćirilici** (`sr-Cyrl` default), sa opcijama
+  latinica (`sr-Latn`) i engleski (`en`). React koristi i18next; jezik se pamti u
+  localStorage i šalje kroz `X-Locale` header ka API-ju (server: `SetLocale`
+  middleware + `lang/{sr-Cyrl,sr-Latn,en}`).
+- **Role = Postgres native enum tip** `user_role` (`CREATE TYPE`), vrednosti:
+  `superadmin`, `library_admin`, `librarian`, `user` (mapiranje iz §5.2).
+  PHP `enum UserRole: string` koristi `EnumToArray` trait (obrazac iz projekta
+  "portfolio") sa `toArray()`, `toArrayWithValue()` i lokalizovanim `getLabel()`.
+- **Biblioteka-korisnik je many-to-many** preko pivot tabele `library_user`
+  (jedan nalog može koristiti više biblioteka). Nasleđeni `library_id` na
+  korisniku se ne uvodi. Model "mesto" (place) pripada regiji; biblioteka pripada
+  mestu (bez dupliranja region/city na biblioteci kao u legacy-ju).
+- **`users` tabela** je proširena: role (enum), `username`, `first_name`,
+  `last_name`, `jmbg`, `address`, `city`, `post_code`, `bar_code` (auto-generisano
+  kroz API, 13 cifara).
+- **Dashboard (React)**: `/login`, `/forgot-password`, `/reset-password`
+  (query: email+token), a iza autentikacije `/` (dashboard početna, prazan widget
+  prostor — widgeti po tipu naloga dolaze kasnije), `/users`, `/libraries`.
+  Sidebar za početak: Users i Libraries (vidljive superadminu); role-based meni
+  dolazi sa module-ima. Password reset link iz email-a vodi na React rutu.
+- **Login API ostaje session-based (Sanctum)**; `/me` vraća korisnika kroz
+  `UserResource` (sa `role`). Auth ekrani su rađeni u shadcn/ui stilu sa blagim
+  žutim akcentom (sidebar/nav), bez menjanja fontova.

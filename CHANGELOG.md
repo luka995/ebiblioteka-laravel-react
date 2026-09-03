@@ -1,5 +1,41 @@
 # Changelog
 
+## [03.09.2026] Frontend: React dashboard shell, auth ekrani i i18n (ćirilica default)
+
+### Added
+
+- **Frontend stack** (`frontend/`) — Tailwind CSS v4, shadcn/ui komponente (button, input, label, card, badge, select, modal), React Router, TanStack Query, React Hook Form + Zod
+- **Dizajn tokeni** (`frontend/src/index.css`) — shadcn look zadržan; blagi žuti akcenat (`#ffd968`) na sidebar/nav aktivnim stavkama i brand elementima; fontovi ne menjani
+- **Auth ekrani** (`frontend/src/pages/auth/`) — `/login`, `/forgot-password`, `/reset-password` sa split layout-om (brand panel u ćirilici/latinici/engleskom), jezičkim menjačem i shadcn formama
+- **Dashboard shell** (`frontend/src/components/layout/app-shell.tsx`) — sidebar (Početna, Users, Libraries prema ulozi), header sa jezičkim menjačem i odjavom; `/` dashboard početna sa praznim widget prostorom
+- **Users/Libraries stranice** (`frontend/src/pages/users/`, `frontend/src/pages/libraries/`) — liste sa pretragom i forme za kreiranje korisnika (sa rolom, bibliotekama m2m, auto bar-kod) i biblioteka (region → mesto kaskada)
+- **API klijent** (`frontend/src/lib/api.ts`) — fetch sa `credentials: include`, Sanctum CSRF flow, `X-Locale` header, tipizirane rute
+- **i18n** (`frontend/src/i18n/`) — i18next, default `sr-Cyrl`, opcije `sr-Latn` i `en` (JSON prevodi), pamćenje izbora u localStorage
+
+### Changed
+
+- **Auth context** (`frontend/src/hooks/useAuth.tsx`) — stanje autentikacije iz `/api/v1/auth/me`; login/logout kroz TanStack Query
+- **Javni portal** — uklonjen CTA „Kreiraj nalog" (nema javne registracije); ostaje „Prijava"
+- **Frontend build** (`frontend/dist/`) — regenerisani asseti
+
+## [03.09.2026] Backend: Role model (Postgres enum), Users/Libraries API i server i18n
+
+### Added
+
+- **Role enum** (`app/Enums/UserRole.php`) — `superadmin`, `library_admin`, `librarian`, `user` sa `EnumToArray` trait-om (`toArray`, `toArrayWithValue`, lokalizovan `getLabel`) i mapiranjem iz Symfony/FOS legacy-ja
+- **Migrations** — `user_role` native Postgres enum tip, profilska polja na `users` (username, first/last name, jmbg, address, city, post_code, bar_code), tabele `regions`, `places`, `libraries`, pivot `library_user` (m2m korisnik–biblioteka)
+- **Modeli** — `Region`, `Place`, `Library` + relacije; `User` sa role cast-om, `libraries()`, `displayName()`
+- **Users/Libraries API** (`app/Http/Controllers/`) — liste i kreiranje korisnika (bar-kod auto-generisan kroz API), biblioteka, regija i mesta; `/api/v1/roles` i `/roles/assignable`; Gate za superadmin upravljanje
+- **UserResource** — `/api/v1/auth/me` vraća korisnika sa rolom
+- **Superadmin seed** (`app/Console/Commands/EnsureSuperAdmin.php`) — `admin@ebiblioteka.rs`
+- **Početne regije/mesta** (`database/seeders/LocationSeeder.php`)
+- **Server i18n** — `SetLocale` middleware (`X-Locale`), `lang/{sr-Cyrl,sr-Latn,en}` fajlovi (auth, passwords, roles, validation); reset email link vodi na React `/reset-password`
+- **Testovi** (`tests/Feature/Auth/UsersApiTest.php`) — role pristup, kreiranje korisnika/biblioteke, lokalizovane role labele, bar-kod
+
+### Removed
+
+- **Javna registracija** — `POST /api/v1/auth/register`, `RegisteredUserController`, `RegistrationTest`
+
 ## [02.09.2026] Frontend: React environment konfiguracija i Vite host podešavanja
 
 ### Added

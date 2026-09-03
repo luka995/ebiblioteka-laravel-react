@@ -8,6 +8,6 @@
         <a class="{{ request()->routeIs('contact.*') ? 'active' : '' }}" href="{{ route('contact.create') }}">Kontakt</a>
         <a class="mobile-login" href="{{ \App\Support\FrontendUrl::url() }}">Prijava</a>
     </nav>
-    <div class="public-actions">@include('public.partials.theme-switch', ['themeSwitchLang' => 'lat'])<a class="public-login" href="{{ \App\Support\FrontendUrl::url() }}">Prijava</a><a class="button button-blue" href="{{ \App\Support\FrontendUrl::url() }}">Kreiraj nalog <span>↗</span></a></div>
+    <div class="public-actions">@include('public.partials.theme-switch', ['themeSwitchLang' => 'lat'])<a class="public-login" href="{{ \App\Support\FrontendUrl::url() }}">Prijava</a></div>
     <button class="public-menu-toggle" data-menu-toggle type="button" aria-label="Otvori meni" aria-expanded="false">☰</button>
 </header>

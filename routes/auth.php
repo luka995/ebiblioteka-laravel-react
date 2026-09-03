@@ -4,15 +4,11 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Resources\UserResource;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1/auth')->group(function (): void {
-    Route::post('/register', [RegisteredUserController::class, 'store'])
-        ->middleware('guest')
-        ->name('register');
-
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('guest')
         ->name('login');
@@ -38,6 +34,6 @@ Route::prefix('v1/auth')->group(function (): void {
         ->name('verification.send');
 
     Route::get('/me', function (\Illuminate\Http\Request $request) {
-        return $request->user();
+        return new UserResource($request->user());
     })->middleware('auth')->name('me');
 });

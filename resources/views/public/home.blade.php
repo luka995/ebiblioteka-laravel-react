@@ -20,7 +20,6 @@
         <div class="public-actions">
             @include('public.partials.theme-switch', ['themeSwitchLang' => 'lat'])
             <a class="public-login" href="{{ \App\Support\FrontendUrl::url() }}">Prijava</a>
-            <a class="button button-blue" href="{{ \App\Support\FrontendUrl::url() }}">Kreiraj nalog <span>↗</span></a>
         </div>
         <button class="public-menu-toggle" data-menu-toggle type="button" aria-label="Otvori meni" aria-expanded="false">☰</button>
     </header>
@@ -100,7 +99,7 @@
         </section>
 
         <section class="public-wrap join-section" id="prijava">
-            <div class="join-mark">✦</div><div><span class="section-label">OSTANIMO U KONTAKTU</span><h2 class="display">Uvek ima još jedna <span class="serif">dobra knjiga.</span></h2></div><div class="join-copy"><p>Prijavite se da saznate kada se otvori nova biblioteka ili stigne nova preporuka.</p><a class="button button-yellow" href="{{ \App\Support\FrontendUrl::url() }}">Pridružite se čitaocima <span>↗</span></a></div>
+            <div class="join-mark">✦</div><div><span class="section-label">OSTANIMO U KONTAKTU</span><h2 class="display">Uvek ima još jedna <span class="serif">dobra knjiga.</span></h2></div><div class="join-copy"><p>Prijavite se da saznate kada se otvori nova biblioteka ili stigne nova preporuka.</p><a class="button button-yellow" href="{{ \App\Support\FrontendUrl::url() }}">Prijavite se <span>↗</span></a></div>
         </section>
     </main>
 
