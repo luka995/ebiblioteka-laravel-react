@@ -64,7 +64,20 @@
     "formSubtitle": "Open an account within the library.",
     "barcodeAuto": "The barcode is generated automatically.",
     "regenerate": "Generate",
-    "created": "User created."
+    "created": "User created.",
+    "editTitle": "Edit user",
+    "editSubtitle": "Update the account details.",
+    "updated": "User updated.",
+    "deleted": "User deleted.",
+    "deleteConfirmTitle": "Delete user?",
+    "deleteConfirmText": "Are you sure you want to delete the user “{{name}}”? This action cannot be undone.",
+    "notFound": "User not found.",
+    "tabs": {
+      "info": "Info",
+      "reservations": "Reservations",
+      "borrows": "Borrows"
+    },
+    "soonText": "This section is under construction and will be available soon."
   },
   "libs": {
     "title": "Libraries",
@@ -82,6 +95,14 @@
     "formTitle": "New library",
     "formSubtitle": "Add a library at a specific place.",
     "created": "Library created.",
+    "editTitle": "Edit library",
+    "editSubtitle": "Update the library details.",
+    "updated": "Library updated.",
+    "deleted": "Library deleted.",
+    "deletedBadge": "Deleted",
+    "deleteConfirmTitle": "Delete library?",
+    "deleteConfirmText": "Are you sure you want to delete the library “{{name}}”? This action cannot be undone.",
+    "notFound": "Library not found.",
     "placePlaceholder": "Select a place",
     "regionPlaceholder": "Select a region"
   },
@@ -129,6 +150,15 @@
     "actions": "Actions",
     "loading": "Loading...",
     "required": "Required",
-    "back": "Back"
+    "back": "Back",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "backToList": "Back to list"
+  },
+  "pagination": {
+    "showing": "Showing {{from}}–{{to}} of {{total}}",
+    "previous": "Previous page",
+    "next": "Next page"
   }
 }

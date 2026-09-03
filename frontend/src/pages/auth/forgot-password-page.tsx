@@ -8,8 +8,7 @@ import { api, ApiError, apiPaths } from '@/lib/api'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { FieldError, FormItem } from '@/components/ui/form'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Spinner } from '@/components/ui/loader'
 import { MailCheck } from 'lucide-react'
 
@@ -25,17 +24,13 @@ export function ForgotPasswordPage() {
 
   type FormValues = z.infer<typeof schema>
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<FormValues>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     mode: 'onTouched',
     defaultValues: { email: '' },
   })
 
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = form.handleSubmit(async (values) => {
     setPending(true)
     try {
       await api.post(apiPaths.forgotPassword, { email: values.email })
@@ -53,8 +48,8 @@ export function ForgotPasswordPage() {
   if (sent) {
     return (
       <Card>
-        <CardHeader className="items-center space-y-3 text-center">
-          <span className="flex size-12 items-center justify-center rounded-full bg-brand-soft text-brand">
+        <CardHeader className="items-center text-center">
+          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-brand-soft text-brand">
             <MailCheck className="size-6" />
           </span>
           <CardTitle className="font-brand-heading text-2xl">{t('auth.forgotSentTitle')}</CardTitle>
@@ -71,37 +66,45 @@ export function ForgotPasswordPage() {
 
   return (
     <Card>
-      <CardHeader className="space-y-2">
+      <CardHeader>
         <CardTitle className="font-brand-heading text-2xl">{t('auth.forgotTitle')}</CardTitle>
         <CardDescription>{t('auth.forgotSubtitle')}</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="space-y-5" noValidate>
-          <FormItem>
-            <Label htmlFor="email">{t('auth.emailLabel')}</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              autoCapitalize="none"
-              placeholder={t('auth.emailLabel')}
-              aria-invalid={!!errors.email}
-              {...register('email')}
+        <Form {...form}>
+          <form onSubmit={onSubmit} className="space-y-5" noValidate>
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('auth.emailLabel')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      placeholder={t('auth.emailLabel')}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            <FieldError message={errors.email?.message} />
-          </FormItem>
 
-          <Button type="submit" variant="brand" className="w-full" disabled={pending}>
-            {pending ? <Spinner className="border-white/40 border-t-transparent" /> : null}
-            {t('auth.forgotSubmit')}
-          </Button>
+            <Button type="submit" variant="brand" className="w-full" disabled={pending}>
+              {pending ? <Spinner className="border-white/40 border-t-transparent" /> : null}
+              {t('auth.forgotSubmit')}
+            </Button>
 
-          <div className="text-center">
-            <Link to="/login" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
-              {t('auth.backToLogin')}
-            </Link>
-          </div>
-        </form>
+            <div className="text-center">
+              <Link to="/login" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
+                {t('auth.backToLogin')}
+              </Link>
+            </div>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   )

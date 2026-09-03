@@ -33,6 +33,7 @@ return [
     'custom' => [
         'role_not_assignable' => 'Ova uloga nije dostupna za dodelu sa vašeg naloga.',
         'place_duplicate' => 'Mesto sa tim nazivom već postoji u izabranoj regiji.',
+        'cannot_delete_self' => 'Ne možete obrisati sopstveni nalog.',
     ],
 
     'attributes' => [

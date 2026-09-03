@@ -64,7 +64,20 @@
     "formSubtitle": "Otvorite nalog u okviru biblioteke.",
     "barcodeAuto": "Bar-kod se generiše automatski.",
     "regenerate": "Generiši",
-    "created": "Korisnik je kreiran."
+    "created": "Korisnik je kreiran.",
+    "editTitle": "Izmeni korisnika",
+    "editSubtitle": "Ažurirajte podatke naloga.",
+    "updated": "Korisnik je izmenjen.",
+    "deleted": "Korisnik je obrisan.",
+    "deleteConfirmTitle": "Obriši korisnika?",
+    "deleteConfirmText": "Da li ste sigurni da želite da obrišete korisnika „{{name}}“? Ova akcija se ne može vratiti.",
+    "notFound": "Korisnik nije pronađen.",
+    "tabs": {
+      "info": "Podaci",
+      "reservations": "Rezervacije",
+      "borrows": "Pozajmice"
+    },
+    "soonText": "Ovaj deo je u pripremi i biće dostupan uskoro."
   },
   "libs": {
     "title": "Biblioteke",
@@ -82,6 +95,14 @@
     "formTitle": "Nova biblioteka",
     "formSubtitle": "Dodajte biblioteku na određeno mesto.",
     "created": "Biblioteka je kreirana.",
+    "editTitle": "Izmeni biblioteku",
+    "editSubtitle": "Ažurirajte podatke biblioteke.",
+    "updated": "Biblioteka je izmenjena.",
+    "deleted": "Biblioteka je obrisana.",
+    "deletedBadge": "Obrisana",
+    "deleteConfirmTitle": "Obriši biblioteku?",
+    "deleteConfirmText": "Da li ste sigurni da želite da obrišete biblioteku „{{name}}“? Ova akcija se ne može vratiti.",
+    "notFound": "Biblioteka nije pronađena.",
     "placePlaceholder": "Izaberite mesto",
     "regionPlaceholder": "Izaberite regiju"
   },
@@ -129,6 +150,15 @@
     "actions": "Akcije",
     "loading": "Učitavanje...",
     "required": "Obavezno",
-    "back": "Nazad"
+    "back": "Nazad",
+    "view": "Prikaz",
+    "edit": "Izmeni",
+    "delete": "Obriši",
+    "backToList": "Nazad na listu"
+  },
+  "pagination": {
+    "showing": "Prikaz {{from}}–{{to}} od {{total}}",
+    "previous": "Prethodna strana",
+    "next": "Sledeća strana"
   }
 }

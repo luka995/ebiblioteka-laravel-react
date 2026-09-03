@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePlaceRequest;
 use App\Http\Resources\PlaceResource;
 use App\Models\Place;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Validation\Rule;
 
 class PlacesController extends Controller
 {
@@ -24,23 +24,9 @@ class PlacesController extends Controller
         );
     }
 
-    public function store(Request $request): PlaceResource
+    public function store(StorePlaceRequest $request): PlaceResource
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'region_id' => ['required', 'integer', Rule::exists('regions', 'id')],
-        ]);
-
-        $request->validate([
-            'name' => [
-                'required',
-                Rule::unique('places', 'name')->where('region_id', $data['region_id']),
-            ],
-        ], [
-            'name.unique' => __('validation.custom.place_duplicate'),
-        ]);
-
-        $place = Place::create($data);
+        $place = Place::create($request->validated());
 
         return new PlaceResource($place->load('region'));
     }

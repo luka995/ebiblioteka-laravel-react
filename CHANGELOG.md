@@ -1,5 +1,38 @@
 # Changelog
 
+## [03.09.2026] Users/Libraries upravljanje: server-side paginacija, CRUD i prikaz korisnika sa tabovima
+
+### Added
+
+- **Users/Libraries CRUD API** (`app/Http/Controllers/UsersController.php`, `app/Http/Controllers/LibrariesController.php`, `routes/api.php`) — `show`/`update`/`destroy` endpointi za korisnike i biblioteke; soft delete korisnika (migracija `deleted_at` + `SoftDeletes` na `User`), biblioteka se deaktivira kroz postojeći `deleted` flag; zaštita od brisanja sopstvenog naloga
+- **Request klase** (`app/Http/Requests/UpdateUserRequest.php`, `app/Http/Requests/UpdateLibraryRequest.php`) — validacija izmene uz ignorisanje sopstvenog `email`/`username`/`bar_code` i opcionu lozinku
+- **UserResource** (`app/Http/Resources/UserResource.php`) — izložena profilska polja (`jmbg`, `address`, `city`, `post_code`)
+- **Testovi** (`tests/Feature/Auth/UserCrudApiTest.php`) — prikaz, izmena, soft delete korisnika/biblioteke, samodelecija i pagination meta
+- **Server-side paginacija** (`frontend/src/pages/users/users-page.tsx`, `frontend/src/pages/libraries/libraries-page.tsx`) — lista 10 po strani, sinhronizacija `page`/`q` kroz URL query parametre i shadcn `Pagination`
+- **CRUD akcije u tabelama** — ikonice pogled/izmena/obriši po redu i AlertDialog potvrda za brisanje
+- **Prikaz korisnika** (`frontend/src/pages/users/user-detail-page.tsx`) — ruta `/users/:id` sa karticom (avatar/inicijali, ime, uloga, bar-kod, biblioteke) i tabovima Podaci / Rezervacije / Pozajmice (samo Podaci su funkcionalni)
+- **Prikaz biblioteke** (`frontend/src/pages/libraries/library-detail-page.tsx`) — read-only ruta `/libraries/:id`
+- **Deljeni modali** (`frontend/src/components/users/user-form-modal.tsx`, `frontend/src/components/libraries/library-form-modal.tsx`) — kreiranje i izmena u istom dialogu
+- **shadcn/ui komponente** (`frontend/src/components/ui/`) — `tabs`, `pagination`, `alert-dialog`, `avatar`, `table`, `checkbox`, `dialog`, `sonner`; uklonjen custom `modal`
+- **PaginationBar** (`frontend/src/components/pagination-bar.tsx`) — numerisana kontrola i prikaz „Приказ X–Y од Z"
+- **API klijent** (`frontend/src/lib/api.ts`) — `put`/`delete` metode i helperi `user(id)`/`library(id)`
+
+### Changed
+
+- **Store validacije premeštene u FormRequest** (`StoreUserRequest`, `StoreLibraryRequest`, `StorePlaceRequest`, `StoreContactRequest`) umesto inline `validate()` u kontrolerima (`UsersController`, `LibrariesController`, `PlacesController`, `PublicContactController`)
+- **Libraries lista** — `index` vraća samo neobrisane biblioteke (`where('deleted', false)`)
+- **Toast stil** (`frontend/src/App.tsx`, `frontend/src/components/ui/sonner.tsx`) — Toaster montiran preko `sonner` komponente sa theme tokenima; pozivi toast-a struktuirani (title + description)
+- **Auth forme** — refaktor na shadcn komponente i RHF `onTouched` validaciju
+- **Validation poruke** (`lang/{sr-Cyrl,sr-Latn,en}/validation.php`) — dodato `cannot_delete_self`
+- **i18n** (`frontend/src/i18n/locales/*.json`) — ključevi za CRUD akcije, paginaciju, detail stranice i tabove (sr-Cyrl, sr-Latn, en)
+- **`frontend/src/index.css`** — `tw-animate-css` i `@custom-variant dark`
+- **Frontend build** (`frontend/dist/`) — regenerisani asseti
+
+### Removed
+
+- **Custom modal** (`frontend/src/components/ui/modal.tsx`) — zamenjen shadcn `dialog` komponentom
+- **Inline validacija** u kontrolerima — premeštena u FormRequest klase
+
 ## [03.09.2026] Frontend: Link na početnu sajta sa guest auth stranica
 
 ### Changed

@@ -181,6 +181,7 @@ return [
     'custom' => [
         'role_not_assignable' => 'This role cannot be assigned from your account.',
         'place_duplicate' => 'A place with that name already exists in the selected region.',
+        'cannot_delete_self' => 'You cannot delete your own account.',
     ],
 
     /*

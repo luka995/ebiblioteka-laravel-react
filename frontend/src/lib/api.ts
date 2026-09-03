@@ -110,6 +110,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body }),
+  put: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PUT', body }),
+  patch: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PATCH', body }),
+  delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
   del: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 }
 
@@ -120,8 +123,10 @@ export const apiPaths = {
   forgotPassword: '/api/v1/auth/forgot-password',
   resetPassword: '/api/v1/auth/reset-password',
   users: '/api/v1/users',
+  user: (id: number) => `/api/v1/users/${id}`,
   barcodeNext: '/api/v1/users/barcode/next',
   libraries: '/api/v1/libraries',
+  library: (id: number) => `/api/v1/libraries/${id}`,
   regions: '/api/v1/regions',
   places: '/api/v1/places',
   roles: '/api/v1/roles',

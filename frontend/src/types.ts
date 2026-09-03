@@ -14,6 +14,10 @@ export interface User {
   email: string
   role: RoleValue
   role_label: string
+  jmbg: string | null
+  address: string | null
+  city: string | null
+  post_code: string | null
   bar_code: string | null
   email_verified_at: string | null
   created_at: string

@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreContactRequest;
 use App\Mail\ContactMessage;
 use App\Support\PublicTheme;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
@@ -16,14 +16,9 @@ class PublicContactController extends Controller
         return view(PublicTheme::view('public.contact'));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreContactRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'email' => ['required', 'email', 'max:255'],
-            'organization' => ['nullable', 'string', 'max:150'],
-            'message' => ['required', 'string', 'max:5000'],
-        ]);
+        $validated = $request->validated();
 
         Mail::to(config('contact.recipient'))
             ->send((new ContactMessage($validated))->replyTo($validated['email'], $validated['name']));

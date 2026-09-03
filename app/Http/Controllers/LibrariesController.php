@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreLibraryRequest;
+use App\Http\Requests\UpdateLibraryRequest;
 use App\Http\Resources\LibraryResource;
 use App\Models\Library;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Validation\Rule;
 
 class LibrariesController extends Controller
 {
@@ -17,6 +19,7 @@ class LibrariesController extends Controller
     {
         $libraries = Library::query()
             ->with(['place.region'])
+            ->where('deleted', false)
             ->when($request->filled('search'), function ($query) use ($request) {
                 $term = trim((string) $request->string('search'));
                 $query->where(function ($query) use ($term) {
@@ -36,17 +39,35 @@ class LibrariesController extends Controller
         );
     }
 
-    public function store(Request $request): LibraryResource
+    public function store(StoreLibraryRequest $request): LibraryResource
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'address' => ['required', 'string', 'max:255'],
-            'place_id' => ['required', 'integer', Rule::exists('places', 'id')],
-            'work_time' => ['nullable', 'string', 'max:255'],
-        ]);
-
-        $library = Library::create($data);
+        $library = Library::create($request->validated());
 
         return new LibraryResource($library->load(['place.region']));
+    }
+
+    public function show(Library $library): LibraryResource
+    {
+        abort_if($library->deleted, 404);
+
+        return new LibraryResource($library->load(['place.region']));
+    }
+
+    public function update(UpdateLibraryRequest $request, Library $library): LibraryResource
+    {
+        abort_if($library->deleted, 404);
+
+        $library->update($request->validated());
+
+        return new LibraryResource($library->load(['place.region']));
+    }
+
+    public function destroy(Library $library): JsonResponse
+    {
+        abort_if($library->deleted, 404);
+
+        $library->update(['deleted' => true]);
+
+        return response()->json(status: 204);
     }
 }

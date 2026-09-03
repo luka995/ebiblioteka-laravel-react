@@ -8,8 +8,7 @@ import { api, ApiError, apiPaths } from '@/lib/api'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { FieldError, FormItem } from '@/components/ui/form'
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Spinner } from '@/components/ui/loader'
 import { CheckCircle2 } from 'lucide-react'
 
@@ -34,12 +33,7 @@ export function ResetPasswordPage() {
 
   type FormValues = z.infer<typeof schema>
 
-  const {
-    register,
-    handleSubmit,
-    setError,
-    formState: { errors },
-  } = useForm<FormValues>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     mode: 'onTouched',
     defaultValues: { password: '', password_confirmation: '' },
@@ -61,7 +55,7 @@ export function ResetPasswordPage() {
     )
   }
 
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = form.handleSubmit(async (values) => {
     setPending(true)
     try {
       await api.post(apiPaths.resetPassword, {
@@ -74,8 +68,8 @@ export function ResetPasswordPage() {
     } catch (error) {
       if (error instanceof ApiError) {
         const fieldErrors = error.validationErrors
-        if (fieldErrors?.email?.[0]) setError('password', { message: fieldErrors.email[0] })
-        if (fieldErrors?.password?.[0]) setError('password', { message: fieldErrors.password[0] })
+        if (fieldErrors?.email?.[0]) form.setError('password', { message: fieldErrors.email[0] })
+        if (fieldErrors?.password?.[0]) form.setError('password', { message: fieldErrors.password[0] })
       }
     } finally {
       setPending(false)
@@ -85,8 +79,8 @@ export function ResetPasswordPage() {
   if (success) {
     return (
       <Card>
-        <CardHeader className="items-center space-y-3 text-center">
-          <span className="flex size-12 items-center justify-center rounded-full bg-brand-soft text-brand">
+        <CardHeader className="items-center text-center">
+          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-brand-soft text-brand">
             <CheckCircle2 className="size-6" />
           </span>
           <CardTitle className="font-brand-heading text-2xl">{t('auth.resetSuccessTitle')}</CardTitle>
@@ -103,42 +97,48 @@ export function ResetPasswordPage() {
 
   return (
     <Card>
-      <CardHeader className="space-y-2">
+      <CardHeader>
         <CardTitle className="font-brand-heading text-2xl">{t('auth.resetTitle')}</CardTitle>
         <CardDescription>{t('auth.resetSubtitle')}</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={onSubmit} className="space-y-5" noValidate>
-          <FormItem>
-            <Label htmlFor="password">{t('auth.newPasswordLabel')}</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              aria-invalid={!!errors.password}
-              {...register('password')}
+        <Form {...form}>
+          <form onSubmit={onSubmit} className="space-y-5" noValidate>
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('auth.newPasswordLabel')}</FormLabel>
+                  <FormControl>
+                    <Input type="password" autoComplete="new-password" {...field} />
+                  </FormControl>
+                  <FormDescription>{t('auth.passwordHint')}</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            <p className="text-xs text-muted-foreground">{t('auth.passwordHint')}</p>
-            <FieldError message={errors.password?.message} />
-          </FormItem>
 
-          <FormItem>
-            <Label htmlFor="password_confirmation">{t('auth.confirmPasswordLabel')}</Label>
-            <Input
-              id="password_confirmation"
-              type="password"
-              autoComplete="new-password"
-              aria-invalid={!!errors.password_confirmation}
-              {...register('password_confirmation')}
+            <FormField
+              control={form.control}
+              name="password_confirmation"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('auth.confirmPasswordLabel')}</FormLabel>
+                  <FormControl>
+                    <Input type="password" autoComplete="new-password" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            <FieldError message={errors.password_confirmation?.message} />
-          </FormItem>
 
-          <Button type="submit" variant="brand" className="w-full" disabled={pending}>
-            {pending ? <Spinner className="border-white/40 border-t-transparent" /> : null}
-            {t('auth.resetSubmit')}
-          </Button>
-        </form>
+            <Button type="submit" variant="brand" className="w-full" disabled={pending}>
+              {pending ? <Spinner className="border-white/40 border-t-transparent" /> : null}
+              {t('auth.resetSubmit')}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   )

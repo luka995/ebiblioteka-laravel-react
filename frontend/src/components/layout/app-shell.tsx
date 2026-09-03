@@ -101,7 +101,6 @@ function pageTitleFor(pathname: string): string {
   if (pathname.startsWith('/libraries')) return 'nav.libraries'
   return 'nav.dashboard'
 }
-
 export function AppShell() {
   const { t } = useTranslation()
   const location = useLocation()
