@@ -1,5 +1,11 @@
 # Changelog
 
+## [03.09.2026] Frontend: Link na početnu sajta sa guest auth stranica
+
+### Changed
+
+- **Auth layout** (`frontend/src/pages/auth/auth-layout.tsx`) — na `/login`, `/forgot-password` i `/reset-password` dodat link „Nazad na sajt" koji vodi na javnu početnu stranicu (`laravelBaseUrl()`)
+
 ## [03.09.2026] Frontend: React dashboard shell, auth ekrani i i18n (ćirilica default)
 
 ### Added

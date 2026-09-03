@@ -37,7 +37,8 @@
     "resetSubmit": "Promeni lozinku",
     "resetSuccessTitle": "Lozinka je promenjena",
     "resetSuccessText": "Sada se možete prijaviti sa novom lozinkom.",
-    "passwordHint": "Najmanje 8 karaktera."
+    "passwordHint": "Najmanje 8 karaktera.",
+    "backToSite": "Nazad na sajt"
   },
   "dashboard": {
     "kicker": "eBiblioteka",

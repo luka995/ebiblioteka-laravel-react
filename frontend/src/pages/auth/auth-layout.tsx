@@ -1,10 +1,13 @@
 import { Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { ArrowLeft } from 'lucide-react'
 import { BrandMark } from '@/components/brand'
 import { LocaleSwitcher } from '@/components/locale-switcher'
+import { laravelBaseUrl } from '@/lib/environment'
 
 export function AuthLayout() {
   const { t } = useTranslation()
+  const siteUrl = `${laravelBaseUrl()}/`
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
@@ -39,6 +42,15 @@ export function AuthLayout() {
         </div>
         <div className="w-full max-w-md">
           <Outlet />
+          <div className="mt-6 flex justify-center">
+            <a
+              href={siteUrl}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ArrowLeft className="size-4" />
+              {t('auth.backToSite')}
+            </a>
+          </div>
         </div>
       </div>
     </div>

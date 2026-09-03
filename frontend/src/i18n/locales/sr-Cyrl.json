@@ -37,7 +37,8 @@
     "resetSubmit": "Промени лозинку",
     "resetSuccessTitle": "Лозинка је промењена",
     "resetSuccessText": "Сада се можете пријавити са новом лозинком.",
-    "passwordHint": "Најмање 8 карактера."
+    "passwordHint": "Најмање 8 карактера.",
+    "backToSite": "Назад на сајт"
   },
   "dashboard": {
     "kicker": "еБиблиотека",

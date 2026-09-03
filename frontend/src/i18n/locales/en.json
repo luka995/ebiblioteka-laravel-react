@@ -37,7 +37,8 @@
     "resetSubmit": "Reset password",
     "resetSuccessTitle": "Password changed",
     "resetSuccessText": "You can now sign in with your new password.",
-    "passwordHint": "At least 8 characters."
+    "passwordHint": "At least 8 characters.",
+    "backToSite": "Back to website"
   },
   "dashboard": {
     "kicker": "eBiblioteka",
