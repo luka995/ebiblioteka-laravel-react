@@ -1,0 +1,133 @@
+{
+  "appName": "eBiblioteka",
+  "tagline": "Mirnije mesto za dobre knjige",
+  "lang": {
+    "sr-Cyrl": "Ćirilica",
+    "sr-Latn": "Latinica",
+    "en": "English"
+  },
+  "nav": {
+    "dashboard": "Početna",
+    "users": "Korisnici",
+    "libraries": "Biblioteke",
+    "logout": "Odjava",
+    "account": "Moj nalog"
+  },
+  "auth": {
+    "heroTitle": "Radni prostor za biblioteke i čitaoce",
+    "heroText": "Prijavite se da upravljate članovima, bibliotekama i čitalačkom evidencijom.",
+    "loginTitle": "Prijavite se",
+    "loginSubtitle": "Dobrodošli nazad — unesite podatke svog naloga.",
+    "emailLabel": "Email adresa",
+    "passwordLabel": "Lozinka",
+    "remember": "Zapamti me na ovom uređaju",
+    "submit": "Prijava",
+    "forgotLink": "Zaboravili ste lozinku?",
+    "loginError": "Prijava nije uspela. Proverite adresu i lozinku.",
+    "forgotTitle": "Zaboravljena lozinka",
+    "forgotSubtitle": "Unesite email adresu naloga i poslaćemo vam link za promenu lozinke.",
+    "forgotSubmit": "Pošalji link",
+    "forgotSentTitle": "Proverite prijemno sanduče",
+    "forgotSentText": "Ako nalog postoji, poslali smo link za promenu lozinke na {{email}}.",
+    "backToLogin": "Nazad na prijavu",
+    "resetTitle": "Nova lozinka",
+    "resetSubtitle": "Postavite novu lozinku za svoj nalog.",
+    "newPasswordLabel": "Nova lozinka",
+    "confirmPasswordLabel": "Potvrda lozinke",
+    "resetSubmit": "Promeni lozinku",
+    "resetSuccessTitle": "Lozinka je promenjena",
+    "resetSuccessText": "Sada se možete prijaviti sa novom lozinkom.",
+    "passwordHint": "Najmanje 8 karaktera."
+  },
+  "dashboard": {
+    "kicker": "eBiblioteka",
+    "title": "Početna",
+    "welcome": "Dobrodošli, {{name}}",
+    "emptyTitle": "Radni prostor je spreman",
+    "emptyText": "Ovde će se pojaviti pregledi i widgeti u skladu sa tipom vašeg naloga. Uskoro."
+  },
+  "users": {
+    "title": "Korisnici",
+    "add": "Novi korisnik",
+    "search": "Pretražite korisnike...",
+    "empty": "Nema korisnika.",
+    "columns": {
+      "user": "Korisnik",
+      "email": "Email",
+      "role": "Uloga",
+      "libraries": "Biblioteke",
+      "barcode": "Bar-kod",
+      "created": "Kreiran"
+    },
+    "formTitle": "Novi korisnik",
+    "formSubtitle": "Otvorite nalog u okviru biblioteke.",
+    "barcodeAuto": "Bar-kod se generiše automatski.",
+    "regenerate": "Generiši",
+    "created": "Korisnik je kreiran."
+  },
+  "libs": {
+    "title": "Biblioteke",
+    "add": "Nova biblioteka",
+    "search": "Pretražite biblioteke...",
+    "empty": "Nema biblioteka.",
+    "columns": {
+      "name": "Naziv",
+      "place": "Mesto",
+      "region": "Regija",
+      "address": "Adresa",
+      "workTime": "Radno vreme",
+      "created": "Kreirana"
+    },
+    "formTitle": "Nova biblioteka",
+    "formSubtitle": "Dodajte biblioteku na određeno mesto.",
+    "created": "Biblioteka je kreirana.",
+    "placePlaceholder": "Izaberite mesto",
+    "regionPlaceholder": "Izaberite regiju"
+  },
+  "fields": {
+    "firstName": "Ime",
+    "lastName": "Prezime",
+    "username": "Korisničko ime",
+    "email": "Email adresa",
+    "password": "Lozinka",
+    "role": "Uloga",
+    "libraries": "Biblioteke",
+    "barcode": "Bar-kod",
+    "jmbg": "JMBG",
+    "address": "Adresa",
+    "city": "Grad",
+    "postCode": "Poštanski broj",
+    "name": "Naziv",
+    "place": "Mesto",
+    "region": "Regija",
+    "workTime": "Radno vreme",
+    "optional": "opciono",
+    "selectPlaceholder": "Izaberite..."
+  },
+  "roles": {
+    "superadmin": "Superadministrator",
+    "library_admin": "Administrator biblioteke",
+    "librarian": "Bibliotekar",
+    "user": "Korisnik"
+  },
+  "errors": {
+    "required": "Ovo polje je obavezno.",
+    "emailInvalid": "Unesite ispravnu email adresu.",
+    "minPassword": "Lozinka mora imati najmanje 8 karaktera.",
+    "passwordMismatch": "Lozinke se ne poklapaju.",
+    "unexpected": "Došlo je do greške. Pokušajte ponovo.",
+    "forbidden": "Nemate dozvolu za ovu akciju.",
+    "usernameInvalid": "Korisničko ime može sadržati samo slova, brojeve, tačku, crticu i podvuku.",
+    "jmbgInvalid": "JMBG mora imati tačno 13 cifara.",
+    "placeDuplicate": "Mesto sa tim nazivom već postoji u izabranoj regiji."
+  },
+  "common": {
+    "save": "Sačuvaj",
+    "cancel": "Otkaži",
+    "search": "Pretraga",
+    "actions": "Akcije",
+    "loading": "Učitavanje...",
+    "required": "Obavezno",
+    "back": "Nazad"
+  }
+}

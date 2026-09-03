@@ -1,0 +1,133 @@
+{
+  "appName": "eBiblioteka",
+  "tagline": "A calmer place to find great books",
+  "lang": {
+    "sr-Cyrl": "Cyrillic",
+    "sr-Latn": "Latin",
+    "en": "English"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "libraries": "Libraries",
+    "logout": "Log out",
+    "account": "My account"
+  },
+  "auth": {
+    "heroTitle": "A workspace for libraries and readers",
+    "heroText": "Sign in to manage members, libraries and the reading records.",
+    "loginTitle": "Sign in",
+    "loginSubtitle": "Welcome back — enter your account details.",
+    "emailLabel": "Email address",
+    "passwordLabel": "Password",
+    "remember": "Remember me on this device",
+    "submit": "Sign in",
+    "forgotLink": "Forgot your password?",
+    "loginError": "Sign in failed. Check your email and password.",
+    "forgotTitle": "Forgot password",
+    "forgotSubtitle": "Enter the email address of your account and we will send you a link to reset your password.",
+    "forgotSubmit": "Send link",
+    "forgotSentTitle": "Check your inbox",
+    "forgotSentText": "If the account exists, we sent a password reset link to {{email}}.",
+    "backToLogin": "Back to sign in",
+    "resetTitle": "New password",
+    "resetSubtitle": "Set a new password for your account.",
+    "newPasswordLabel": "New password",
+    "confirmPasswordLabel": "Confirm password",
+    "resetSubmit": "Reset password",
+    "resetSuccessTitle": "Password changed",
+    "resetSuccessText": "You can now sign in with your new password.",
+    "passwordHint": "At least 8 characters."
+  },
+  "dashboard": {
+    "kicker": "eBiblioteka",
+    "title": "Dashboard",
+    "welcome": "Welcome, {{name}}",
+    "emptyTitle": "Your workspace is ready",
+    "emptyText": "Overview widgets will appear here depending on your account type. Soon."
+  },
+  "users": {
+    "title": "Users",
+    "add": "New user",
+    "search": "Search users...",
+    "empty": "No users found.",
+    "columns": {
+      "user": "User",
+      "email": "Email",
+      "role": "Role",
+      "libraries": "Libraries",
+      "barcode": "Barcode",
+      "created": "Created"
+    },
+    "formTitle": "New user",
+    "formSubtitle": "Open an account within the library.",
+    "barcodeAuto": "The barcode is generated automatically.",
+    "regenerate": "Generate",
+    "created": "User created."
+  },
+  "libs": {
+    "title": "Libraries",
+    "add": "New library",
+    "search": "Search libraries...",
+    "empty": "No libraries found.",
+    "columns": {
+      "name": "Name",
+      "place": "Place",
+      "region": "Region",
+      "address": "Address",
+      "workTime": "Working hours",
+      "created": "Created"
+    },
+    "formTitle": "New library",
+    "formSubtitle": "Add a library at a specific place.",
+    "created": "Library created.",
+    "placePlaceholder": "Select a place",
+    "regionPlaceholder": "Select a region"
+  },
+  "fields": {
+    "firstName": "First name",
+    "lastName": "Last name",
+    "username": "Username",
+    "email": "Email address",
+    "password": "Password",
+    "role": "Role",
+    "libraries": "Libraries",
+    "barcode": "Barcode",
+    "jmbg": "JMBG",
+    "address": "Address",
+    "city": "City",
+    "postCode": "Postal code",
+    "name": "Name",
+    "place": "Place",
+    "region": "Region",
+    "workTime": "Working hours",
+    "optional": "optional",
+    "selectPlaceholder": "Select..."
+  },
+  "roles": {
+    "superadmin": "Super administrator",
+    "library_admin": "Library administrator",
+    "librarian": "Librarian",
+    "user": "User"
+  },
+  "errors": {
+    "required": "This field is required.",
+    "emailInvalid": "Enter a valid email address.",
+    "minPassword": "Password must be at least 8 characters.",
+    "passwordMismatch": "Passwords do not match.",
+    "unexpected": "Something went wrong. Please try again.",
+    "forbidden": "You are not allowed to perform this action.",
+    "usernameInvalid": "Username may only contain letters, numbers, dots, dashes and underscores.",
+    "jmbgInvalid": "JMBG must contain exactly 13 digits.",
+    "placeDuplicate": "A place with that name already exists in the selected region."
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "search": "Search",
+    "actions": "Actions",
+    "loading": "Loading...",
+    "required": "Required",
+    "back": "Back"
+  }
+}

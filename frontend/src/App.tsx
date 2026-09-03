@@ -1,19 +1,43 @@
-import { BookOpen, LayoutDashboard, LogIn, ShieldCheck } from 'lucide-react'
-import { laravelBaseUrl } from './lib/environment'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { AppShell } from '@/components/layout/app-shell'
+import { GuestOnly, RequireAuth } from '@/components/auth/guards'
+import { AuthLayout } from '@/pages/auth/auth-layout'
+import { LoginPage } from '@/pages/auth/login-page'
+import { ForgotPasswordPage } from '@/pages/auth/forgot-password-page'
+import { ResetPasswordPage } from '@/pages/auth/reset-password-page'
+import { DashboardPage } from '@/pages/dashboard-page'
+import { UsersPage } from '@/pages/users/users-page'
+import { LibrariesPage } from '@/pages/libraries/libraries-page'
 
 function App() {
   return (
-    <main className="app-placeholder">
-      <div className="placeholder-card">
-        <div className="placeholder-brand"><span><BookOpen size={19} /></span> eBiblioteka</div>
-        <div className="placeholder-icon"><LayoutDashboard size={28} /></div>
-        <p className="placeholder-kicker">REAKT APLIKACIJA</p>
-        <h1>Prostor za vaš<br /><em>nalog.</em></h1>
-        <p className="placeholder-copy">Prijava, radni prostor biblioteke i administratorski panel biće dostupni ovde u sledećoj fazi.</p>
-        <div className="placeholder-status"><ShieldCheck size={16} /> Laravel API veza je pripremljena</div>
-        <a className="placeholder-link" href={`${laravelBaseUrl()}/`}>Nazad na početnu stranicu <LogIn size={16} /></a>
-      </div>
-    </main>
+    <Routes>
+      <Route
+        element={
+          <GuestOnly>
+            <AuthLayout />
+          </GuestOnly>
+        }
+      >
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+      </Route>
+
+      <Route
+        element={
+          <RequireAuth>
+            <AppShell />
+          </RequireAuth>
+        }
+      >
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/users" element={<UsersPage />} />
+        <Route path="/libraries" element={<LibrariesPage />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 
