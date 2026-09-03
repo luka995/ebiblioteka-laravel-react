@@ -5,6 +5,7 @@
 ### Changed
 
 - **Auth layout** (`frontend/src/pages/auth/auth-layout.tsx`) — na `/login`, `/forgot-password` i `/reset-password` dodat link „Nazad na sajt" koji vodi na javnu početnu stranicu (`laravelBaseUrl()`)
+- **Auth forme** (login, forgot, reset i admin modali) — `react-hook-form` prebačen na `mode: 'onTouched'` da se validacione greške čiste dok korisnik kuca (izbegava se prikaz zastarelih „required" poruka)
 
 ## [03.09.2026] Frontend: React dashboard shell, auth ekrani i i18n (ćirilica default)
 

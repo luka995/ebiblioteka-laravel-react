@@ -86,7 +86,11 @@ function NewUserModal({
     setError,
     reset,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { role: '' } })
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    mode: 'onTouched',
+    defaultValues: { role: '' },
+  })
 
   useEffect(() => {
     if (!open) return

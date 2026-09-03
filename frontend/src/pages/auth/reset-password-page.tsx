@@ -41,6 +41,7 @@ export function ResetPasswordPage() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
+    mode: 'onTouched',
     defaultValues: { password: '', password_confirmation: '' },
   })
 

@@ -29,7 +29,11 @@ export function ForgotPasswordPage() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: '' } })
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    mode: 'onTouched',
+    defaultValues: { email: '' },
+  })
 
   const onSubmit = handleSubmit(async (values) => {
     setPending(true)

@@ -69,6 +69,7 @@ function NewLibraryModal({
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
+    mode: 'onTouched',
     defaultValues: { name: '', region: '', place: '', address: '', work_time: '' },
   })
 

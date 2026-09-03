@@ -35,6 +35,7 @@ export function LoginPage() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
+    mode: 'onTouched',
     defaultValues: { email: '', password: '', remember: false },
   })
 
