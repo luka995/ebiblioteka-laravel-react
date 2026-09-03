@@ -72,11 +72,17 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers['X-XSRF-TOKEN'] = readCookie('XSRF-TOKEN') ?? ''
   }
 
+  const body = options.body !== undefined ? JSON.stringify(options.body) : undefined
+
+  if (body !== undefined) {
+    headers['Content-Type'] = 'application/json'
+  }
+
   const response = await fetch(`${laravelBaseUrl()}${path}`, {
     method,
     credentials: 'include',
     headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body,
   })
 
   if (!response.ok) {
