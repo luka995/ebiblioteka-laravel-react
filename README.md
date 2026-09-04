@@ -1,58 +1,169 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# eBiblioteka — moderni školsko-bibliotečki sistem
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+> Novi projekat eBiblioteka — rewrite zastarele Symfony 2 aplikacije u modernu,
+> odvojenu arhitekturu **Laravel API + React web**, uz zadržavanje postojeće
+> poslovne logike i uvođenje novih funkcionalnosti (Razred / Class / Učenik,
+> analitika za direktore, skeniranje ISBN/bar-koda, PWA i Capacitor mobilno izdanje).
 
-## About Laravel
+Detaljna specifikacija projekta (domeni, modeli, relacije, API, migracija podataka,
+prihvatni kriterijumi, faze) nalazi se u [PRD_laravel_react_migracija.md](./PRD_laravel_react_migracija.md).
+Ovaj README daje sažet pregled projekta i trenutno stanje implementacije.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Pozadina
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Legacy projekat**: Symfony 2 + Twig + FOSUserBundle + Doctrine, na putanji
+  `/var/www/ebiblioteka`. Koristi se isključivo kao referenca za poslovna pravila,
+  audit, migraciju podataka i funkcionalnu verifikaciju — ne kopira se u novi kod.
+- **Novi projekat**: `/var/www/ebiblioteka-new` (ovaj repozitorijum).
+- Legacy termin `BookCopy`/kopija knjige u novoj aplikaciji i dokumentaciji zamenjen
+  je terminom **Fizičke jedinice**.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Ciljna arhitektura
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```text
+ React (dashboard + javni katalog)          Laravel API
+ +----------------------------------+        +------------------------------------+
+ | shadcn/ui + Tailwind CSS         |  JSON  | Controllers (tanki)                |
+ | React Hook Form + Zod            | <----> | Services (domenska logika)         |
+ | TanStack Query                   |  REST  | Policies/Gate (autorizacija)       |
+ | Lucide React + i18n (sr/en)      |        | Form Requests + API Resources      |
+ +----------------------------------+        | Eloquent + Query objekti          |
+                                             +------------------------------------+
+                                                      |
+                                              PostgreSQL 16 (greenfield)
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+- Backend: **Laravel** (PHP 8.3) — verzionisani JSON REST API (`/api/v1`).
+- Baza: **PostgreSQL 16**, greenfield sema. Legacy baza služi samo za ETL migraciju.
+- Autentikacija: **Laravel Sanctum, session-based (cookie)**, HTTP-only kolačići;
+  bez JWT. Detalji u §3.6 PRD-a.
+- Frontend: **React + Vite + TypeScript** — potpuno odvojen SPA koji komunicira sa
+  API-jem isključivo preko JSON REST-a.
 
-## Contributing
+## Tehnologije
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Backend
+- Laravel + Sanctum, PHP 8.3
+- PostgreSQL 16
+- Policy autorizacija + Form Request validacija + API Resources
+- Service sloj za domensku logiku, Query objekti za kompleksne upite
+- Pest (feature/unit testovi)
 
-## Code of Conduct
+### Frontend
+- React + Vite + TypeScript
+- React Router, TanStack Query, React Hook Form, Zod
+- shadcn/ui (Radix UI + Tailwind CSS 4) kao jedini UI standard
+- Lucide React ikonice, next-themes (light/dark), sonner (toast)
+- i18n: sr-Cyrl (podrazumevano), sr-Latn, en
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Infrastruktura
+- Docker Compose stack: PHP-FPM, Nginx, PostgreSQL, Vite dev server
+- PWA izdanje + Capacitor wrapper (Android/iOS) iz istog React koda
+- Cloudflare Tunnel za deljenje javnih adresa (vidi `TUNNEL.md`)
 
-## Security Vulnerabilities
+## Role model (bez Spatie)
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Jedan korisnik ima tačno jednu rolu (Postgres `user_role` enum):
 
-## License
+| Role | Nivo |
+|---|---|
+| `superadmin` | Globalni admin sistema |
+| `library_admin` | Admin biblioteke |
+| `librarian` | Bibliotekar |
+| `user` | Član (učenik) |
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Autorizacija u kodu ide kroz **Policy** klase + `AuthorizationService`, a frontend
+dobija globalne/per-resource dozvole kroz `/api/v1/auth/me` (sidebar se gradi po
+dozvolama, ne po hardkodovanoj ulozi).
+
+## Domeni i moduli
+
+- Auth & Users (role, članstva u bibliotekama, tagovi)
+- Libraries & Settings (region → mesto → biblioteka)
+- Catalog (knjige, autori, kategorije, tagovi) — u izradi
+- Fizičke jedinice & Inventar — u izradi
+- Pozajmice / rezervacije / članarine — u izradi
+- Statistika, izveštaji i analitika za direktore — u izradi
+- Razred / Class / Učenik + školske godine — u izradi
+- CMS (vesti, stranice, baneri) — u izradi
+- Import / Export (Excel, PDF 1:1 sa legacy-jem) — u izradi
+
+## Autentikacija (session/cookie)
+
+React i Laravel API su na različitim domenima (npr. `dashboard.ebiblioteka.rs` →
+`demo.ebiblioteka.rs`). Session/XSRF kolačići dele se preko zajedničkog
+`.ebiblioteka.rs` domena (middleware `SetSessionCookieDomain`, `SESSION_COOKIE_DOMAIN_PUBLIC`).
+Na localhost-u ostaju host-only kolačići.
+
+Auth endpointi:
+
+- `GET  /api/v1/auth/me` — trenutni korisnik + dozvole + biblioteke + aktivna biblioteka
+- `POST /api/v1/auth/login`, `POST /api/v1/auth/logout`
+- `POST /api/v1/auth/password/...` — zaboravljena lozinka / reset
+- `PUT  /api/v1/auth/active-library` — kontekst aktivne biblioteke
+
+## Status implementacije
+
+> Bez naznake "u izradi" stavke su implementirane i pokrivene testovima.
+
+- [x] Auth: login, logout, /me, forgot/reset lozinke, verifikacija email-a
+- [x] Javni portal (ćirilica): početna, o projektu, kontakt, pregled/katalog biblioteka
+- [x] Dashboard shell: role i permisije, sidebar po dozvolama, izbor jezika, light/dark tema
+- [x] Users: CRUD, soft delete / force delete, promena lozinke, kolonski filteri, kolonska pretraga
+- [x] Biblioteke: CRUD, deaktivacija/restore, aktivna biblioteka i preklopnik
+- [x] Članstva korisnik ↔ biblioteka (deaktivacija / aktivacija / uklanjanje, soft-delete pivot)
+- [x] Regioni / Mesta: CRUD sa zaštitom brisanja
+- [x] Tagovi: CRUD + dodela tagova korisnicima (po korisniku i bulk)
+- [x] Profil: prikaz/izmena, promena lozinke; podešavanja naloga
+- [ ] Catalog (knjige, autori, kategorije) — sledeća faza
+- [ ] Fizičke jedinice, pozajmice, rezervacije, članarine
+- [ ] Razred / Class / Učenik + školske godine
+- [ ] Statistika, izveštaji, analitika za direktore
+- [ ] Skeniranje ISBN/bar-koda, inventurna revizija
+- [ ] PWA + Capacitor mobilno izdanje
+- [ ] Migracija podataka (ETL iz legacy baze)
+
+## Pokretanje (Docker)
+
+```bash
+cp .env.example .env      # podesi DB_* i domene
+docker compose up -d --build
+```
+
+| Servis | Adresa |
+|---|---|
+| Laravel sajt / API | http://localhost:81 |
+| React (Vite) | http://localhost:3001 |
+| Javne adrese | https://demo.ebiblioteka.rs / https://dashboard.ebiblioteka.rs (tunel) |
+
+Rad sa artisanom/composerom/npm unutar kontejnera — vidi `docker-compose.yml`
+(kontejneri `ebiblioteka-php`, `ebiblioteka-frontend`, `ebiblioteka-postgres`).
+
+## Testovi i kod
+
+```bash
+composer test            # Pest feature/unit testovi (config:clear + test)
+vendor/bin/pint          # PHP kodni stil (config: pint.json)
+cd frontend && npm run build   # TypeScript check + Vite build
+```
+
+## Struktura repozitorijuma
+
+```text
+app/                  Laravel backend (Controllers, Services, Policies, Resources, Queries)
+database/             migracije i factory
+frontend/src/         React aplikacija (pages, components/ui, hooks, i18n, lib)
+lang/                 server-side prevodi (sr-Cyrl, sr-Latn, en)
+resources/views/      javni portal (Blade) — target: React javni katalog
+tests/                Pest testovi
+routes/               api.php, auth.php, web.php
+PRD_laravel_react_migracija.md   kompletna specifikacija projekta
+TUNNEL.md             Cloudflare Tunnel podešavanje
+CHANGELOG.md          dnevnik promena
+```
+
+## Srodna dokumentacija
+
+- `PRD_laravel_react_migracija.md` — detaljna specifikacija (domeni, baza, API, role, faze, kriterijumi)
+- `TUNNEL.md` — Cloudflare Tunnel (javne adrese za kolege)
+- `CHANGELOG.md` — istorija promena po danima

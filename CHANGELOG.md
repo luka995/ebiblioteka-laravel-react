@@ -1,6 +1,13 @@
 # Changelog
 
-## [04.09.2026] Admin: policy autorizacija, tagovi, profil i životni ciklus članstva u bibliotekama
+## [04.09.2026] README i .env.example: projektni pregled i uklanjanje konkretnih vrednosti iz šablona
+
+### Changed
+
+- **README.md** (`README.md`) — zamenjen default Laravel sadržaj projektnim pregledom po PRD-u: opis novog projekta (rewrite Symfony 2 → Laravel API + React), ciljna arhitektura, tehnologije, role model, domeni/moduli, autentikacija, status implementacije i roadmap; linkovi ka `PRD_laravel_react_migracija.md`, `TUNNEL.md` i `CHANGELOG.md`
+- **.env.example** (`.env.example`) — produkcijske vrednosti (`FRONTEND_URL_PUBLIC`, `SESSION_COOKIE_DOMAIN_PUBLIC`, `CONTACT_EMAIL`) zamenjene generičkim placeholderima uz komentare; konkretni domeni i email prebačeni u lokalni `.env`
+- **Config contact** (`config/contact.php`) — uklonjen hardkodovani fallback `akademijafilipovic@gmail.com`; `recipient` se čita isključivo iz `env('CONTACT_EMAIL')`
+
 
 ### Added
 
