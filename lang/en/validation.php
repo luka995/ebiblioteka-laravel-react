@@ -182,6 +182,15 @@ return [
         'role_not_assignable' => 'This role cannot be assigned from your account.',
         'place_duplicate' => 'A place with that name already exists in the selected region.',
         'cannot_delete_self' => 'You cannot delete your own account.',
+        'cannot_force_delete' => 'The account cannot be permanently deleted because related records exist.',
+        'active_library_required' => 'You must have an active library selected.',
+        'active_library_invalid' => 'The selected library does not belong to your account.',
+        'region_has_places' => 'The region cannot be deleted because it contains places.',
+        'place_has_libraries' => 'The place cannot be deleted because it contains libraries.',
+        'tag_duplicate' => 'A tag with that name already exists in the selected library.',
+        'tag_library_mismatch' => 'The tag does not belong to a library the user is a member of.',
+        'library_not_managed' => 'You do not have access to this library.',
+        'user_not_library_member' => 'The user is not a member of the selected library.',
     ],
 
     /*
@@ -195,6 +204,8 @@ return [
     |
     */
 
-    'attributes' => [],
+    'attributes' => [
+        'current_password' => 'current password',
+    ],
 
 ];

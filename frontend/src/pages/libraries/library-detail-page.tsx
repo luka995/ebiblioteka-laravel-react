@@ -34,7 +34,7 @@ function InfoRow({ label, children }: { label: string; children: ReactNode }) {
 
 export function LibraryDetailPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { can } = useAuth()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { id } = useParams<{ id: string }>()
@@ -52,7 +52,7 @@ export function LibraryDetailPage() {
     },
   })
 
-  if (user?.role !== 'superadmin') {
+  if (!can('libraries.viewAny')) {
     return <p className="text-sm text-muted-foreground">{t('errors.forbidden')}</p>
   }
 
@@ -114,14 +114,18 @@ export function LibraryDetailPage() {
           </div>
 
           <div className="flex shrink-0 gap-2">
-            <Button variant="outline" onClick={() => setEditOpen(true)}>
-              <Pencil />
-              {t('common.edit')}
-            </Button>
-            <Button variant="outline" onClick={() => setDeleteOpen(true)}>
-              <Trash2 />
-              {t('common.delete')}
-            </Button>
+            {target.can?.update ? (
+              <Button variant="outline" onClick={() => setEditOpen(true)}>
+                <Pencil />
+                {t('common.edit')}
+              </Button>
+            ) : null}
+            {target.can?.delete ? (
+              <Button variant="outline" onClick={() => setDeleteOpen(true)}>
+                <Trash2 />
+                {t('common.delete')}
+              </Button>
+            ) : null}
           </div>
         </CardContent>
       </Card>

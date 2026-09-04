@@ -2,37 +2,58 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Eye, Filter, Pencil, Plus, Power, Tag, UserX } from 'lucide-react'
 import { toast } from 'sonner'
-import { api, apiPaths, ApiError } from '@/lib/api'
+import { api, apiPaths } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoader } from '@/components/ui/loader'
 import { PaginationBar } from '@/components/pagination-bar'
 import { UserFormModal } from '@/components/users/user-form-modal'
+import { UserMembershipModal } from '@/components/users/user-membership-modal'
+import { UserTagsBulkModal } from '@/components/users/user-tags-bulk-modal'
+import {
+  countActiveFilters,
+  EMPTY_USER_FILTERS,
+  UserFiltersPanel,
+  type UserFilters,
+} from '@/components/users/user-filters-panel'
 import { useAuth } from '@/hooks/useAuth'
 import type { PaginatedResponse, User } from '@/types'
 
 const PAGE_SIZE = 10
 
-function useUsersQuery(page: number, search: string) {
+const FILTER_KEYS = [
+  'first_name',
+  'last_name',
+  'email',
+  'username',
+  'bar_code',
+  'jmbg',
+  'city',
+  'role',
+  'library_id',
+] as const
+
+function readFilters(params: URLSearchParams): UserFilters {
+  const filters = { ...EMPTY_USER_FILTERS }
+  FILTER_KEYS.forEach((key) => {
+    const value = params.get(key)
+    if (value) filters[key] = value
+  })
+  return filters
+}
+
+function useUsersQuery(page: number, filters: UserFilters) {
   return useQuery({
-    queryKey: ['users', { page, search }],
+    queryKey: ['users', { page, filters }],
     queryFn: async () => {
       const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
-      if (search) query.set('search', search)
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) query.set(key, String(value))
+      })
       return api.get<PaginatedResponse<User>>(`${apiPaths.users}?${query.toString()}`)
     },
   })
@@ -40,21 +61,26 @@ function useUsersQuery(page: number, search: string) {
 
 export function UsersPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { can } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
-  const search = searchParams.get('q') ?? ''
+  const filters = readFilters(searchParams)
 
-  const [searchInput, setSearchInput] = useState(search)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [deletingUser, setDeletingUser] = useState<User | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [membershipUser, setMembershipUser] = useState<User | null>(null)
+  const [membershipMode, setMembershipMode] = useState<'toggle' | 'delete'>('toggle')
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [bulkTagMode, setBulkTagMode] = useState<'assign' | 'remove'>('assign')
+  const [bulkTagOpen, setBulkTagOpen] = useState(false)
 
-  const usersQuery = useUsersQuery(page, search)
+  const usersQuery = useUsersQuery(page, filters)
 
-  if (user?.role !== 'superadmin') {
+  const activeFilters = countActiveFilters(filters)
+
+  if (!can('users.viewAny')) {
     return <p className="text-sm text-muted-foreground">{t('errors.forbidden')}</p>
   }
 
@@ -72,64 +98,109 @@ export function UsersPage() {
     )
   }
 
-  const applySearch = (value: string) => {
-    setSearchInput(value)
-    setParams({ q: value.trim() || null, page: null })
+  const applyFilters = (next: UserFilters) => {
+    setParams({ ...next, page: null })
   }
 
-  const confirmDelete = async () => {
-    if (!deletingUser) return
-    setIsDeleting(true)
-    try {
-      await api.delete(apiPaths.user(deletingUser.id))
-      const nextPage =
-        usersQuery.data && usersQuery.data.data.length === 1 && page > 1 ? page - 1 : page
-      setParams({ page: nextPage === page ? page : nextPage })
-      await usersQuery.refetch()
-      toast.success(t('users.deleted'), { description: deletingUser.email })
-      setDeletingUser(null)
-    } catch (error) {
-      if (error instanceof ApiError) {
-        toast.error(error.messageText ?? t('errors.unexpected'))
-      }
-    } finally {
-      setIsDeleting(false)
-    }
+  const clearFilters = () => {
+    setParams({ ...EMPTY_USER_FILTERS, page: null })
   }
+
+  const pageIds = (usersQuery.data?.data ?? []).map((item) => item.id)
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id))
+  const somePageSelected = pageIds.some((id) => selectedIds.has(id))
+
+  const toggleSelectAll = () => {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      if (allPageSelected) {
+        pageIds.forEach((id) => next.delete(id))
+      } else {
+        pageIds.forEach((id) => next.add(id))
+      }
+      return next
+    })
+  }
+
+  const toggleRow = (id: number) => {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const clearSelection = () => setSelectedIds(new Set())
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-brand-heading text-2xl font-bold tracking-tight">{t('users.title')}</h2>
+        {can('users.create') ? (
+          <Button
+            variant="brand"
+            onClick={() => {
+              setEditingUser(null)
+              setModalOpen(true)
+            }}
+          >
+            <Plus />
+            {t('users.add')}
+          </Button>
+        ) : null}
+      </div>
+
+      <div className="flex items-center gap-2">
         <Button
-          variant="brand"
-          onClick={() => {
-            setEditingUser(null)
-            setModalOpen(true)
-          }}
+          variant="outline"
+          onClick={() => setFiltersOpen((value) => !value)}
+          aria-expanded={filtersOpen}
         >
-          <Plus />
-          {t('users.add')}
+          <Filter />
+          {t('users.filters.toggle')}
+          {activeFilters > 0 ? <Badge variant="secondary">{activeFilters}</Badge> : null}
         </Button>
       </div>
 
-      <form
-        className="flex gap-2"
-        onSubmit={(event) => {
-          event.preventDefault()
-          applySearch(searchInput)
-        }}
-      >
-        <Input
-          value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
-          placeholder={t('users.search')}
-          className="max-w-xs"
-        />
-        <Button variant="outline" type="submit" aria-label={t('common.search')}>
-          <Search />
-        </Button>
-      </form>
+      {filtersOpen ? (
+        <UserFiltersPanel filters={filters} onApply={applyFilters} onClear={clearFilters} />
+      ) : null}
+
+      {selectedIds.size > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2">
+          <span className="text-sm text-muted-foreground">
+            {t('tags.selectedCount', { count: selectedIds.size })}
+          </span>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setBulkTagMode('assign')
+                setBulkTagOpen(true)
+              }}
+            >
+              <Tag />
+              {t('tags.bulkAssign')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setBulkTagMode('remove')
+                setBulkTagOpen(true)
+              }}
+            >
+              <Tag />
+              {t('tags.bulkRemove')}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={clearSelection}>
+              {t('tags.clearSelection')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       {usersQuery.isLoading ? (
         <PageLoader />
@@ -138,6 +209,13 @@ export function UsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10 px-4">
+                  <Checkbox
+                    checked={allPageSelected ? true : somePageSelected ? 'indeterminate' : false}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label={t('tags.selectAll')}
+                  />
+                </TableHead>
                 <TableHead className="px-4">{t('users.columns.user')}</TableHead>
                 <TableHead className="px-4">{t('users.columns.email')}</TableHead>
                 <TableHead className="px-4">{t('users.columns.role')}</TableHead>
@@ -149,6 +227,13 @@ export function UsersPage() {
             <TableBody>
               {usersQuery.data?.data.map((item) => (
                 <TableRow key={item.id}>
+                  <TableCell className="px-4">
+                    <Checkbox
+                      checked={selectedIds.has(item.id)}
+                      onCheckedChange={() => toggleRow(item.id)}
+                      aria-label={item.name}
+                    />
+                  </TableCell>
                   <TableCell className="px-4">
                     <Link to={`/users/${item.id}`} className="font-medium hover:underline">
                       {item.name}
@@ -170,32 +255,52 @@ export function UsersPage() {
                           <Eye />
                         </Link>
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={t('common.edit')}
-                        onClick={() => {
-                          setEditingUser(item)
-                          setModalOpen(true)
-                        }}
-                      >
-                        <Pencil />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={t('common.delete')}
-                        onClick={() => setDeletingUser(item)}
-                      >
-                        <Trash2 />
-                      </Button>
+                      {item.can?.update ? (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={t('common.edit')}
+                          onClick={() => {
+                            setEditingUser(item)
+                            setModalOpen(true)
+                          }}
+                        >
+                          <Pencil />
+                        </Button>
+                      ) : null}
+                      {item.can?.manageMemberships ? (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={t('membership.toggleTitle')}
+                          onClick={() => {
+                            setMembershipUser(item)
+                            setMembershipMode('toggle')
+                          }}
+                        >
+                          <Power />
+                        </Button>
+                      ) : null}
+                      {item.can?.forceDelete || item.can?.delete ? (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label={t('membership.deleteTitle')}
+                          onClick={() => {
+                            setMembershipUser(item)
+                            setMembershipMode('delete')
+                          }}
+                        >
+                          <UserX />
+                        </Button>
+                      ) : null}
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
               {!usersQuery.data?.data.length ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                     {t('users.empty')}
                   </TableCell>
                 </TableRow>
@@ -229,22 +334,32 @@ export function UsersPage() {
         />
       ) : null}
 
-      <AlertDialog open={Boolean(deletingUser)} onOpenChange={(value) => !value && setDeletingUser(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('users.deleteConfirmTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('users.deleteConfirmText', { name: deletingUser?.name ?? '' })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" disabled={isDeleting} onClick={() => void confirmDelete()}>
-              {t('common.delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {membershipUser ? (
+        <UserMembershipModal
+          open={Boolean(membershipUser)}
+          user={membershipUser}
+          mode={membershipMode}
+          onClose={() => setMembershipUser(null)}
+          onSuccess={(message) => {
+            toast.success(message, { description: membershipUser.email })
+            void usersQuery.refetch()
+          }}
+        />
+      ) : null}
+
+      {bulkTagOpen ? (
+        <UserTagsBulkModal
+          open={bulkTagOpen}
+          mode={bulkTagMode}
+          userIds={Array.from(selectedIds)}
+          onClose={() => setBulkTagOpen(false)}
+          onSuccess={(message) => {
+            toast.success(message)
+            clearSelection()
+            void usersQuery.refetch()
+          }}
+        />
+      ) : null}
     </div>
   )
 }

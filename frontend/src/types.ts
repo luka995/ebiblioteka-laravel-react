@@ -1,9 +1,29 @@
 export type RoleValue = 'superadmin' | 'library_admin' | 'librarian' | 'user'
 
+export interface ResourceCan {
+  view: boolean
+  update: boolean
+  delete: boolean
+  restore?: boolean
+  forceDelete?: boolean
+  manageMemberships?: boolean
+}
+
+export type CollectionPermissions = Record<string, boolean>
+
+export type GlobalPermissions = Record<string, CollectionPermissions>
+
 export interface RoleOption {
   value: RoleValue
   label: string
 }
+
+export interface LibraryOption {
+  id: number
+  name: string
+}
+
+export type ActiveLibrary = LibraryOption | null
 
 export interface User {
   id: number
@@ -23,12 +43,16 @@ export interface User {
   created_at: string
   updated_at: string
   libraries?: Array<{ id: number; name: string }>
+  deactivated_libraries?: Array<{ id: number; name: string }>
+  tags?: Array<{ id: number; name: string; library_id: number }>
+  can?: ResourceCan
 }
 
 export interface Region {
   id: number
   name: string
   places_count?: number
+  can?: ResourceCan
 }
 
 export interface Place {
@@ -36,6 +60,16 @@ export interface Place {
   name: string
   region_id: number
   region_name?: string
+  can?: ResourceCan
+}
+
+export interface Tag {
+  id: number
+  name: string
+  library_id: number
+  library_name?: string
+  users_count?: number
+  can?: ResourceCan
 }
 
 export interface Library {
@@ -51,6 +85,7 @@ export interface Library {
     region_id: number
     region: { id: number; name: string } | null
   }
+  can?: ResourceCan
 }
 
 export interface Paginated<T> {
@@ -78,4 +113,5 @@ export interface PaginatedResponse<T> {
     next?: string | null
   }
   meta: PaginatedMeta
+  permissions?: CollectionPermissions
 }

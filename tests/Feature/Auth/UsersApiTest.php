@@ -14,7 +14,7 @@ function adminApiHeaders(array $extra = []): array
     ], $extra);
 }
 
-test('non superadmin cannot access users management endpoints', function () {
+test('regular user cannot access users management endpoints', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
@@ -22,12 +22,6 @@ test('non superadmin cannot access users management endpoints', function () {
         ->assertForbidden();
 
     $this->actingAs($user)
-        ->postJson('/api/v1/users', [], adminApiHeaders())
-        ->assertForbidden();
-
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
-
-    $this->actingAs($libraryAdmin)
         ->postJson('/api/v1/users', [], adminApiHeaders())
         ->assertForbidden();
 });
@@ -147,4 +141,116 @@ test('me returns the authenticated user with role', function () {
         ->assertOk()
         ->assertJsonPath('data.role', 'superadmin')
         ->assertJsonPath('data.email', $admin->email);
+});
+
+test('me returns global permissions for a superadmin', function () {
+    $admin = User::factory()->superAdmin()->create();
+
+    $this->actingAs($admin)->getJson('/api/v1/auth/me', adminApiHeaders())
+        ->assertOk()
+        ->assertJsonPath('permissions.users.viewAny', true)
+        ->assertJsonPath('permissions.users.create', true)
+        ->assertJsonPath('permissions.libraries.viewAny', true)
+        ->assertJsonPath('permissions.libraries.create', true);
+});
+
+test('me returns empty permissions for a regular user', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->getJson('/api/v1/auth/me', adminApiHeaders())
+        ->assertOk()
+        ->assertJsonPath('permissions.users.viewAny', false)
+        ->assertJsonPath('permissions.users.create', false)
+        ->assertJsonPath('permissions.libraries.viewAny', false)
+        ->assertJsonPath('permissions.libraries.create', false);
+});
+
+test('users list includes collection permissions and per-item can map', function () {
+    $admin = User::factory()->superAdmin()->create();
+    User::factory()->count(2)->create();
+
+    $this->actingAs($admin)->getJson('/api/v1/users', adminApiHeaders())
+        ->assertOk()
+        ->assertJsonPath('permissions.viewAny', true)
+        ->assertJsonPath('permissions.create', true)
+        ->assertJsonPath('data.0.can.view', true)
+        ->assertJsonPath('data.0.can.update', true)
+        ->assertJsonPath('data.0.can.delete', true);
+});
+
+test('library detail includes per-resource can map', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $region = Region::factory()->create();
+    $place = Place::factory()->for($region)->create();
+    $library = Library::factory()->for($place)->create();
+
+    $this->actingAs($admin)->getJson("/api/v1/libraries/{$library->id}", adminApiHeaders())
+        ->assertOk()
+        ->assertJsonPath('data.can.view', true)
+        ->assertJsonPath('data.can.update', true)
+        ->assertJsonPath('data.can.delete', true);
+});
+
+test('superadmin can filter users by column', function () {
+    $admin = User::factory()->superAdmin()->create();
+    User::factory()->create([
+        'email' => 'ana@example.com',
+        'username' => 'ana',
+        'first_name' => 'Ana',
+        'last_name' => 'Anić',
+        'bar_code' => '1111111111111',
+        'jmbg' => '0101990123456',
+        'city' => 'Beograd',
+    ]);
+    User::factory()->create(['email' => 'marko@example.com', 'username' => 'marko', 'city' => 'Novi Sad']);
+
+    $this->actingAs($admin)->getJson('/api/v1/users?email=ana@example.com', adminApiHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.email', 'ana@example.com');
+
+    $this->actingAs($admin)->getJson('/api/v1/users?username=marko', adminApiHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.username', 'marko');
+
+    $this->actingAs($admin)->getJson('/api/v1/users?city=beograd', adminApiHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.city', 'Beograd');
+});
+
+test('superadmin can filter users by role', function () {
+    $admin = User::factory()->superAdmin()->create();
+    User::factory()->count(2)->role(UserRole::Librarian)->create();
+    User::factory()->count(3)->role(UserRole::User)->create();
+
+    $this->actingAs($admin)->getJson('/api/v1/users?role=librarian', adminApiHeaders())
+        ->assertOk()
+        ->assertJsonCount(2, 'data');
+});
+
+test('superadmin can filter users by library membership', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $region = Region::factory()->create();
+    $place = Place::factory()->for($region)->create();
+    $library = Library::factory()->for($place)->create();
+
+    $member = User::factory()->create();
+    $member->libraries()->sync([$library->id]);
+    User::factory()->create();
+
+    $this->actingAs($admin)->getJson("/api/v1/users?library_id={$library->id}", adminApiHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $member->id);
+});
+
+test('invalid role filter returns empty results without error', function () {
+    $admin = User::factory()->superAdmin()->create();
+    User::factory()->count(3)->create();
+
+    $this->actingAs($admin)->getJson('/api/v1/users?role=nonsense', adminApiHeaders())
+        ->assertOk()
+        ->assertJsonCount(0, 'data');
 });

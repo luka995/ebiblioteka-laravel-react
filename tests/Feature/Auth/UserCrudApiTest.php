@@ -134,3 +134,28 @@ test('superadmin can show, update and soft delete a library', function () {
     $this->actingAs($admin)->getJson("/api/v1/libraries/{$library->id}", crudApiHeaders())
         ->assertNotFound();
 });
+
+test('superadmin can change another user password without current password', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $user = User::factory()->create();
+    $originalPassword = $user->password;
+
+    $this->actingAs($admin)->putJson("/api/v1/users/{$user->id}/password", [
+        'password' => 'newsecret123',
+        'password_confirmation' => 'newsecret123',
+    ], crudApiHeaders())
+        ->assertNoContent();
+
+    expect($user->fresh()->password)->not->toBe($originalPassword);
+});
+
+test('non superadmin cannot change another user password', function () {
+    $libraryAdmin = User::factory()->role(\App\Enums\UserRole::LibraryAdmin)->create();
+    $target = User::factory()->create();
+
+    $this->actingAs($libraryAdmin)->putJson("/api/v1/users/{$target->id}/password", [
+        'password' => 'newsecret123',
+        'password_confirmation' => 'newsecret123',
+    ], crudApiHeaders())
+        ->assertForbidden();
+});

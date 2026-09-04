@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Building2, Eye, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Building2, Eye, Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import {
   AlertDialog,
@@ -26,12 +27,13 @@ import type { Library, PaginatedResponse } from '@/types'
 
 const PAGE_SIZE = 10
 
-function useLibrariesQuery(page: number, search: string) {
+function useLibrariesQuery(page: number, search: string, deleted: boolean) {
   return useQuery({
-    queryKey: ['libraries', { page, search }],
+    queryKey: ['libraries', { page, search, deleted }],
     queryFn: async () => {
       const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
       if (search) query.set('search', search)
+      if (deleted) query.set('deleted', '1')
       return api.get<PaginatedResponse<Library>>(`${apiPaths.libraries}?${query.toString()}`)
     },
   })
@@ -39,7 +41,7 @@ function useLibrariesQuery(page: number, search: string) {
 
 export function LibrariesPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { can } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
@@ -50,10 +52,11 @@ export function LibrariesPage() {
   const [editingLibrary, setEditingLibrary] = useState<Library | null>(null)
   const [deletingLibrary, setDeletingLibrary] = useState<Library | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleted, setShowDeleted] = useState(false)
 
-  const librariesQuery = useLibrariesQuery(page, search)
+  const librariesQuery = useLibrariesQuery(page, search, showDeleted)
 
-  if (user?.role !== 'superadmin') {
+  if (!can('libraries.viewAny')) {
     return <p className="text-sm text-muted-foreground">{t('errors.forbidden')}</p>
   }
 
@@ -96,39 +99,64 @@ export function LibrariesPage() {
     }
   }
 
+  const confirmRestore = async (library: Library) => {
+    try {
+      await api.post(apiPaths.libraryRestore(library.id))
+      await librariesQuery.refetch()
+      toast.success(t('libs.restored'), { description: library.name })
+    } catch (error) {
+      if (error instanceof ApiError) {
+        toast.error(error.messageText ?? t('errors.unexpected'))
+      }
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-brand-heading text-2xl font-bold tracking-tight">{t('libs.title')}</h2>
-        <Button
-          variant="brand"
-          onClick={() => {
-            setEditingLibrary(null)
-            setModalOpen(true)
-          }}
-        >
-          <Plus />
-          {t('libs.add')}
-        </Button>
+        {can('libraries.create') ? (
+          <Button
+            variant="brand"
+            onClick={() => {
+              setEditingLibrary(null)
+              setModalOpen(true)
+            }}
+          >
+            <Plus />
+            {t('libs.add')}
+          </Button>
+        ) : null}
       </div>
 
-      <form
-        className="flex gap-2"
-        onSubmit={(event) => {
-          event.preventDefault()
-          applySearch(searchInput)
-        }}
-      >
-        <Input
-          value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
-          placeholder={t('libs.search')}
-          className="max-w-xs"
-        />
-        <Button variant="outline" type="submit" aria-label={t('common.search')}>
-          <Search />
+      <div className="flex flex-wrap items-center gap-2">
+        <form
+          className="flex gap-2"
+          onSubmit={(event) => {
+            event.preventDefault()
+            applySearch(searchInput)
+          }}
+        >
+          <Input
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder={t('libs.search')}
+            className="max-w-xs"
+          />
+          <Button variant="outline" type="submit" aria-label={t('common.search')}>
+            <Search />
+          </Button>
+        </form>
+        <Button
+          variant={showDeleted ? 'secondary' : 'outline'}
+          onClick={() => {
+            setShowDeleted((value) => !value)
+            setParams({ page: null })
+          }}
+        >
+          {t('libs.showDeleted')}
         </Button>
-      </form>
+      </div>
 
       {librariesQuery.isLoading ? (
         <PageLoader />
@@ -154,6 +182,9 @@ export function LibrariesPage() {
                       <Link to={`/libraries/${library.id}`} className="hover:underline">
                         {library.name}
                       </Link>
+                      {library.deleted ? (
+                        <Badge variant="destructive">{t('libs.deletedBadge')}</Badge>
+                      ) : null}
                     </div>
                   </TableCell>
                   <TableCell className="px-4">{library.place?.name ?? '—'}</TableCell>
@@ -162,30 +193,49 @@ export function LibrariesPage() {
                   <TableCell className="px-4 text-muted-foreground">{library.work_time ?? '—'}</TableCell>
                   <TableCell className="px-4">
                     <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon-sm" asChild aria-label={t('common.view')}>
-                        <Link to={`/libraries/${library.id}`}>
-                          <Eye />
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={t('common.edit')}
-                        onClick={() => {
-                          setEditingLibrary(library)
-                          setModalOpen(true)
-                        }}
-                      >
-                        <Pencil />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={t('common.delete')}
-                        onClick={() => setDeletingLibrary(library)}
-                      >
-                        <Trash2 />
-                      </Button>
+                      {library.deleted ? (
+                        library.can?.restore ? (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={t('libs.restore')}
+                            onClick={() => void confirmRestore(library)}
+                          >
+                            <RotateCcw />
+                          </Button>
+                        ) : null
+                      ) : (
+                        <>
+                          <Button variant="ghost" size="icon-sm" asChild aria-label={t('common.view')}>
+                            <Link to={`/libraries/${library.id}`}>
+                              <Eye />
+                            </Link>
+                          </Button>
+                          {library.can?.update ? (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={t('common.edit')}
+                              onClick={() => {
+                                setEditingLibrary(library)
+                                setModalOpen(true)
+                              }}
+                            >
+                              <Pencil />
+                            </Button>
+                          ) : null}
+                          {library.can?.delete ? (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={t('common.delete')}
+                              onClick={() => setDeletingLibrary(library)}
+                            >
+                              <Trash2 />
+                            </Button>
+                          ) : null}
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

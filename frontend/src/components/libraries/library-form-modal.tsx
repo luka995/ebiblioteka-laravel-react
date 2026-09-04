@@ -27,7 +27,7 @@ export function LibraryFormModal({ open, onClose, onSuccess, library }: LibraryF
   const regionsQuery = useQuery({
     queryKey: ['regions'],
     queryFn: async () => {
-      const response = await api.get<PaginatedResponse<Region>>(apiPaths.regions)
+      const response = await api.get<PaginatedResponse<Region>>(`${apiPaths.regions}?all=1`)
       return response.data
     },
   })
@@ -64,7 +64,7 @@ export function LibraryFormModal({ open, onClose, onSuccess, library }: LibraryF
     queryKey: ['places', selectedRegion],
     enabled: !!selectedRegion,
     queryFn: async () => {
-      const response = await api.get<PaginatedResponse<Place>>(`${apiPaths.places}?region_id=${selectedRegion}`)
+      const response = await api.get<PaginatedResponse<Place>>(`${apiPaths.places}?region_id=${selectedRegion}&all=1`)
       return response.data
     },
   })

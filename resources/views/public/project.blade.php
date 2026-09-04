@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'O projektu | eBiblioteka')
+@section('title', 'О пројекту | еБиблиотека')
 
 @section('content')
 <div class="public-shell catalog-shell project-shell" id="top">
@@ -9,46 +9,46 @@
     <main>
         <section class="project-hero public-wrap">
             <div class="project-hero-main">
-                <div class="breadcrumbs"><a href="{{ route('home') }}">Početna</a><span>/</span><strong>O projektu</strong></div>
-                <span class="section-label">NOVA VERZIJA eBIBLIOTEKE</span>
-                <h1 class="display">Biblioteka<br><span class="serif">koja prati</span><br>vaš dan.</h1>
-                <p class="project-lead">Akademija Filipović razvija novu verziju softvera <strong>eBiblioteka.rs</strong> — sa manje administracije za bibliotekare i jednostavnijim pristupom knjigama za učenike, nastavnike i roditelje.</p>
-                <div class="project-hero-actions"><a class="button button-blue" href="{{ route('libraries.index') }}">Istražite katalog <span>↗</span></a><a class="text-link" href="https://akademijafilipovic.com" target="_blank" rel="noreferrer">Saznajte više o Akademiji <span>↗</span></a></div>
+                <div class="breadcrumbs"><a href="{{ route('home') }}">Почетна</a><span>/</span><strong>О пројекту</strong></div>
+                <span class="section-label">НОВА ВЕРЗИЈА еБИБЛИОТЕКЕ</span>
+                <h1 class="display">Библиотека<br><span class="serif">која прати</span><br>ваш дан.</h1>
+                <p class="project-lead">Академија Филиповић развија нову верзију софтвера <strong>еБиблиотека.rs</strong> — са мање администрације за библиотекаре и једноставнијим приступом књигама за ученике, наставнике и родитеље.</p>
+                <div class="project-hero-actions"><a class="button button-blue" href="{{ route('libraries.index') }}">Истражите каталог <span>↗</span></a><a class="text-link" href="https://akademijafilipovic.com" target="_blank" rel="noreferrer">Сазнајте више о Академији <span>↗</span></a></div>
             </div>
             <div class="project-hero-panel">
-                <div class="project-panel-top"><span>eBiblioteka</span><span>01 / 04</span></div>
-                <div class="project-panel-title">Od police<br>do podataka.</div>
-                <div class="project-panel-flow"><div><b>01</b><span>Skeniraj</span><small>Kamerom telefona</small></div><i>↓</i><div><b>02</b><span>Evidentiraj</span><small>Zaduženje ili razduženje</small></div><i>↓</i><div><b>03</b><span>Prati</span><small>Rokove i dostupnost</small></div></div>
-                <div class="project-panel-footer"><span class="project-panel-dot"></span> Jednostavniji rad, svakog dana <strong>↗</strong></div>
+                <div class="project-panel-top"><span>еБиблиотека</span><span>01 / 04</span></div>
+                <div class="project-panel-title">Од полице<br>до података.</div>
+                <div class="project-panel-flow"><div><b>01</b><span>Скенирај</span><small>Камером телефона</small></div><i>↓</i><div><b>02</b><span>Евидентирај</span><small>Задужење или раздужење</small></div><i>↓</i><div><b>03</b><span>Прати</span><small>Рокове и доступност</small></div></div>
+                <div class="project-panel-footer"><span class="project-panel-dot"></span> Једноставнији рад, сваког дана <strong>↗</strong></div>
             </div>
         </section>
 
         <section class="project-intro public-wrap">
-            <div class="project-intro-heading"><span class="section-label">ZAŠTO NOVA VERZIJA</span><h2 class="display">Tehnologija treba da<br><span class="serif">skloni prepreke.</span></h2></div>
-            <div class="project-intro-copy"><p>Akademija Filipović više od dve decenije razvija rešenja za savremeno obrazovanje. eBiblioteka je nastala iz potrebe da školska biblioteka bude pregledna, dostupna i korisna u svakodnevnom radu — ne još jedna komplikovana obaveza.</p><p>Nova verzija zadržava ono što je provereno u praksi: katalog, bar-kod evidenciju, zaduženje, razduženje, rezervacije i izveštaje. Istovremeno uvodi brže tokove rada i iskustvo prilagođeno telefonu.</p></div>
-            <div class="project-proof"><div><strong>2003.</strong><span>Akademija Filipović<br>počinje rad</span></div><div><strong>2013.</strong><span>eBiblioteka dobija<br>međunarodno priznanje</span></div><div><strong>80.000+</strong><span>polaznika programa<br>stručnog usavršavanja</span></div></div>
+            <div class="project-intro-heading"><span class="section-label">ЗАШТО НОВА ВЕРЗИЈА</span><h2 class="display">Технологија треба да<br><span class="serif">склони препреке.</span></h2></div>
+            <div class="project-intro-copy"><p>Академија Филиповић више од две деценије развија решења за савремено образовање. еБиблиотека је настала из потребе да школска библиотека буде прегледна, доступна и корисна у свакодневном раду — не још једна компликована обавеза.</p><p>Нова верзија задржава оно што је проверено у пракси: каталог, бар-код евиденцију, задужење, раздужење, резервације и извештаје. Истовремено уводи брже токове рада и искуство прилагођено телефону.</p></div>
+            <div class="project-proof"><div><strong>2003.</strong><span>Академија Филиповић<br>почиње рад</span></div><div><strong>2013.</strong><span>еБиблиотека добија<br>међународно признање</span></div><div><strong>80.000+</strong><span>полазника програма<br>стручног усавршавања</span></div></div>
         </section>
 
         <section class="project-capabilities">
             <div class="public-wrap">
-                <div class="project-capabilities-heading"><div><span class="section-label">FUNKCIONALNOSTI</span><h2 class="display">Sve što je važno.<br><span class="serif">Bez suvišnih koraka.</span></h2></div><p>Nova eBiblioteka povezuje bibliotekare, škole i čitaoce oko istih, jasnih podataka.</p></div>
+                <div class="project-capabilities-heading"><div><span class="section-label">ФУНКЦИОНАЛНОСТИ</span><h2 class="display">Све што је важно.<br><span class="serif">Без сувишних корака.</span></h2></div><p>Нова еБиблиотека повезује библиотекаре, школе и читаоце око истих, јасних података.</p></div>
                 <div class="project-capability-list">
-                    <article class="project-capability"><span class="project-capability-number">01</span><div class="project-capability-icon">⌁</div><div><h3>Skeniranje knjiga mobilnim telefonom</h3><p>Kamera telefona prepoznaje bar-kod knjige, pa bibliotekar može brže da pronađe primerak i evidentira zaduženje ili razduženje — bez posebnog čitača na svakom radnom mestu.</p></div><span class="project-capability-arrow">↗</span></article>
-                    <article class="project-capability"><span class="project-capability-number">02</span><div class="project-capability-icon">⌕</div><div><h3>Katalog dostupan na svakom uređaju</h3><p>Pretraga po naslovu, autoru, izdavaču i drugim podacima radi pregledno na računaru, tabletu i telefonu. Čitalac odmah vidi šta je dostupno.</p></div><span class="project-capability-arrow">↗</span></article>
-                    <article class="project-capability"><span class="project-capability-number">03</span><div class="project-capability-icon">↔</div><div><h3>Jednostavne rezervacije i rokovi</h3><p>Zaduženja, razduženja i rezervacije prate jedan jasan tok. Obaveštenja podsećaju na rokove i informišu korisnika kada je tražena knjiga dostupna.</p></div><span class="project-capability-arrow">↗</span></article>
-                    <article class="project-capability"><span class="project-capability-number">04</span><div class="project-capability-icon">◎</div><div><h3>Podaci koji rade za biblioteku</h3><p>Izveštaji i statistike o fondu, pozajmicama, najtraženijim naslovima i radu biblioteke nastaju iz evidencije koju već vodite.</p></div><span class="project-capability-arrow">↗</span></article>
+                    <article class="project-capability"><span class="project-capability-number">01</span><div class="project-capability-icon">⌁</div><div><h3>Скенирање књига мобилним телефоном</h3><p>Камера телефона препознаје бар-код књиге, па библиотекар може брже да пронађе примерак и евидентира задужење или раздужење — без посебног читача на сваком радном месту.</p></div><span class="project-capability-arrow">↗</span></article>
+                    <article class="project-capability"><span class="project-capability-number">02</span><div class="project-capability-icon">⌕</div><div><h3>Каталог доступан на сваком уређају</h3><p>Претрага по наслову, аутору, издавачу и другим подацима ради прегледно на рачунару, таблету и телефону. Читалац одмах види шта је доступно.</p></div><span class="project-capability-arrow">↗</span></article>
+                    <article class="project-capability"><span class="project-capability-number">03</span><div class="project-capability-icon">↔</div><div><h3>Једноставне резервације и рокови</h3><p>Задужења, раздужења и резервације прате један јасан ток. Обавештења подсећају на рокове и информишу корисника када је тражена књига доступна.</p></div><span class="project-capability-arrow">↗</span></article>
+                    <article class="project-capability"><span class="project-capability-number">04</span><div class="project-capability-icon">◎</div><div><h3>Подаци који раде за библиотеку</h3><p>Извештаји и статистике о фонду, позајмицама, најтраженијим насловима и раду библиотеке настају из евиденције коју већ водите.</p></div><span class="project-capability-arrow">↗</span></article>
                 </div>
             </div>
         </section>
 
         <section class="project-audience public-wrap">
-            <div class="project-audience-heading"><span class="section-label">ZA KOGA JE eBIBLIOTEKA</span><h2 class="display">Jedan sistem.<br><span class="serif">Tri bolja pogleda.</span></h2></div>
-            <div class="project-audience-list"><div><span>01 / BIBLIOTEKAR</span><p><strong>Vodi fond, ne papir.</strong> Brže evidentiranje, tačniji podaci i pregled korisnika, rokova i dostupnosti na jednom mestu.</p></div><div><span>02 / ŠKOLA</span><p><strong>Vidi širu sliku.</strong> Uređen katalog, pouzdani izveštaji i mogućnost povezivanja više biblioteka u jednu mrežu.</p></div><div><span>03 / ČITALAC</span><p><strong>Pronađi knjigu bez čekanja.</strong> Pretraga, dostupnost, rezervacija i pregled zaduženja sa računara ili mobilnog telefona.</p></div></div>
+            <div class="project-audience-heading"><span class="section-label">ЗА КОГА ЈЕ еБИБЛИОТЕКА</span><h2 class="display">Један систем.<br><span class="serif">Три боља погледа.</span></h2></div>
+            <div class="project-audience-list"><div><span>01 / БИБЛИОТЕКАР</span><p><strong>Води фонд, не папир.</strong> Брже евидентирање, тачнији подаци и преглед корисника, рокова и доступности на једном месту.</p></div><div><span>02 / ШКОЛА</span><p><strong>Види ширу слику.</strong> Уређен каталог, поуздани извештаји и могућност повезивања више библиотека у једну мрежу.</p></div><div><span>03 / ЧИТАЛАЦ</span><p><strong>Пронађи књигу без чекања.</strong> Претрага, доступност, резервација и преглед задужења са рачунара или мобилног телефона.</p></div></div>
         </section>
 
         <section class="project-cta public-wrap">
-            <div><span class="section-label">POGLEDAJTE KAKO RADI</span><h2 class="display">Dobra biblioteka<br><span class="serif">počinje dobrim podacima.</span></h2></div>
-            <div class="project-cta-copy"><p>Istražite javni katalog nove eBiblioteke i pogledajte kako biblioteke, kategorije i naslovi izgledaju u novom digitalnom prostoru.</p><a class="button button-yellow" href="{{ route('libraries.index') }}">Otvorite katalog <span>↗</span></a></div>
+            <div><span class="section-label">ПОГЛЕДАЈТЕ КАКО РАДИ</span><h2 class="display">Добра библиотека<br><span class="serif">почиње добрим подацима.</span></h2></div>
+            <div class="project-cta-copy"><p>Истражите јавни каталог нове еБиблиотеке и погледајте како библиотеке, категорије и наслови изгледају у новом дигиталном простору.</p><a class="button button-yellow" href="{{ route('libraries.index') }}">Отворите каталог <span>↗</span></a></div>
         </section>
     </main>
 

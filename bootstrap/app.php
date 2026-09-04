@@ -1,8 +1,13 @@
 <?php
 
+use App\Http\Middleware\EnsureEmailIsVerified;
+use App\Http\Middleware\PublicThemeMiddleware;
+use App\Http\Middleware\SetLocale;
+use App\Http\Middleware\SetSessionCookieDomain;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -15,16 +20,18 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
 
         $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-            \App\Http\Middleware\SetLocale::class,
+            SetSessionCookieDomain::class,
+            EnsureFrontendRequestsAreStateful::class,
+            SetLocale::class,
         ]);
 
         $middleware->web(prepend: [
-            \App\Http\Middleware\PublicThemeMiddleware::class,
+            SetSessionCookieDomain::class,
+            PublicThemeMiddleware::class,
         ]);
 
         $middleware->alias([
-            'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            'verified' => EnsureEmailIsVerified::class,
         ]);
 
         //

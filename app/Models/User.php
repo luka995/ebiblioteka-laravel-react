@@ -57,19 +57,81 @@ class User extends Authenticatable
         return $this->role->isLibraryAdmin();
     }
 
+    /**
+     * Administrativne role (superadmin + library_admin).
+     */
+    public function isAdmin(): bool
+    {
+        return $this->isSuperAdmin() || $this->isLibraryAdmin();
+    }
+
     public function canManageLibrary(): bool
     {
         return $this->role->canManageLibrary();
     }
 
     /**
-     * Biblioteke u kojima korisnik ima nalog (many-to-many).
+     * Aktivne biblioteke u kojima korisnik ima nalog (many-to-many).
+     *
+     * Isključuje deaktivirana članstva (soft-deleted pivot redove).
      *
      * @return BelongsToMany<Library, $this>
      */
     public function libraries(): BelongsToMany
     {
-        return $this->belongsToMany(Library::class)->withTimestamps();
+        return $this->belongsToMany(Library::class)
+            ->using(LibraryUserPivot::class)
+            ->withTimestamps()
+            ->wherePivotNull('deleted_at');
+    }
+
+    /**
+     * Sve biblioteke uključujući deaktivirana članstva.
+     *
+     * @return BelongsToMany<Library, $this>
+     */
+    public function librariesWithTrashed(): BelongsToMany
+    {
+        return $this->belongsToMany(Library::class)
+            ->using(LibraryUserPivot::class)
+            ->withTimestamps()
+            ->withPivot('deleted_at');
+    }
+
+    /**
+     * Tagovi dodeljeni korisniku (many-to-many, per-biblioteka preko tag.library_id).
+     *
+     * @return BelongsToMany<Tag, $this>
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class)->withTimestamps();
+    }
+
+    /**
+     * Da li korisnik upravlja datom bibliotekom (superadmin: sve; inače član te biblioteke).
+     */
+    public function managesLibrary(int $libraryId): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->libraries()->whereKey($libraryId)->exists();
+    }
+
+    /**
+     * Da li korisnik deli bar jednu aktivnu biblioteku sa drugim korisnikom.
+     */
+    public function sharesLibraryWith(User $other): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        $otherIds = $other->libraries()->pluck('libraries.id');
+
+        return $this->libraries()->whereIn('libraries.id', $otherIds)->exists();
     }
 
     /**

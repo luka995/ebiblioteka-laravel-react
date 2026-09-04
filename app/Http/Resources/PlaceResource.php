@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Concerns\InteractsWithResourceAbilities;
 use App\Models\Place;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -11,6 +12,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class PlaceResource extends JsonResource
 {
+    use InteractsWithResourceAbilities;
+
     /**
      * @return array<string, mixed>
      */
@@ -21,6 +24,9 @@ class PlaceResource extends JsonResource
             'name' => $this->name,
             'region_id' => $this->region_id,
             'region_name' => $this->whenLoaded('region', fn () => $this->region->name),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+            'can' => $this->abilities($request->user(), ['view', 'update', 'delete']),
         ];
     }
 }

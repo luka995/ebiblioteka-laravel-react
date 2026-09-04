@@ -160,6 +160,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public Cookie Domain Suffix
+    |--------------------------------------------------------------------------
+    |
+    | When the request host belongs to this parent domain (e.g. a public
+    | dashboard served through a tunnel), the session/XSRF cookies are scoped
+    | to the parent domain so they are shared across its subdomains. Local
+    | hosts (localhost, *.local) are left as host-only cookies.
+    |
+    */
+
+    'cookie_domain_public' => env('SESSION_COOKIE_DOMAIN_PUBLIC'),
+
+    /*
+    |--------------------------------------------------------------------------
     | HTTPS Only Cookies
     |--------------------------------------------------------------------------
     |

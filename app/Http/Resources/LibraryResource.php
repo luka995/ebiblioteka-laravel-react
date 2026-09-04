@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Concerns\InteractsWithResourceAbilities;
 use App\Models\Library;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -11,6 +12,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class LibraryResource extends JsonResource
 {
+    use InteractsWithResourceAbilities;
+
     /**
      * @return array<string, mixed>
      */
@@ -36,6 +39,7 @@ class LibraryResource extends JsonResource
             ]),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+            'can' => $this->abilities($request->user(), ['view', 'update', 'delete', 'restore']),
         ];
     }
 }

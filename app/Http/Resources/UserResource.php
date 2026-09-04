@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Concerns\InteractsWithResourceAbilities;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -11,6 +12,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class UserResource extends JsonResource
 {
+    use InteractsWithResourceAbilities;
+
     /**
      * @return array<string, mixed>
      */
@@ -40,6 +43,25 @@ class UserResource extends JsonResource
                     'name' => $library->name,
                 ])
             ),
+            'deactivated_libraries' => $this->whenLoaded(
+                'librariesWithTrashed',
+                fn () => $this->librariesWithTrashed
+                    ->filter(fn ($library) => $library->pivot?->trashed())
+                    ->values()
+                    ->map(fn ($library) => [
+                        'id' => $library->id,
+                        'name' => $library->name,
+                    ])
+            ),
+            'tags' => $this->whenLoaded(
+                'tags',
+                fn () => $this->tags->map(fn ($tag) => [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                    'library_id' => $tag->library_id,
+                ])
+            ),
+            'can' => $this->abilities($request->user(), ['view', 'update', 'delete', 'forceDelete', 'manageMemberships']),
         ];
     }
 }

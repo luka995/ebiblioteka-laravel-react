@@ -9,11 +9,11 @@ import { api, apiPaths, ApiError } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import type { Library, PaginatedResponse, RoleOption, User } from '@/types'
+import { LibrarySelect, type LibraryOption } from '@/components/libraries/library-select'
+import type { RoleOption, User } from '@/types'
 
 interface UserFormModalProps {
   open: boolean
@@ -26,7 +26,7 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const editing = Boolean(user)
-  const [selectedLibraries, setSelectedLibraries] = useState<number[]>([])
+  const [selectedLibraries, setSelectedLibraries] = useState<LibraryOption[]>([])
   const [barCode, setBarCode] = useState<string>('')
 
   const rolesQuery = useQuery({
@@ -34,14 +34,6 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
     queryFn: async () => {
       const response = await api.get<{ roles: RoleOption[] }>(apiPaths.rolesAssignable)
       return response.roles
-    },
-  })
-
-  const librariesQuery = useQuery({
-    queryKey: ['libraries', 'options'],
-    queryFn: async () => {
-      const response = await api.get<PaginatedResponse<Library>>(`${apiPaths.libraries}?all=1`)
-      return response.data.filter((library) => !library.deleted)
     },
   })
 
@@ -102,7 +94,7 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
       city: user?.city ?? '',
       post_code: user?.post_code ?? '',
     })
-    setSelectedLibraries((user?.libraries ?? []).map((library) => library.id))
+    setSelectedLibraries(user?.libraries ?? [])
     setBarCode(user?.bar_code ?? '')
     if (!user) void regenerateBarcode()
   }, [open, user, form]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -114,12 +106,6 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
     } catch {
       // ignore
     }
-  }
-
-  const toggleLibrary = (id: number) => {
-    setSelectedLibraries((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
-    )
   }
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -134,7 +120,7 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
       city: values.city || null,
       post_code: values.post_code || null,
       bar_code: barCode,
-      libraries: selectedLibraries,
+      libraries: selectedLibraries.map((library) => library.id),
       ...(values.password ? { password: values.password } : {}),
     }
 
@@ -235,24 +221,21 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      {t('fields.password')}{' '}
-                      {editing ? (
-                        <span className="font-normal text-muted-foreground">({t('fields.optional')})</span>
-                      ) : null}
-                    </FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder={t('fields.password')} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {!editing ? (
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('fields.password')}</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder={t('fields.password')} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : null}
               <FormField
                 control={form.control}
                 name="role"
@@ -351,29 +334,7 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
 
             <div className="space-y-2">
               <Label>{t('fields.libraries')}</Label>
-              {librariesQuery.isLoading ? (
-                <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
-              ) : (
-                <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border p-2">
-                  {librariesQuery.data?.length === 0 ? (
-                    <p className="px-2 py-1 text-sm text-muted-foreground">{t('libs.empty')}</p>
-                  ) : (
-                    librariesQuery.data?.map((library) => (
-                      <label
-                        key={library.id}
-                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-muted"
-                      >
-                        <Checkbox
-                          id={`library-${library.id}`}
-                          checked={selectedLibraries.includes(library.id)}
-                          onCheckedChange={() => toggleLibrary(library.id)}
-                        />
-                        {library.name}
-                      </label>
-                    ))
-                  )}
-                </div>
-              )}
+              <LibrarySelect value={selectedLibraries} onChange={setSelectedLibraries} />
             </div>
 
             <div className="space-y-2">

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Sparkles } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { LibrarySwitcher } from '@/components/layout/library-switcher'
 
 export function DashboardPage() {
   const { t } = useTranslation()
@@ -14,6 +15,8 @@ export function DashboardPage() {
           {t('dashboard.welcome', { name: user?.name ?? '' })}
         </h2>
       </div>
+
+      <LibrarySwitcher />
 
       <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-card px-6 py-16 text-center">
         <span className="flex size-12 items-center justify-center rounded-full bg-brand-soft text-brand">

@@ -49,6 +49,21 @@ class StoreUserRequest extends FormRequest
                     $validator->errors()->add('role', __('validation.custom.role_not_assignable'));
                 }
             },
+            function (Validator $validator) {
+                if ($this->user()->isSuperAdmin()) {
+                    return;
+                }
+
+                $allowed = $this->user()->libraries()->pluck('libraries.id')->all();
+
+                foreach ($this->input('libraries', []) as $libraryId) {
+                    if (! in_array((int) $libraryId, $allowed, true)) {
+                        $validator->errors()->add('libraries', __('validation.custom.library_not_managed'));
+
+                        return;
+                    }
+                }
+            },
         ];
     }
 }

@@ -2,12 +2,13 @@ import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, CalendarClock, LibraryBig, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, CalendarClock, KeyRound, LibraryBig, Pencil, Tag, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ChangePasswordDialog } from '@/components/profile/change-password-dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,6 +23,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageLoader } from '@/components/ui/loader'
 import { UserFormModal } from '@/components/users/user-form-modal'
+import { UserTagModal } from '@/components/users/user-tag-modal'
 import { useAuth } from '@/hooks/useAuth'
 import type { User } from '@/types'
 
@@ -53,13 +55,15 @@ function ComingSoon({ icon, title, text }: { icon: ReactNode; title: string; tex
 
 export function UserDetailPage() {
   const { t } = useTranslation()
-  const { user: actor } = useAuth()
+  const { can } = useAuth()
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
   const userId = Number(id)
   const queryClient = useQueryClient()
   const [editOpen, setEditOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [passwordOpen, setPasswordOpen] = useState(false)
+  const [tagOpen, setTagOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const userQuery = useQuery({
@@ -71,7 +75,7 @@ export function UserDetailPage() {
     },
   })
 
-  if (actor?.role !== 'superadmin') {
+  if (!can('users.viewAny')) {
     return <p className="text-sm text-muted-foreground">{t('errors.forbidden')}</p>
   }
 
@@ -110,6 +114,10 @@ export function UserDetailPage() {
   }
 
   const memberLibraries = (target.libraries ?? []).map((library) => library.name)
+  const tagsByLibrary = (target.libraries ?? []).map((library) => ({
+    library,
+    tags: (target.tags ?? []).filter((tag) => tag.library_id === library.id),
+  }))
 
   return (
     <div className="space-y-6">
@@ -149,14 +157,30 @@ export function UserDetailPage() {
           </div>
 
           <div className="flex shrink-0 gap-2">
-            <Button variant="outline" onClick={() => setEditOpen(true)}>
-              <Pencil />
-              {t('common.edit')}
-            </Button>
-            <Button variant="outline" onClick={() => setDeleteOpen(true)}>
-              <Trash2 />
-              {t('common.delete')}
-            </Button>
+            {target.can?.update ? (
+              <Button variant="outline" onClick={() => setEditOpen(true)}>
+                <Pencil />
+                {t('common.edit')}
+              </Button>
+            ) : null}
+            {target.can?.update ? (
+              <Button variant="outline" onClick={() => setTagOpen(true)}>
+                <Tag />
+                {t('tags.assignButton')}
+              </Button>
+            ) : null}
+            {target.can?.update ? (
+              <Button variant="outline" onClick={() => setPasswordOpen(true)}>
+                <KeyRound />
+                {t('profile.changePassword')}
+              </Button>
+            ) : null}
+            {target.can?.delete ? (
+              <Button variant="outline" onClick={() => setDeleteOpen(true)}>
+                <Trash2 />
+                {t('common.delete')}
+              </Button>
+            ) : null}
           </div>
         </CardContent>
       </Card>
@@ -189,6 +213,26 @@ export function UserDetailPage() {
                 <InfoRow label={t('fields.postCode')}>{target.post_code}</InfoRow>
                 <InfoRow label={t('fields.libraries')}>
                   {memberLibraries.length > 0 ? memberLibraries.join(', ') : null}
+                </InfoRow>
+                <InfoRow label={t('fields.tags')}>
+                  {tagsByLibrary.some(({ tags }) => tags.length > 0) ? (
+                    <div className="space-y-1.5">
+                      {tagsByLibrary.map(({ library, tags }) => (
+                        <div key={library.id} className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-xs font-medium text-muted-foreground">{library.name}:</span>
+                          {tags.length > 0 ? (
+                            tags.map((tag) => (
+                              <Badge key={tag.id} variant="secondary" className="border-transparent">
+                                {tag.name}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </InfoRow>
               </dl>
             </CardContent>
@@ -240,6 +284,20 @@ export function UserDetailPage() {
           }}
         />
       ) : null}
+
+      {tagOpen ? (
+        <UserTagModal
+          open={tagOpen}
+          user={target}
+          onClose={() => setTagOpen(false)}
+          onSuccess={(message) => {
+            toast.success(message)
+            void queryClient.invalidateQueries({ queryKey: ['users'] })
+          }}
+        />
+      ) : null}
+
+      <ChangePasswordDialog open={passwordOpen} onClose={() => setPasswordOpen(false)} target={target} />
     </div>
   )
 }

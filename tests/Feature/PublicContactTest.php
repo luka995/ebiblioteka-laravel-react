@@ -7,9 +7,9 @@ test('contact page presents academy information and a contact form', function ()
     $response = $this->get(route('contact.create'));
 
     $response->assertOk();
-    $response->assertSee('Akademija Filipović');
-    $response->assertSee('Ustanova ili organizacija');
-    $response->assertSee('Vaša poruka');
+    $response->assertSee('Академија Филиповић');
+    $response->assertSee('Установа или организација');
+    $response->assertSee('Ваша порука');
     $response->assertSee(route('contact.store'));
 });
 

@@ -11,6 +11,11 @@ import { UsersPage } from '@/pages/users/users-page'
 import { UserDetailPage } from '@/pages/users/user-detail-page'
 import { LibrariesPage } from '@/pages/libraries/libraries-page'
 import { LibraryDetailPage } from '@/pages/libraries/library-detail-page'
+import { RegionsPage } from '@/pages/regions/regions-page'
+import { PlacesPage } from '@/pages/places/places-page'
+import { TagsPage } from '@/pages/tags/tags-page'
+import { ProfilePage } from '@/pages/profile/profile-page'
+import { SettingsPage } from '@/pages/settings/settings-page'
 
 function App() {
   return (
@@ -40,6 +45,11 @@ function App() {
           <Route path="/users/:id" element={<UserDetailPage />} />
           <Route path="/libraries" element={<LibrariesPage />} />
           <Route path="/libraries/:id" element={<LibraryDetailPage />} />
+          <Route path="/regions" element={<RegionsPage />} />
+          <Route path="/places" element={<PlacesPage />} />
+          <Route path="/tags" element={<TagsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,35 +1,44 @@
 import { type ReactNode, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BookOpen, Building2, LayoutDashboard, LogOut, Menu, Users, X } from 'lucide-react'
+import { BadgeCheck, BookOpen, Building2, KeyRound, LayoutDashboard, LogOut, Map, MapPin, Menu, Settings, Tag, Users, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { BrandMark } from '@/components/brand'
 import { LocaleSwitcher } from '@/components/locale-switcher'
-import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { ChangePasswordDialog } from '@/components/profile/change-password-dialog'
 import { cn } from '@/lib/utils'
-import type { RoleValue } from '@/types'
 
 interface NavItem {
   to: string
   labelKey: string
   icon: typeof LayoutDashboard
-  roles: RoleValue[]
+  permission: string | null
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, roles: ['superadmin', 'library_admin', 'librarian', 'user'] },
-  { to: '/users', labelKey: 'nav.users', icon: Users, roles: ['superadmin'] },
-  { to: '/libraries', labelKey: 'nav.libraries', icon: Building2, roles: ['superadmin'] },
+  { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: null },
+  { to: '/users', labelKey: 'nav.users', icon: Users, permission: 'users.viewAny' },
+  { to: '/libraries', labelKey: 'nav.libraries', icon: Building2, permission: 'libraries.viewAny' },
+  { to: '/regions', labelKey: 'nav.regions', icon: Map, permission: 'regions.viewAny' },
+  { to: '/places', labelKey: 'nav.places', icon: MapPin, permission: 'places.viewAny' },
+  { to: '/tags', labelKey: 'nav.tags', icon: Tag, permission: 'tags.viewAny' },
 ]
-
-function navItemsFor(role: RoleValue): NavItem[] {
-  return NAV_ITEMS.filter((item) => item.roles.includes(role))
-}
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useTranslation()
-  const { user } = useAuth()
-  const items = user ? navItemsFor(user.role) : []
+  const { user, can, logout } = useAuth()
+  const [passwordOpen, setPasswordOpen] = useState(false)
+  const items = NAV_ITEMS.filter((item) => item.permission === null || can(item.permission))
 
   return (
     <div className="flex h-full flex-col">
@@ -62,43 +71,77 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </nav>
 
-      <div className="border-t px-4 py-4">
+      <div className="border-t px-2 py-2">
         {user ? (
-          <div className="flex items-center gap-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-accent text-sm font-semibold text-brand">
-              {user.name.charAt(0).toUpperCase()}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{user.name}</p>
-              <p className="truncate text-xs text-muted-foreground">{user.role_label}</p>
-            </div>
-            <LogoutButton />
-          </div>
+          <>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors hover:bg-muted focus:outline-none">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-accent text-sm font-semibold text-brand">
+                    {user.name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{user.name}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{user.role_label}</span>
+                  </span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="right" align="end" className="w-56">
+                <DropdownMenuLabel className="p-0 font-normal">
+                  <div className="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
+                    <Avatar className="size-8 rounded-lg">
+                      <AvatarFallback className="rounded-lg">
+                        {user.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-start text-sm leading-tight">
+                      <span className="truncate font-semibold">{user.name}</span>
+                      <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                    </div>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" onClick={onNavigate}>
+                      <BadgeCheck />
+                      {t('nav.account')}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" onClick={onNavigate}>
+                      <Settings />
+                      {t('nav.settings')}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => setPasswordOpen(true)}>
+                    <KeyRound />
+                    {t('profile.changePassword')}
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive" onSelect={() => void logout()}>
+                  <LogOut />
+                  {t('nav.logout')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <ChangePasswordDialog open={passwordOpen} onClose={() => setPasswordOpen(false)} />
+          </>
         ) : null}
       </div>
     </div>
   )
 }
 
-function LogoutButton() {
-  const { t } = useTranslation()
-  const { logout } = useAuth()
-
-  return (
-    <button
-      type="button"
-      title={t('nav.logout')}
-      onClick={() => void logout()}
-      className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-    >
-      <LogOut className="size-4" />
-    </button>
-  )
-}
-
 function pageTitleFor(pathname: string): string {
   if (pathname.startsWith('/users')) return 'nav.users'
   if (pathname.startsWith('/libraries')) return 'nav.libraries'
+  if (pathname.startsWith('/regions')) return 'nav.regions'
+  if (pathname.startsWith('/places')) return 'nav.places'
+  if (pathname.startsWith('/tags')) return 'nav.tags'
+  if (pathname.startsWith('/profile')) return 'nav.account'
+  if (pathname.startsWith('/settings')) return 'nav.settings'
   return 'nav.dashboard'
 }
 export function AppShell() {

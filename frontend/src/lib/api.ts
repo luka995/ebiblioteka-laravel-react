@@ -40,6 +40,12 @@ function readCookie(name: string): string | null {
   return match ? decodeURIComponent(match[1]) : null
 }
 
+let unauthorizedHandler: (() => void) | null = null
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler
+}
+
 let csrfPromise: Promise<boolean> | null = null
 
 async function ensureCsrf(): Promise<void> {
@@ -92,6 +98,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     } catch {
       // ignore
     }
+    if (response.status === 401 && path !== apiPaths.me) {
+      unauthorizedHandler?.()
+    }
     throw new ApiError(response.status, data)
   }
 
@@ -112,23 +121,39 @@ export const api = {
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body }),
   put: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PUT', body }),
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PATCH', body }),
-  delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
-  del: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  delete: <T>(path: string, body?: unknown) => request<T>(path, { method: 'DELETE', body }),
+  del: <T>(path: string, body?: unknown) => request<T>(path, { method: 'DELETE', body }),
 }
 
 export const apiPaths = {
   me: '/api/v1/auth/me',
+  activeLibrary: '/api/v1/auth/active-library',
+  profile: '/api/v1/profile',
+  profilePassword: '/api/v1/profile/password',
   login: '/api/v1/auth/login',
   logout: '/api/v1/auth/logout',
   forgotPassword: '/api/v1/auth/forgot-password',
   resetPassword: '/api/v1/auth/reset-password',
   users: '/api/v1/users',
   user: (id: number) => `/api/v1/users/${id}`,
+  userPassword: (id: number) => `/api/v1/users/${id}/password`,
+  userForce: (id: number) => `/api/v1/users/${id}/force`,
+  userLibrariesDeactivate: (id: number) => `/api/v1/users/${id}/libraries/deactivate`,
+  userLibrariesActivate: (id: number) => `/api/v1/users/${id}/libraries/activate`,
+  userLibraries: (id: number) => `/api/v1/users/${id}/libraries`,
+  userTags: (id: number) => `/api/v1/users/${id}/tags`,
+  usersTagsAssign: '/api/v1/users/tags/assign',
+  usersTagsRemove: '/api/v1/users/tags/remove',
   barcodeNext: '/api/v1/users/barcode/next',
   libraries: '/api/v1/libraries',
   library: (id: number) => `/api/v1/libraries/${id}`,
+  libraryRestore: (id: number) => `/api/v1/libraries/${id}/restore`,
   regions: '/api/v1/regions',
   places: '/api/v1/places',
+  tags: '/api/v1/tags',
+  tag: (id: number) => `/api/v1/tags/${id}`,
+  region: (id: number) => `/api/v1/regions/${id}`,
+  place: (id: number) => `/api/v1/places/${id}`,
   roles: '/api/v1/roles',
   rolesAssignable: '/api/v1/roles/assignable',
 } as const

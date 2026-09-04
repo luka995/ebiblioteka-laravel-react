@@ -3,10 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreUserRequest;
+use App\Http\Requests\UpdateUserPasswordRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Queries\UserFilters;
+use App\Services\ActiveLibraryService;
+use App\Services\AuthorizationService;
+use App\Services\LibraryMembershipService;
 use App\Support\BarCode;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -17,29 +23,36 @@ class UsersController extends Controller
     /**
      * @return AnonymousResourceCollection<int, UserResource>
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection
     {
-        $users = User::query()
-            ->with('libraries')
-            ->when($request->filled('search'), function ($query) use ($request) {
-                $term = trim((string) $request->string('search'));
-                $query->where(function ($query) use ($term) {
-                    $query->where('email', 'ilike', "%{$term}%")
-                        ->orWhere('first_name', 'ilike', "%{$term}%")
-                        ->orWhere('last_name', 'ilike', "%{$term}%")
-                        ->orWhere('username', 'ilike', "%{$term}%")
-                        ->orWhere('bar_code', 'ilike', "%{$term}%");
-                });
-            })
-            ->when($request->filled('role'), fn ($query) => $query->where('role', $request->string('role')))
+        $query = (new UserFilters)->apply(
+            User::query()->with(['libraries', 'librariesWithTrashed']),
+            $request->only([
+                'email',
+                'username',
+                'first_name',
+                'last_name',
+                'bar_code',
+                'jmbg',
+                'city',
+                'role',
+                'library_id',
+            ])
+        );
+
+        $query = $activeLibrary->scopeUsers($query, $request->user());
+
+        $users = $query
             ->latest()
             ->paginate($request->integer('per_page', 25))
             ->withQueryString();
 
-        return UserResource::collection($users);
+        return UserResource::collection($users)->additional([
+            'permissions' => $auth->collectionPermissions($request->user(), User::class),
+        ]);
     }
 
-    public function store(StoreUserRequest $request): UserResource
+    public function store(StoreUserRequest $request, LibraryMembershipService $memberships): UserResource
     {
         $data = $request->validated();
 
@@ -49,9 +62,9 @@ class UsersController extends Controller
         $user->bar_code = $data['bar_code'] ?? BarCode::generate();
         $user->save();
 
-        $user->libraries()->sync($data['libraries'] ?? []);
+        $memberships->syncMemberships($user, $data['libraries'] ?? []);
 
-        return new UserResource($user->load('libraries'));
+        return new UserResource($user->load(['libraries', 'librariesWithTrashed', 'tags']));
     }
 
     public function nextBarcode(): JsonResponse
@@ -61,10 +74,10 @@ class UsersController extends Controller
 
     public function show(User $user): UserResource
     {
-        return new UserResource($user->load('libraries'));
+        return new UserResource($user->load(['libraries', 'librariesWithTrashed', 'tags']));
     }
 
-    public function update(UpdateUserRequest $request, User $user): UserResource
+    public function update(UpdateUserRequest $request, User $user, LibraryMembershipService $memberships): UserResource
     {
         $data = $request->validated();
 
@@ -77,10 +90,19 @@ class UsersController extends Controller
         $user->save();
 
         if ($request->has('libraries')) {
-            $user->libraries()->sync($data['libraries'] ?? []);
+            $memberships->syncMemberships($user, $data['libraries'] ?? []);
         }
 
-        return new UserResource($user->load('libraries'));
+        return new UserResource($user->load(['libraries', 'librariesWithTrashed', 'tags']));
+    }
+
+    public function updatePassword(UpdateUserPasswordRequest $request, User $user): JsonResponse
+    {
+        $user->forceFill([
+            'password' => Hash::make($request->string('password')),
+        ])->save();
+
+        return response()->json(status: 204);
     }
 
     public function destroy(Request $request, User $user): JsonResponse
@@ -90,6 +112,21 @@ class UsersController extends Controller
         }
 
         $user->delete();
+
+        return response()->json(status: 204);
+    }
+
+    public function forceDestroy(Request $request, User $user): JsonResponse
+    {
+        if ($user->is($request->user())) {
+            return response()->json(['message' => __('validation.custom.cannot_delete_self')], 422);
+        }
+
+        try {
+            $user->forceDelete();
+        } catch (QueryException) {
+            return response()->json(['message' => __('validation.custom.cannot_force_delete')], 422);
+        }
 
         return response()->json(status: 204);
     }

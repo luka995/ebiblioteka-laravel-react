@@ -1,6 +1,40 @@
 # Changelog
 
-## [03.09.2026] Users/Libraries upravljanje: server-side paginacija, CRUD i prikaz korisnika sa tabovima
+## [04.09.2026] Admin: policy autorizacija, tagovi, profil i životni ciklus članstva u bibliotekama
+
+### Added
+
+- **Policy autorizacija** (`app/Policies/UserPolicy.php`, `LibraryPolicy.php`, `RegionPolicy.php`, `PlacePolicy.php`, `TagPolicy.php`) — zamenjena ad-hoc `Gate` pravila (`manage-users`, `manage-libraries`) Laravel policy-ima; rute koriste `can:` abilities (`viewAny`, `view`, `create`, `update`, `delete`, `restore`, `forceDelete`, `manageMemberships`)
+- **AuthorizationService** (`app/Services/AuthorizationService.php`) — jedinstveni sloj koji prevodi policy rezultate u API oblike: `resourceCan()` (per-resource `can`), `collectionPermissions()` i `globalPermissions()` (za `/me` i sidebar)
+- **InteractsWithResourceAbilities** (`app/Http/Resources/Concerns/InteractsWithResourceAbilities.php`) — ugrađuje `can` mapu u resurse (User, Library, Region, Place, Tag)
+- **Tag CRUD** (`app/Http/Controllers/TagsController.php`, `app/Models/Tag.php`, `database/migrations/*_create_tags_table.php`, `*_create_tag_user_table.php`, `database/factories/TagFactory.php`, `app/Http/Resources/TagResource.php`) — model `Tag` sa `library_id`, jedinstveno ime po biblioteci, CRUD kontroler, `StoreTagRequest`/`UpdateTagRequest`
+- **Dodela tagova korisnicima** (`app/Http/Controllers/UserTagsController.php`) — `sync` (po biblioteci, čuva tagove drugih biblioteka) i bulk `assign`/`remove` za više korisnika, uz validaciju pripadnosti taga/biblioteke i članstva
+- **Profile API** (`app/Http/Controllers/ProfileController.php`, `UpdateProfileRequest.php`, `UpdatePasswordRequest.php`) — prikaz, izmena profila (bez mogućnosti promene `role`/`libraries`/`bar_code`), promena lozinke uz `current_password`
+- **Izmena lozinke korisnika od strane superadmina** (`UpdateUserPasswordRequest.php`, `UsersController::updatePassword`) — bez `current_password`
+- **Životni ciklus članstva** (`app/Services/LibraryMembershipService.php`, `app/Http/Controllers/UserMembershipsController.php`, `app/Models/LibraryUserPivot.php`, `database/migrations/*_add_deleted_at_to_library_user_table.php`) — deaktivacija (soft delete pivota), aktivacija (restore) i trajno uklanjanje članstva; `LibraryUserPivot` pivot sa `SoftDeletes` i prepisanim `delete()`
+- **ActiveLibraryService** (`app/Services/ActiveLibraryService.php`) — serverski kontekst aktivne biblioteke u sesiji: izbor, fallback na jedinu biblioteku, scope korisnika po biblioteci; endpoint `/api/v1/auth/active-library`
+- **UserFilters** (`app/Queries/UserFilters.php`) — kolonska pretraga korisnika (`email`, `username`, `first_name`, `last_name`, `bar_code`, `jmbg`, `city`, `role`, `library_id`) umesto catch-all `search`
+- **SetSessionCookieDomain** (`app/Http/Middleware/SetSessionCookieDomain.php`, `config/session.php`, `.env.example`) — dinamiko postavljanje `session.domain` na `SESSION_COOKIE_DOMAIN_PUBLIC` za javne domene (deljenje kolačića između poddomena), localhost ostaje host-only
+- **Blameable** (`app/Models/Concerns/Blameable.php`) — `created_by`/`updated_by` trait (Laravel ekvivalent Yii2 BlameableBehavior)
+- **AuthorizesByCreator** (`app/Policies/Concerns/AuthorizesByCreator.php`) — ownership pattern za buduće modele sa `created_by`
+- **Frontend stranice** (`frontend/src/pages/regions/regions-page.tsx`, `places/places-page.tsx`, `tags/tags-page.tsx`, `profile/profile-page.tsx`, `settings/settings-page.tsx`) — CRUD tabele za regione/mesta/tagove, profil korisnika i podešavanja (dark mode)
+- **Form modali** (`frontend/src/components/regions/region-form-modal.tsx`, `places/place-form-modal.tsx`, `tags/tag-form-modal.tsx`, `profile/change-password-dialog.tsx`, `users/user-membership-modal.tsx`, `users/user-tag-modal.tsx`, `users/user-tags-bulk-modal.tsx`) — kreiranje/izmena i bulk dodela tagova, upravljanje članstvima
+- **LibrarySwitcher i select** (`frontend/src/components/layout/library-switcher.tsx`, `components/libraries/library-select.tsx`, `components/tags/tag-select.tsx`) — izbor aktivne biblioteke i selectovi za biblioteke/tagove
+- **DropdownMenu** (`frontend/src/components/ui/dropdown-menu.tsx`) — korisnički meni (profil, podešavanja, promena lozinke, odjava)
+- **Testovi** (`tests/Feature/Auth/*`) — ActiveLibrary, LibraryAdminTags, LibraryMembership, ProfileApi, RegionPlaceCrudApi, TagCrudApi, UserTagAssignment; prošireni UserCrudApi/UsersApi (permissions, filteri, promena lozinke)
+
+### Changed
+
+- **Rute** (`routes/api.php`, `routes/auth.php`) — `manage-users`/`manage-libraries` zamenjene policy abilities; dodati profile, tagovi, članstva, active-library i restore biblioteke endpointi
+- **`/me` odgovor** (`routes/auth.php`) — dodat `permissions`, `selectable_libraries` i `active_library`; `AppServiceProvider` bez inline `Gate` definicija
+- **Nav baziran na permisijama** (`frontend/src/components/layout/app-shell.tsx`) — sidebar filtriran po `can(permission)` umesto po ulozi; dodate stavke regioni/mesta/tagovi; korisnički meni prebačen u DropdownMenu
+- **useAuth** (`frontend/src/hooks/useAuth.tsx`) — `permissions`, `libraries`, `activeLibrary`, `can()` i `setActiveLibrary()`; `setUnauthorizedHandler` za 401
+- **Tema** (`frontend/src/main.tsx`, `frontend/src/index.css`) — `next-themes` ThemeProvider (system/light/dark) sa `storageKey="ebib.theme"`
+- **Javni view-ovi prevedeni na ćirilicu** (`resources/views/public/*`, `resources/css/app.css`) — home, project, contact, libraries, footer, nav; testovi `PublicContactTest`/`PublicHomeTest`/`PublicProjectTest` ažurirani
+- **i18n** (`frontend/src/i18n/locales/*.json`) — ključevi za nav, profil, tagove, regione, mesta, članstva, podešavanja
+- **Frontend build** (`frontend/dist/`) — regenerisani asseti
+
+
 
 ### Added
 
