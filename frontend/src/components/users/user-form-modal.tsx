@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { RefreshCw } from 'lucide-react'
+import { Building2, RefreshCw } from 'lucide-react'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LibrarySelect, type LibraryOption } from '@/components/libraries/library-select'
+import { useAuth } from '@/hooks/useAuth'
 import type { RoleOption, User } from '@/types'
 
 interface UserFormModalProps {
@@ -25,7 +26,9 @@ interface UserFormModalProps {
 export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const { user: actor, activeLibrary } = useAuth()
   const editing = Boolean(user)
+  const isSuperAdmin = actor?.role === 'superadmin'
   const [selectedLibraries, setSelectedLibraries] = useState<LibraryOption[]>([])
   const [barCode, setBarCode] = useState<string>('')
 
@@ -94,7 +97,7 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
       city: user?.city ?? '',
       post_code: user?.post_code ?? '',
     })
-    setSelectedLibraries(user?.libraries ?? [])
+    setSelectedLibraries(isSuperAdmin ? (user?.libraries ?? []) : [])
     setBarCode(user?.bar_code ?? '')
     if (!user) void regenerateBarcode()
   }, [open, user, form]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -109,6 +112,12 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
   }
 
   const onSubmit = form.handleSubmit(async (values) => {
+    const libraryIds = isSuperAdmin
+      ? selectedLibraries.map((library) => library.id)
+      : activeLibrary
+        ? [activeLibrary.id]
+        : null
+
     const payload = {
       first_name: values.first_name,
       last_name: values.last_name,
@@ -120,7 +129,7 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
       city: values.city || null,
       post_code: values.post_code || null,
       bar_code: barCode,
-      libraries: selectedLibraries.map((library) => library.id),
+      ...(libraryIds !== null ? { libraries: libraryIds } : {}),
       ...(values.password ? { password: values.password } : {}),
     }
 
@@ -332,10 +341,20 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>{t('fields.libraries')}</Label>
-              <LibrarySelect value={selectedLibraries} onChange={setSelectedLibraries} />
-            </div>
+            {isSuperAdmin ? (
+              <div className="space-y-2">
+                <Label>{t('fields.libraries')}</Label>
+                <LibrarySelect value={selectedLibraries} onChange={setSelectedLibraries} />
+              </div>
+            ) : activeLibrary ? (
+              <div className="space-y-2">
+                <Label>{t('fields.libraries')}</Label>
+                <div className="flex items-start gap-2.5 rounded-md border bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
+                  <Building2 className="mt-0.5 size-4 shrink-0 text-brand" />
+                  <p>{t('users.librariesActiveLibrary', { library: activeLibrary.name })}</p>
+                </div>
+              </div>
+            ) : null}
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">

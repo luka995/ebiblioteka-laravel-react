@@ -13,6 +13,11 @@ import { PageLoader } from '@/components/ui/loader'
 import { PaginationBar } from '@/components/pagination-bar'
 import { UserFormModal } from '@/components/users/user-form-modal'
 import { UserMembershipModal } from '@/components/users/user-membership-modal'
+import { UsersMobileList } from '@/components/users/users-mobile-list'
+import {
+  UserMembershipsBulkModal,
+  type BulkMembershipMode,
+} from '@/components/users/user-memberships-bulk-modal'
 import { UserTagsBulkModal } from '@/components/users/user-tags-bulk-modal'
 import {
   countActiveFilters,
@@ -61,7 +66,8 @@ function useUsersQuery(page: number, filters: UserFilters) {
 
 export function UsersPage() {
   const { t } = useTranslation()
-  const { can } = useAuth()
+  const { can, user } = useAuth()
+  const isSuperAdmin = user?.role === 'superadmin'
   const [searchParams, setSearchParams] = useSearchParams()
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
@@ -75,6 +81,8 @@ export function UsersPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [bulkTagMode, setBulkTagMode] = useState<'assign' | 'remove'>('assign')
   const [bulkTagOpen, setBulkTagOpen] = useState(false)
+  const [bulkMembershipMode, setBulkMembershipMode] = useState<BulkMembershipMode | null>(null)
+  const [bulkMembershipIds, setBulkMembershipIds] = useState<number[]>([])
 
   const usersQuery = useUsersQuery(page, filters)
 
@@ -132,6 +140,12 @@ export function UsersPage() {
   }
 
   const clearSelection = () => setSelectedIds(new Set())
+
+  const openBulkMembership = (mode: BulkMembershipMode) => {
+    if (selectedIds.size === 0) return
+    setBulkMembershipIds(Array.from(selectedIds))
+    setBulkMembershipMode(mode)
+  }
 
   return (
     <div className="space-y-6">
@@ -195,6 +209,49 @@ export function UsersPage() {
               <Tag />
               {t('tags.bulkRemove')}
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => openBulkMembership('remove')}
+            >
+              {t('membership.removeSelected')}
+            </Button>
+            {isSuperAdmin ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openBulkMembership('deactivate')}
+              >
+                {t('membership.deactivateSelected')}
+              </Button>
+            ) : null}
+            {isSuperAdmin ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openBulkMembership('activate')}
+              >
+                {t('membership.activateSelected')}
+              </Button>
+            ) : null}
+            {isSuperAdmin ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => openBulkMembership('bulkDeactivateAccounts')}
+              >
+                {t('membership.bulkSoftDeleteAccounts')}
+              </Button>
+            ) : null}
+            {isSuperAdmin ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => openBulkMembership('bulkForceDeleteAccounts')}
+              >
+                {t('membership.bulkForceDeleteAccounts')}
+              </Button>
+            ) : null}
             <Button variant="ghost" size="sm" onClick={clearSelection}>
               {t('tags.clearSelection')}
             </Button>
@@ -206,7 +263,8 @@ export function UsersPage() {
         <PageLoader />
       ) : (
         <div className="rounded-lg border bg-card">
-          <Table>
+          <div className="hidden lg:block">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10 px-4">
@@ -281,7 +339,7 @@ export function UsersPage() {
                           <Power />
                         </Button>
                       ) : null}
-                      {item.can?.forceDelete || item.can?.delete ? (
+                      {item.can?.forceDelete || item.can?.delete || item.can?.removeMemberships ? (
                         <Button
                           variant="ghost"
                           size="icon-sm"
@@ -306,7 +364,28 @@ export function UsersPage() {
                 </TableRow>
               ) : null}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
+
+          <div className="lg:hidden">
+            <UsersMobileList
+              users={usersQuery.data?.data ?? []}
+              selectedIds={selectedIds}
+              onToggleRow={toggleRow}
+              onEdit={(item) => {
+                setEditingUser(item)
+                setModalOpen(true)
+              }}
+              onMembershipToggle={(item) => {
+                setMembershipUser(item)
+                setMembershipMode('toggle')
+              }}
+              onMembershipDelete={(item) => {
+                setMembershipUser(item)
+                setMembershipMode('delete')
+              }}
+            />
+          </div>
 
           {usersQuery.data && usersQuery.data.meta.total > 0 ? (
             <PaginationBar
@@ -353,6 +432,20 @@ export function UsersPage() {
           mode={bulkTagMode}
           userIds={Array.from(selectedIds)}
           onClose={() => setBulkTagOpen(false)}
+          onSuccess={(message) => {
+            toast.success(message)
+            clearSelection()
+            void usersQuery.refetch()
+          }}
+        />
+      ) : null}
+
+      {bulkMembershipMode ? (
+        <UserMembershipsBulkModal
+          open={Boolean(bulkMembershipMode)}
+          mode={bulkMembershipMode}
+          userIds={bulkMembershipIds}
+          onClose={() => setBulkMembershipMode(null)}
           onSuccess={(message) => {
             toast.success(message)
             clearSelection()

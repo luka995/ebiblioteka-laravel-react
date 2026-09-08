@@ -82,6 +82,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: (libraryId: number | null) => api.put(apiPaths.activeLibrary, { library_id: libraryId }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ME_KEY })
+      await queryClient.invalidateQueries({ queryKey: ['users'] })
+      await queryClient.invalidateQueries({ queryKey: ['tags'] })
+      await queryClient.invalidateQueries({ queryKey: ['libraries'] })
     },
   })
 

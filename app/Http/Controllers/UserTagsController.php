@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Library;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\ActiveLibraryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -74,16 +76,23 @@ class UserTagsController extends Controller
         $data = $request->validate([
             'user_ids' => ['required', 'array'],
             'user_ids.*' => ['integer', Rule::exists('users', 'id')],
-            'library_id' => ['required', 'integer', Rule::exists('libraries', 'id')],
             'tag_ids' => ['required', 'array'],
             'tag_ids.*' => ['integer', Rule::exists('tags', 'id')],
         ]);
 
-        $libraryId = (int) $data['library_id'];
+        $actor = $request->user();
+
+        $library = app(ActiveLibraryService::class)->resolve($actor);
+
+        if (! $library instanceof Library) {
+            return response()->json(['message' => __('validation.custom.active_library_required')], 422);
+        }
+
+        $libraryId = (int) $library->id;
         $userIds = array_values(array_unique(array_map('intval', $data['user_ids'])));
         $tagIds = array_values(array_unique(array_map('intval', $data['tag_ids'])));
 
-        if (! $request->user()->managesLibrary($libraryId)) {
+        if (! $actor->managesLibrary($libraryId)) {
             return response()->json(['message' => __('validation.custom.library_not_managed')], 422);
         }
 

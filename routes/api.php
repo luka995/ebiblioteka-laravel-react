@@ -21,6 +21,12 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
+    Route::post('/users/memberships/deactivate', [UserMembershipsController::class, 'bulkDeactivate'])->middleware('can:bulkManageMemberships,App\Models\User');
+    Route::post('/users/memberships/activate', [UserMembershipsController::class, 'bulkActivate'])->middleware('can:bulkManageMemberships,App\Models\User');
+    Route::delete('/users/memberships', [UserMembershipsController::class, 'bulkRemove'])->middleware('can:bulkRemoveMemberships,App\Models\User');
+    Route::post('/users/bulk/deactivate', [UsersController::class, 'bulkDestroy'])->middleware('can:bulkDelete,App\Models\User');
+    Route::delete('/users/bulk/force', [UsersController::class, 'bulkForceDestroy'])->middleware('can:bulkForceDelete,App\Models\User');
+
     Route::get('/users/barcode/next', [UsersController::class, 'nextBarcode'])->middleware('can:create,App\Models\User');
     Route::get('/users', [UsersController::class, 'index'])->middleware('can:viewAny,App\Models\User');
     Route::post('/users', [UsersController::class, 'store'])->middleware('can:create,App\Models\User');
@@ -31,7 +37,7 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::delete('/users/{user}/force', [UsersController::class, 'forceDestroy'])->middleware('can:forceDelete,user');
     Route::post('/users/{user}/libraries/deactivate', [UserMembershipsController::class, 'deactivate'])->middleware('can:manageMemberships,user');
     Route::post('/users/{user}/libraries/activate', [UserMembershipsController::class, 'activate'])->middleware('can:manageMemberships,user');
-    Route::delete('/users/{user}/libraries', [UserMembershipsController::class, 'destroy'])->middleware('can:manageMemberships,user');
+    Route::delete('/users/{user}/libraries', [UserMembershipsController::class, 'destroy'])->middleware('can:removeMemberships,user');
     Route::put('/users/{user}/tags', [UserTagsController::class, 'sync'])->middleware('can:update,user');
     Route::post('/users/tags/assign', [UserTagsController::class, 'assign'])->middleware('can:viewAny,App\Models\User');
     Route::post('/users/tags/remove', [UserTagsController::class, 'remove'])->middleware('can:viewAny,App\Models\User');

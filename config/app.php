@@ -127,17 +127,4 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Public Theme
-    |--------------------------------------------------------------------------
-    |
-    | Active theme for the public Blade pages. Supported values: "classic"
-    | (existing design) and "ref" (reference design prototype). The value can
-    | be overridden per request via the "theme" query parameter.
-    |
-    */
-
-    'public_theme' => env('PUBLIC_THEME', 'classic'),
-
 ];

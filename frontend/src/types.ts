@@ -7,6 +7,7 @@ export interface ResourceCan {
   restore?: boolean
   forceDelete?: boolean
   manageMemberships?: boolean
+  removeMemberships?: boolean
 }
 
 export type CollectionPermissions = Record<string, boolean>

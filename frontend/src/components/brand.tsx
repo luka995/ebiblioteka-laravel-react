@@ -1,15 +1,12 @@
-import { BookOpen } from 'lucide-react'
+import logoUrl from '@/assets/ebiblioteka-logo.svg'
 import { cn } from '@/lib/utils'
 
 export function BrandMark({ className }: { className?: string }) {
   return (
-    <span
-      className={cn(
-        'inline-flex size-9 items-center justify-center rounded-lg bg-brand-accent text-brand shadow-sm',
-        className,
-      )}
-    >
-      <BookOpen className="size-5" strokeWidth={2.2} />
-    </span>
+    <img
+      src={logoUrl}
+      alt="eBiblioteka"
+      className={cn('size-9 shrink-0 rounded-lg object-contain', className)}
+    />
   )
 }

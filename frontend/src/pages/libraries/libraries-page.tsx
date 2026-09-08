@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PageLoader } from '@/components/ui/loader'
 import { PaginationBar } from '@/components/pagination-bar'
 import { LibraryFormModal } from '@/components/libraries/library-form-modal'
+import { LibrariesMobileList } from '@/components/libraries/libraries-mobile-list'
 import { useAuth } from '@/hooks/useAuth'
 import type { Library, PaginatedResponse } from '@/types'
 
@@ -162,7 +163,8 @@ export function LibrariesPage() {
         <PageLoader />
       ) : (
         <div className="rounded-lg border bg-card">
-          <Table>
+          <div className="hidden lg:block">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="px-4">{t('libs.columns.name')}</TableHead>
@@ -248,7 +250,20 @@ export function LibrariesPage() {
                 </TableRow>
               ) : null}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
+
+          <div className="lg:hidden">
+            <LibrariesMobileList
+              libraries={librariesQuery.data?.data ?? []}
+              onEdit={(library) => {
+                setEditingLibrary(library)
+                setModalOpen(true)
+              }}
+              onDelete={(library) => setDeletingLibrary(library)}
+              onRestore={(library) => void confirmRestore(library)}
+            />
+          </div>
 
           {librariesQuery.data && librariesQuery.data.meta.total > 0 ? (
             <PaginationBar

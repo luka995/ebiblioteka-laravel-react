@@ -191,6 +191,7 @@ return [
         'tag_library_mismatch' => 'The tag does not belong to a library the user is a member of.',
         'library_not_managed' => 'You do not have access to this library.',
         'user_not_library_member' => 'The user is not a member of the selected library.',
+        'memberships_none_eligible' => 'None of the selected users has a matching membership in the active library.',
     ],
 
     /*

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { api, apiPaths, ApiError } from '@/lib/api'
@@ -44,7 +44,7 @@ interface UserMembershipModalProps {
 
 export function UserMembershipModal({ open, onClose, user, mode, onSuccess }: UserMembershipModalProps) {
   const { t } = useTranslation()
-  const { activeLibrary, user: actor } = useAuth()
+  const { activeLibrary, user: actor, libraries: actorLibraries } = useAuth()
   const [selected, setSelected] = useState<number[]>([])
   const [busy, setBusy] = useState(false)
   const [forceConfirmOpen, setForceConfirmOpen] = useState(false)
@@ -59,6 +59,8 @@ export function UserMembershipModal({ open, onClose, user, mode, onSuccess }: Us
 
   const scoped = activeLibrary !== null
   const isSuperAdmin = actor?.role === 'superadmin'
+  const managedIds = useMemo(() => new Set(actorLibraries.map((library) => library.id)), [actorLibraries])
+  const displayRows = isSuperAdmin ? rows : rows.filter((library) => managedIds.has(library.id))
 
   const reset = () => setSelected([])
 
@@ -126,10 +128,10 @@ export function UserMembershipModal({ open, onClose, user, mode, onSuccess }: Us
             </p>
           ) : (
             <div className="space-y-1">
-              {rows.length === 0 ? (
+              {displayRows.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t('membership.noLibraries')}</p>
               ) : (
-                rows.map((library) => (
+                displayRows.map((library) => (
                   <label
                     key={library.id}
                     className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted"
@@ -147,6 +149,23 @@ export function UserMembershipModal({ open, onClose, user, mode, onSuccess }: Us
               )}
             </div>
           )}
+
+          <div className="space-y-1 rounded-md border border-dashed px-3 py-2 text-xs text-muted-foreground">
+            {mode === 'delete' ? (
+              isSuperAdmin ? (
+                <>
+                  <p className="font-medium text-foreground">{t('membership.deleteActionsTitle')}</p>
+                  <p>• {t('membership.removeInfo')}</p>
+                  <p>• {t('membership.softDeleteInfo')}</p>
+                  <p>• {t('membership.forceDeleteInfo')}</p>
+                </>
+              ) : (
+                <p>{t('membership.removeInfo')}</p>
+              )
+            ) : (
+              <p>{t('membership.toggleInfo')}</p>
+            )}
+          </div>
 
           <DialogFooter>
             {mode === 'toggle' ? (

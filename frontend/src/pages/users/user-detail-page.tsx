@@ -4,25 +4,16 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, CalendarClock, KeyRound, LibraryBig, Pencil, Tag, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { api, apiPaths, ApiError } from '@/lib/api'
+import { api, apiPaths } from '@/lib/api'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ChangePasswordDialog } from '@/components/profile/change-password-dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageLoader } from '@/components/ui/loader'
 import { UserFormModal } from '@/components/users/user-form-modal'
+import { UserMembershipModal } from '@/components/users/user-membership-modal'
 import { UserTagModal } from '@/components/users/user-tag-modal'
 import { useAuth } from '@/hooks/useAuth'
 import type { User } from '@/types'
@@ -61,10 +52,9 @@ export function UserDetailPage() {
   const userId = Number(id)
   const queryClient = useQueryClient()
   const [editOpen, setEditOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [membershipOpen, setMembershipOpen] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [tagOpen, setTagOpen] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
 
   const userQuery = useQuery({
     queryKey: ['users', userId],
@@ -98,18 +88,11 @@ export function UserDetailPage() {
 
   const target = userQuery.data
 
-  const confirmDelete = async () => {
-    setIsDeleting(true)
-    try {
-      await api.delete(apiPaths.user(target.id))
-      toast.success(t('users.deleted'), { description: target.email })
+  const handleMembershipSuccess = async (message: string) => {
+    toast.success(message, { description: target.email })
+    const result = await userQuery.refetch()
+    if (result.error) {
       navigate('/users')
-    } catch (error) {
-      if (error instanceof ApiError) {
-        toast.error(error.messageText ?? t('errors.unexpected'))
-      }
-    } finally {
-      setIsDeleting(false)
     }
   }
 
@@ -156,27 +139,31 @@ export function UserDetailPage() {
             </div>
           </div>
 
-          <div className="flex shrink-0 gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
             {target.can?.update ? (
-              <Button variant="outline" onClick={() => setEditOpen(true)}>
+              <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => setEditOpen(true)}>
                 <Pencil />
                 {t('common.edit')}
               </Button>
             ) : null}
             {target.can?.update ? (
-              <Button variant="outline" onClick={() => setTagOpen(true)}>
+              <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => setTagOpen(true)}>
                 <Tag />
                 {t('tags.assignButton')}
               </Button>
             ) : null}
             {target.can?.update ? (
-              <Button variant="outline" onClick={() => setPasswordOpen(true)}>
+              <Button variant="outline" className="flex-1 sm:flex-none" onClick={() => setPasswordOpen(true)}>
                 <KeyRound />
                 {t('profile.changePassword')}
               </Button>
             ) : null}
-            {target.can?.delete ? (
-              <Button variant="outline" onClick={() => setDeleteOpen(true)}>
+            {target.can?.forceDelete || target.can?.delete || target.can?.removeMemberships ? (
+              <Button
+                variant="outline"
+                className="flex-1 sm:flex-none"
+                onClick={() => setMembershipOpen(true)}
+              >
                 <Trash2 />
                 {t('common.delete')}
               </Button>
@@ -256,23 +243,6 @@ export function UserDetailPage() {
         </TabsContent>
       </Tabs>
 
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('users.deleteConfirmTitle')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('users.deleteConfirmText', { name: target.name })}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" disabled={isDeleting} onClick={() => void confirmDelete()}>
-              {t('common.delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {editOpen ? (
         <UserFormModal
           open={editOpen}
@@ -282,6 +252,16 @@ export function UserDetailPage() {
             toast.success(t('users.updated'), { description: email })
             void queryClient.invalidateQueries({ queryKey: ['users'] })
           }}
+        />
+      ) : null}
+
+      {membershipOpen ? (
+        <UserMembershipModal
+          open={membershipOpen}
+          user={target}
+          mode="delete"
+          onClose={() => setMembershipOpen(false)}
+          onSuccess={(message) => void handleMembershipSuccess(message)}
         />
       ) : null}
 

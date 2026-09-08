@@ -44,6 +44,7 @@ return [
         'tag_library_mismatch' => 'Tag ne pripada biblioteci u kojoj je korisnik član.',
         'library_not_managed' => 'Nemate pristup ovoj biblioteci.',
         'user_not_library_member' => 'Korisnik nije član izabrane biblioteke.',
+        'memberships_none_eligible' => 'Nijedan izabrani korisnik nema odgovarajuće članstvo u aktivnoj biblioteci.',
     ],
 
     'attributes' => [

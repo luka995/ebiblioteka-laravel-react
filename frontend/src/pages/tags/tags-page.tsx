@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -21,7 +21,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PageLoader } from '@/components/ui/loader'
 import { PaginationBar } from '@/components/pagination-bar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { LibrarySelect, type LibraryOption } from '@/components/libraries/library-select'
 import { TagFormModal } from '@/components/tags/tag-form-modal'
+import { TagsMobileList } from '@/components/tags/tags-mobile-list'
 import { useAuth } from '@/hooks/useAuth'
 import type { Library, PaginatedResponse, Tag } from '@/types'
 
@@ -41,7 +43,8 @@ function useTagsQuery(page: number, search: string, libraryId: string) {
 
 export function TagsPage() {
   const { t } = useTranslation()
-  const { can } = useAuth()
+  const { can, user } = useAuth()
+  const isSuperAdmin = user?.role === 'superadmin'
   const [searchParams, setSearchParams] = useSearchParams()
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
@@ -49,10 +52,20 @@ export function TagsPage() {
   const libraryId = searchParams.get('library_id') ?? ''
 
   const [searchInput, setSearchInput] = useState(search)
+  const [filterLibrary, setFilterLibrary] = useState<LibraryOption[]>([])
   const [modalOpen, setModalOpen] = useState(false)
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
   const [deletingTag, setDeletingTag] = useState<Tag | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  useEffect(() => {
+    const id = libraryId ? Number(libraryId) : null
+    setFilterLibrary((current) => {
+      if (id === null) return []
+      if (current.length === 1 && current[0].id === id) return current
+      return [{ id, name: '' }]
+    })
+  }, [libraryId])
 
   const tagsQuery = useTagsQuery(page, search, libraryId)
 
@@ -62,6 +75,7 @@ export function TagsPage() {
       const response = await api.get<PaginatedResponse<Library>>(`${apiPaths.libraries}?all=1`)
       return response.data
     },
+    enabled: !isSuperAdmin,
   })
 
   if (!can('tags.viewAny')) {
@@ -85,6 +99,11 @@ export function TagsPage() {
   const applySearch = (value: string) => {
     setSearchInput(value)
     setParams({ q: value.trim() || null, page: null })
+  }
+
+  const applyLibraryFilter = (options: LibraryOption[]) => {
+    setFilterLibrary(options)
+    setParams({ library_id: options[0] ? String(options[0].id) : null, page: null })
   }
 
   const confirmDelete = async () => {
@@ -144,29 +163,41 @@ export function TagsPage() {
           </Button>
         </form>
 
-        <Select
-          value={libraryId || 'all'}
-          onValueChange={(value) => setParams({ library_id: value === 'all' ? null : value, page: null })}
-        >
-          <SelectTrigger className="w-full sm:w-52">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('tags.filterLibrary')}</SelectItem>
-            {librariesQuery.data?.map((library) => (
-              <SelectItem key={library.id} value={String(library.id)}>
-                {library.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {isSuperAdmin ? (
+          <div className="w-full sm:w-72">
+            <LibrarySelect
+              multiple={false}
+              clearable
+              value={filterLibrary}
+              onChange={applyLibraryFilter}
+            />
+          </div>
+        ) : (
+          <Select
+            value={libraryId || 'all'}
+            onValueChange={(value) => setParams({ library_id: value === 'all' ? null : value, page: null })}
+          >
+            <SelectTrigger className="w-full sm:w-52">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('tags.filterLibrary')}</SelectItem>
+              {librariesQuery.data?.map((library) => (
+                <SelectItem key={library.id} value={String(library.id)}>
+                  {library.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {tagsQuery.isLoading ? (
         <PageLoader />
       ) : (
         <div className="rounded-lg border bg-card">
-          <Table>
+          <div className="hidden lg:block">
+            <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="px-4">{t('tags.columns.name')}</TableHead>
@@ -223,7 +254,19 @@ export function TagsPage() {
                 </TableRow>
               ) : null}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
+
+          <div className="lg:hidden">
+            <TagsMobileList
+              tags={tagsQuery.data?.data ?? []}
+              onEdit={(tag) => {
+                setEditingTag(tag)
+                setModalOpen(true)
+              }}
+              onDelete={(tag) => setDeletingTag(tag)}
+            />
+          </div>
 
           {tagsQuery.data && tagsQuery.data.meta.total > 0 ? (
             <PaginationBar

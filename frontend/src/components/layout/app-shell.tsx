@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { BadgeCheck, BookOpen, Building2, KeyRound, LayoutDashboard, LogOut, Map, MapPin, Menu, Settings, Tag, Users, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { BrandMark } from '@/components/brand'
-import { LocaleSwitcher } from '@/components/locale-switcher'
+import { HeaderLibrarySwitcher } from '@/components/layout/library-switcher'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -176,22 +176,22 @@ export function AppShell() {
         <header className="flex h-16 shrink-0 items-center gap-4 border-b bg-card/60 px-4 backdrop-blur sm:px-6">
           <button
             type="button"
-            className="rounded-md p-2 text-muted-foreground hover:bg-accent md:hidden"
+            className="shrink-0 rounded-md p-2 text-muted-foreground hover:bg-accent md:hidden"
             onClick={() => setSidebarOpen(true)}
             aria-label="Open menu"
           >
             <Menu className="size-5" />
           </button>
 
-          <div className="flex items-center gap-2">
-            <BookOpen className="size-5 text-brand-accent md:hidden" />
-            <h1 className="font-brand-heading text-base font-semibold tracking-tight">
+          <div className="flex min-w-0 items-center gap-2">
+            <BookOpen className="size-5 shrink-0 text-brand-accent md:hidden" />
+            <h1 className="truncate font-brand-heading text-base font-semibold tracking-tight">
               {t(pageTitleFor(location.pathname))}
             </h1>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
-            <LocaleSwitcher />
+          <div className="ml-auto shrink-0">
+            <HeaderLibrarySwitcher />
           </div>
         </header>
 

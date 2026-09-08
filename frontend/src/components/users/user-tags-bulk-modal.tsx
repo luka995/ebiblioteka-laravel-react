@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TagSelect, type TagOption } from '@/components/tags/tag-select'
 
 interface UserTagsBulkModalProps {
@@ -24,16 +23,16 @@ interface UserTagsBulkModalProps {
 
 export function UserTagsBulkModal({ open, onClose, mode, userIds, onSuccess }: UserTagsBulkModalProps) {
   const { t } = useTranslation()
-  const { activeLibrary, libraries } = useAuth()
-  const [libraryId, setLibraryId] = useState<number | null>(null)
+  const { activeLibrary } = useAuth()
   const [selectedTags, setSelectedTags] = useState<TagOption[]>([])
   const [busy, setBusy] = useState(false)
 
+  const libraryId = activeLibrary?.id ?? null
+
   useEffect(() => {
     if (!open) return
-    setLibraryId(activeLibrary?.id ?? null)
     setSelectedTags([])
-  }, [open, activeLibrary?.id])
+  }, [open])
 
   const save = async () => {
     if (libraryId === null || selectedTags.length === 0) return
@@ -42,7 +41,6 @@ export function UserTagsBulkModal({ open, onClose, mode, userIds, onSuccess }: U
       const endpoint = mode === 'assign' ? apiPaths.usersTagsAssign : apiPaths.usersTagsRemove
       await api.post(endpoint, {
         user_ids: userIds,
-        library_id: libraryId,
         tag_ids: selectedTags.map((tag) => tag.id),
       })
       onSuccess(mode === 'assign' ? t('tags.assignSuccess') : t('tags.removeSuccess'))
@@ -68,33 +66,15 @@ export function UserTagsBulkModal({ open, onClose, mode, userIds, onSuccess }: U
 
         <div className="space-y-4">
           {activeLibrary ? (
-            <p className="text-sm text-muted-foreground">
-              {t('tags.libraryLabel')}: <span className="font-medium">{activeLibrary.name}</span>
-            </p>
+            <>
+              <p className="text-sm text-muted-foreground">
+                {t('tags.libraryLabel')}: <span className="font-medium">{activeLibrary.name}</span>
+              </p>
+              <TagSelect libraryId={activeLibrary.id} value={selectedTags} onChange={setSelectedTags} />
+            </>
           ) : (
-            <div className="space-y-2">
-              <p className="text-sm font-medium">{t('tags.libraryLabel')}</p>
-              <Select
-                value={libraryId !== null ? String(libraryId) : undefined}
-                onValueChange={(value) => setLibraryId(Number(value))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t('tags.libraryPlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {libraries.map((library) => (
-                    <SelectItem key={library.id} value={String(library.id)}>
-                      {library.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <p className="text-sm text-muted-foreground">{t('tags.bulkNeedActiveLibrary')}</p>
           )}
-
-          {libraryId !== null ? (
-            <TagSelect libraryId={libraryId} value={selectedTags} onChange={setSelectedTags} />
-          ) : null}
         </div>
 
         <div className="flex justify-end gap-2 pt-2">

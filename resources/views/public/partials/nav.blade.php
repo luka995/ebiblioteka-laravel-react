@@ -8,6 +8,6 @@
         <a class="{{ request()->routeIs('contact.*') ? 'active' : '' }}" href="{{ route('contact.create') }}">Контакт</a>
         <a class="mobile-login" href="{{ \App\Support\FrontendUrl::url() }}">Пријава</a>
     </nav>
-    <div class="public-actions">@include('public.partials.theme-switch', ['themeSwitchLang' => 'cyr'])<a class="public-login" href="{{ \App\Support\FrontendUrl::url() }}">Пријава</a></div>
+    <div class="public-actions"><a class="button button-blue" href="{{ \App\Support\FrontendUrl::url() }}">Пријава</a></div>
     <button class="public-menu-toggle" data-menu-toggle type="button" aria-label="Отвори мени" aria-expanded="false">☰</button>
 </header>

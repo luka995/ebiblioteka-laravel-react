@@ -5,6 +5,7 @@ use App\Models\Library;
 use App\Models\Place;
 use App\Models\Region;
 use App\Models\User;
+use App\Services\ActiveLibraryService;
 
 function adminApiHeaders(array $extra = []): array
 {
@@ -253,4 +254,44 @@ test('invalid role filter returns empty results without error', function () {
     $this->actingAs($admin)->getJson('/api/v1/users?role=nonsense', adminApiHeaders())
         ->assertOk()
         ->assertJsonCount(0, 'data');
+});
+
+test('library admin library filter is ignored and scope relies on its libraries', function () {
+    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryA = Library::factory()->create();
+    $libraryB = Library::factory()->create();
+    $libraryAdmin->libraries()->attach($libraryA->id);
+
+    $member = User::factory()->create();
+    $member->libraries()->attach($libraryA->id);
+    $foreign = User::factory()->create();
+    $foreign->libraries()->attach($libraryB->id);
+
+    $response = $this->actingAs($libraryAdmin)
+        ->getJson("/api/v1/users?library_id={$libraryB->id}", adminApiHeaders())
+        ->assertOk();
+
+    $ids = collect($response->json('data'))->pluck('id')->all();
+
+    expect($ids)->toContain($member->id)
+        ->and($ids)->toContain($libraryAdmin->id)
+        ->and($ids)->not->toContain($foreign->id);
+});
+
+test('superadmin library filter takes precedence over the active library', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $libraryA = Library::factory()->create();
+    $libraryB = Library::factory()->create();
+
+    $memberA = User::factory()->create();
+    $memberA->libraries()->attach($libraryA->id);
+    $memberB = User::factory()->create();
+    $memberB->libraries()->attach($libraryB->id);
+
+    app(ActiveLibraryService::class)->set($admin, $libraryA->id);
+
+    $this->actingAs($admin)->getJson("/api/v1/users?library_id={$libraryB->id}", adminApiHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $memberB->id);
 });

@@ -86,6 +86,7 @@
     "deleteConfirmTitle": "Obriši korisnika?",
     "deleteConfirmText": "Da li ste sigurni da želite da obrišete korisnika „{{name}}“? Ova akcija se ne može vratiti.",
     "notFound": "Korisnik nije pronađen.",
+    "librariesActiveLibrary": "Korisnik će pripadati aktivnoj biblioteci: {{library}}",
     "tabs": {
       "info": "Podaci",
       "reservations": "Rezervacije",
@@ -173,7 +174,23 @@
     "activatedMsg": "Članstvo je aktivirano.",
     "removedMsg": "Članstvo je uklonjeno.",
     "softDeletedMsg": "Nalog je deaktiviran.",
-    "forceDeletedMsg": "Nalog je trajno obrisan."
+    "forceDeletedMsg": "Nalog je trajno obrisan.",
+    "deleteActionsTitle": "Šta se dešava?",
+    "removeInfo": "Uklanjanje članstva — korisnik se trajno uklanja iz izabrane biblioteke; nalog ostaje u sistemu.",
+    "softDeleteInfo": "Deaktivacija naloga — korisnik gubi pristup sistemu, a njegovi podaci ostaju sačuvani.",
+    "forceDeleteInfo": "Brisanje celog naloga — trajno brisanje naloga i svih članstava. Ako nalog ima zabeležene relacije (pozajmice, rezervacije, članarine...), baza sprečava brisanje.",
+    "toggleInfo": "Deaktivacija članstva je privremena — članstvo se može ponovo aktivirati. Za trajno uklanjanje koristi dijalog za brisanje.",
+    "bulkSoftDeleteAccounts": "Deaktiviraj naloge",
+    "bulkForceDeleteAccounts": "Obriši naloge",
+    "bulkInfoCount": "Primenjuje se na {{count}} izabranih korisnika.",
+    "bulkActiveLibrary": "Aktivna biblioteka: {{library}}",
+    "bulkNeedActiveLibrary": "Za članske akcije prvo izaberite aktivnu biblioteku.",
+    "bulkActivateInfo": "Aktiviraće deaktivirana članstva u aktivnoj biblioteci.",
+    "bulkDeactivateTitle": "Deaktivacija članstva",
+    "bulkActivateTitle": "Aktivacija članstva",
+    "bulkRemoveTitle": "Uklanjanje članstava",
+    "bulkSoftDeleteAccountsTitle": "Deaktivacija naloga",
+    "bulkForceDeleteAccountsTitle": "Brisanje naloga"
   },
   "regions": {
     "title": "Regije",
@@ -251,6 +268,7 @@
     "bulkAssignTitle": "Dodeli tagove odabranim korisnicima",
     "bulkRemoveTitle": "Ukloni tagove odabranim korisnicima",
     "bulkSelected": "{{count}} odabranih korisnika",
+    "bulkNeedActiveLibrary": "Za dodelu ili uklanjanje tagova prvo izaberite aktivnu biblioteku.",
     "selectedCount": "{{count}} izabrano",
     "clearSelection": "Poništi izbor",
     "selectAll": "Izaberi sve na stranici",
@@ -305,6 +323,7 @@
     "view": "Prikaz",
     "edit": "Izmeni",
     "delete": "Obriši",
+    "clear": "Poništi",
     "backToList": "Nazad na listu"
   },
   "pagination": {

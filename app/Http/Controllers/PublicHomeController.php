@@ -3,14 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Support\LibraryCatalog;
-use App\Support\PublicTheme;
 use Illuminate\View\View;
 
 class PublicHomeController extends Controller
 {
     public function __invoke(): View
     {
-        return view(PublicTheme::view('public.home'), [
+        return view('public.home', [
             'libraries' => LibraryCatalog::all(),
             'recommendations' => [
                 ['title' => 'Grad od papira', 'author' => 'Mira Jovanović', 'type' => 'ROMAN', 'color' => 'cover-1'],

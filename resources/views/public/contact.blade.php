@@ -37,8 +37,22 @@
                 <span class="section-label">КОНТАКТ ФОРМА</span>
                 <h2 class="display">Да ли имате<br><span class="serif">питање за нас?</span></h2>
 
-                @if (session('contact_sent'))
-                    <div class="contact-success" role="status">Порука је послата. Хвала вам што сте нам се јавили.</div>
+                @php
+                    $contactFlash = session('contact_sent')
+                        ? ['title' => 'Порука је послата', 'message' => 'Хвала вам што сте нам се јавили.', 'tone' => 'success']
+                        : (session('contact_error')
+                            ? ['title' => 'Дошло је до грешке', 'message' => session('contact_error'), 'tone' => 'error']
+                            : null);
+                @endphp
+
+                @if ($contactFlash)
+                    <dialog class="contact-modal contact-modal--{{ $contactFlash['tone'] }}" data-contact-modal role="dialog" aria-labelledby="contact-modal-title">
+                        <div class="contact-modal-body">
+                            <h3 id="contact-modal-title">{{ $contactFlash['title'] }}</h3>
+                            <p>{{ $contactFlash['message'] }}</p>
+                            <button class="contact-modal-close" data-contact-modal-close type="button">У реду</button>
+                        </div>
+                    </dialog>
                 @endif
 
                 <form action="{{ route('contact.store') }}" method="post">
@@ -65,7 +79,9 @@
                         <textarea id="contact-message" name="message" rows="6" required>{{ old('message') }}</textarea>
                         @error('message')<small class="contact-error">{{ $message }}</small>@enderror
                     </div>
-                    <button class="button button-blue" type="submit">Пошаљите поруку <span>↗</span></button>
+                    <input type="hidden" name="turnstile_token" id="contact-turnstile-token">
+                    <div id="contact-turnstile" class="contact-turnstile" data-sitekey="{{ config('services.turnstile.site_key') }}" data-action="{{ config('services.turnstile.action') }}"></div>
+                    <button class="button button-blue" type="submit" data-contact-submit disabled>Пошаљите поруку <span>↗</span></button>
                 </form>
             </div>
         </section>
@@ -74,3 +90,33 @@
     @include('public.partials.footer')
 </div>
 @endsection
+
+@push('scripts')
+    @if (config('services.turnstile.site_key'))
+        <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad" async defer></script>
+        <script>
+            window.onTurnstileLoad = function () {
+                const container = document.getElementById('contact-turnstile')
+                const tokenInput = document.getElementById('contact-turnstile-token')
+                const submitButton = document.querySelector('[data-contact-submit]')
+
+                if (!container || !window.turnstile || !submitButton) {
+                    return
+                }
+
+                const setToken = (token) => {
+                    tokenInput.value = token
+                    submitButton.disabled = !token
+                }
+
+                window.turnstile.render(container, {
+                    sitekey: container.dataset.sitekey,
+                    action: container.dataset.action,
+                    callback: setToken,
+                    'expired-callback': () => setToken(''),
+                    'error-callback': () => setToken(''),
+                })
+            }
+        </script>
+    @endif
+@endpush

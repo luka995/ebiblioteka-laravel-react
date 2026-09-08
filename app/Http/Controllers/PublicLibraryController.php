@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Support\LibraryCatalog;
-use App\Support\PublicTheme;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -16,14 +15,14 @@ class PublicLibraryController extends Controller
             ->filter(fn (array $library): bool => $query === '' || str_contains($this->searchable($library), mb_strtolower($query)))
             ->values();
 
-        return view(PublicTheme::view('public.libraries.index'), compact('libraries', 'query'));
+        return view('public.libraries.index', compact('libraries', 'query'));
     }
 
     public function show(string $library): View
     {
         $library = $this->findLibrary($library);
 
-        return view(PublicTheme::view('public.libraries.show'), compact('library'));
+        return view('public.libraries.show', compact('library'));
     }
 
     public function category(string $library, string $category): View
@@ -33,7 +32,7 @@ class PublicLibraryController extends Controller
 
         abort_if($categoryData === null, 404);
 
-        return view(PublicTheme::view('public.libraries.category'), [
+        return view('public.libraries.category', [
             'library' => $library,
             'category' => $categoryData,
         ]);
@@ -47,7 +46,7 @@ class PublicLibraryController extends Controller
 
         abort_if($categoryData === null || $bookData === null, 404);
 
-        return view(PublicTheme::view('public.libraries.book'), [
+        return view('public.libraries.book', [
             'library' => $library,
             'category' => $categoryData,
             'book' => $bookData,

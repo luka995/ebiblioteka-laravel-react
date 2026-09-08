@@ -11,7 +11,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { LibrarySelect, type LibraryOption } from '@/components/libraries/library-select'
 import { TagSelect, type TagOption } from '@/components/tags/tag-select'
+import { useAuth } from '@/hooks/useAuth'
 import type { User } from '@/types'
 
 interface UserTagModalProps {
@@ -23,7 +25,10 @@ interface UserTagModalProps {
 
 export function UserTagModal({ open, onClose, user, onSuccess }: UserTagModalProps) {
   const { t } = useTranslation()
+  const { user: actor } = useAuth()
+  const isSuperAdmin = actor?.role === 'superadmin'
   const [libraryId, setLibraryId] = useState<number | null>(null)
+  const [selectedLibraries, setSelectedLibraries] = useState<LibraryOption[]>([])
   const [selectedTags, setSelectedTags] = useState<TagOption[]>([])
   const [busy, setBusy] = useState(false)
 
@@ -32,7 +37,9 @@ export function UserTagModal({ open, onClose, user, onSuccess }: UserTagModalPro
   useEffect(() => {
     if (!open) return
     const firstId = libraries[0]?.id ?? null
+    const first = libraries[0] ? [{ id: libraries[0].id, name: libraries[0].name }] : []
     setLibraryId(firstId)
+    setSelectedLibraries(first)
     setSelectedTags(
       firstId
         ? (user.tags ?? [])
@@ -49,6 +56,21 @@ export function UserTagModal({ open, onClose, user, onSuccess }: UserTagModalPro
     setSelectedTags(
       (user.tags ?? [])
         .filter((tag) => tag.library_id === id)
+        .map((tag) => ({ id: tag.id, name: tag.name, library_id: tag.library_id })),
+    )
+  }
+
+  const handleLibraryPickerChange = (options: LibraryOption[]) => {
+    const next = options[0] ?? null
+    setSelectedLibraries(options)
+    setLibraryId(next ? next.id : null)
+    if (!next) {
+      setSelectedTags([])
+      return
+    }
+    setSelectedTags(
+      (user.tags ?? [])
+        .filter((tag) => tag.library_id === next.id)
         .map((tag) => ({ id: tag.id, name: tag.name, library_id: tag.library_id })),
     )
   }
@@ -85,18 +107,28 @@ export function UserTagModal({ open, onClose, user, onSuccess }: UserTagModalPro
         ) : (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Select value={libraryId !== null ? String(libraryId) : undefined} onValueChange={handleLibraryChange}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder={t('tags.libraryPlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {libraries.map((library) => (
-                    <SelectItem key={library.id} value={String(library.id)}>
-                      {library.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isSuperAdmin ? (
+                <LibrarySelect
+                  multiple={false}
+                  value={selectedLibraries}
+                  onChange={handleLibraryPickerChange}
+                  localOptions={libraries}
+                  placeholder={t('tags.libraryPlaceholder')}
+                />
+              ) : (
+                <Select value={libraryId !== null ? String(libraryId) : undefined} onValueChange={handleLibraryChange}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t('tags.libraryPlaceholder')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {libraries.map((library) => (
+                      <SelectItem key={library.id} value={String(library.id)}>
+                        {library.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             {libraryId !== null ? (

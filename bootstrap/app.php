@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Middleware\EnsureEmailIsVerified;
-use App\Http\Middleware\PublicThemeMiddleware;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SetSessionCookieDomain;
 use Illuminate\Foundation\Application;
@@ -27,7 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(prepend: [
             SetSessionCookieDomain::class,
-            PublicThemeMiddleware::class,
+            SetLocale::class,
         ]);
 
         $middleware->alias([

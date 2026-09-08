@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Models\Library;
 use App\Models\Place;
 use App\Models\Region;
@@ -30,7 +31,7 @@ test('superadmin can show a user with full profile', function () {
 });
 
 test('non superadmin cannot show or mutate a user', function () {
-    $libraryAdmin = User::factory()->role(\App\Enums\UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
     $target = User::factory()->create();
 
     $this->actingAs($libraryAdmin)
@@ -76,7 +77,7 @@ test('superadmin can soft delete a user', function () {
     expect(User::find($user->id))->toBeNull()
         ->and(User::withTrashed()->find($user->id)->deleted_at)->not->toBeNull();
 
-    $this->actingAs($admin)->getJson("/api/v1/users", crudApiHeaders())
+    $this->actingAs($admin)->getJson('/api/v1/users', crudApiHeaders())
         ->assertOk()
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.id', $admin->id);
@@ -150,7 +151,7 @@ test('superadmin can change another user password without current password', fun
 });
 
 test('non superadmin cannot change another user password', function () {
-    $libraryAdmin = User::factory()->role(\App\Enums\UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
     $target = User::factory()->create();
 
     $this->actingAs($libraryAdmin)->putJson("/api/v1/users/{$target->id}/password", [
@@ -158,4 +159,120 @@ test('non superadmin cannot change another user password', function () {
         'password_confirmation' => 'newsecret123',
     ], crudApiHeaders())
         ->assertForbidden();
+});
+
+test('library admin cannot soft delete or force delete a user even when sharing a library', function () {
+    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $library = Library::factory()->create();
+    $libraryAdmin->libraries()->attach($library->id);
+    $target = User::factory()->create();
+    $target->libraries()->attach($library->id);
+
+    $this->actingAs($libraryAdmin)->deleteJson("/api/v1/users/{$target->id}", [], crudApiHeaders())
+        ->assertForbidden();
+
+    $this->actingAs($libraryAdmin)->deleteJson("/api/v1/users/{$target->id}/force", [], crudApiHeaders())
+        ->assertForbidden();
+
+    expect(User::find($target->id))->not->toBeNull();
+});
+
+test('library admin editing a user keeps memberships in libraries it does not manage', function () {
+    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $managed = Library::factory()->create();
+    $libraryAdmin->libraries()->attach($managed->id);
+    $foreign = Library::factory()->create();
+    $target = User::factory()->create(['email' => 'clan@example.com']);
+    $target->libraries()->attach([$managed->id, $foreign->id]);
+
+    $this->actingAs($libraryAdmin)->putJson("/api/v1/users/{$target->id}", [
+        'first_name' => 'Ana',
+        'last_name' => 'Anić',
+        'username' => 'ana.anic',
+        'email' => 'clan@example.com',
+        'role' => 'user',
+        'libraries' => [$managed->id],
+    ], crudApiHeaders())->assertOk();
+
+    expect($target->fresh()->libraries()->pluck('libraries.id')->all())
+        ->toContain($managed->id)
+        ->toContain($foreign->id);
+});
+
+test('library admin editing a user can remove it from a managed library but not from others', function () {
+    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $managed = Library::factory()->create();
+    $libraryAdmin->libraries()->attach($managed->id);
+    $foreign = Library::factory()->create();
+    $target = User::factory()->create(['email' => 'clan2@example.com']);
+    $target->libraries()->attach([$managed->id, $foreign->id]);
+
+    $this->actingAs($libraryAdmin)->putJson("/api/v1/users/{$target->id}", [
+        'first_name' => 'Ana',
+        'last_name' => 'Anić',
+        'username' => 'ana.anic2',
+        'email' => 'clan2@example.com',
+        'role' => 'user',
+        'libraries' => [],
+    ], crudApiHeaders())->assertOk();
+
+    $ids = $target->fresh()->libraries()->pluck('libraries.id')->all();
+
+    expect($ids)->toContain($foreign->id)
+        ->and($ids)->not->toContain($managed->id);
+});
+
+test('superadmin can bulk soft delete accounts', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+
+    $this->actingAs($admin)->postJson('/api/v1/users/bulk/deactivate', [
+        'user_ids' => [$first->id, $second->id],
+    ], crudApiHeaders())->assertNoContent();
+
+    expect(User::find($first->id))->toBeNull()
+        ->and(User::find($second->id))->toBeNull()
+        ->and(User::withTrashed()->find($first->id))->not->toBeNull();
+});
+
+test('superadmin can bulk force delete accounts', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $first = User::factory()->create();
+    $second = User::factory()->create();
+
+    $this->actingAs($admin)->deleteJson('/api/v1/users/bulk/force', [
+        'user_ids' => [$first->id, $second->id],
+    ], crudApiHeaders())->assertNoContent();
+
+    expect(User::withTrashed()->find($first->id))->toBeNull()
+        ->and(User::withTrashed()->find($second->id))->toBeNull();
+});
+
+test('bulk account deletion refuses to delete own account', function () {
+    $admin = User::factory()->superAdmin()->create();
+
+    $this->actingAs($admin)->postJson('/api/v1/users/bulk/deactivate', [
+        'user_ids' => [$admin->id],
+    ], crudApiHeaders())->assertStatus(422);
+
+    expect(User::find($admin->id))->not->toBeNull();
+});
+
+test('library admin cannot bulk soft or force delete accounts', function () {
+    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $library = Library::factory()->create();
+    $libraryAdmin->libraries()->attach($library->id);
+    $target = User::factory()->create();
+    $target->libraries()->attach($library->id);
+
+    $this->actingAs($libraryAdmin)->postJson('/api/v1/users/bulk/deactivate', [
+        'user_ids' => [$target->id],
+    ], crudApiHeaders())->assertForbidden();
+
+    $this->actingAs($libraryAdmin)->deleteJson('/api/v1/users/bulk/force', [
+        'user_ids' => [$target->id],
+    ], crudApiHeaders())->assertForbidden();
+
+    expect(User::find($target->id))->not->toBeNull();
 });

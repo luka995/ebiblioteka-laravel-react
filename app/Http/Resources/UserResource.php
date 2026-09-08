@@ -61,7 +61,7 @@ class UserResource extends JsonResource
                     'library_id' => $tag->library_id,
                 ])
             ),
-            'can' => $this->abilities($request->user(), ['view', 'update', 'delete', 'forceDelete', 'manageMemberships']),
+            'can' => $this->abilities($request->user(), ['view', 'update', 'delete', 'forceDelete', 'manageMemberships', 'removeMemberships']),
         ];
     }
 }

@@ -18,6 +18,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Transactional & Marketing Mailers
+    |--------------------------------------------------------------------------
+    |
+    | Transakcioni mejlovi (reset lozinke, obaveštenje o novom nalogu) idu
+    | kroz "transactional_mailer" (Postmark), dok će masovne kampanje
+    | (newsletter i sl.) kasnije ići kroz "marketing_mailer" (npr. Mailgun).
+    | Time se provajder menja isključivo kroz konfiguraciju.
+    |
+    */
+
+    'transactional_mailer' => env('MAIL_TRANSACTIONAL_MAILER', 'postmark'),
+
+    'marketing_mailer' => env('MAIL_MARKETING_MAILER', 'postmark'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Mailer Configurations
     |--------------------------------------------------------------------------
     |

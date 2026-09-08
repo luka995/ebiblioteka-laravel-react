@@ -1,5 +1,118 @@
 # Changelog
 
+## [08.09.2026] Security: Cloudflare Turnstile zaštita kontakt forme
+
+### Added
+
+- **TurnstileService** (`app/Services/Security/TurnstileService.php`) — verifikacija tokena prema Cloudflare Turnstile `siteverify` endpointu (Managed mode); proverava `success`, `action` i dozvoljene `hostname`-e; HTTP greške i izuzeci se loguju i vraćaju `false` (fail-closed)
+- **Turnstile widget na kontakt formi** (`resources/views/public/contact.blade.php`, `resources/views/layouts/public.blade.php`) — eksplicitno renderovanje (`render=explicit`), token se upisuje u skriveno polje `turnstile_token`; dugme „Пошаљите поруку" onemogućeno dok widget ne vrati token; skripta se učitava samo ako postoji `TURNSTILE_SITE_KEY`
+- **Rate limiting** (`app/Providers/AppServiceProvider.php`, `routes/web.php`) — `throttle:contact` (5/min po IP) na `POST /kontakt`
+- **Konfiguracija** (`config/services.php`, `.env.example`) — `TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET`, `TURNSTILE_HOSTNAMES`, `services.turnstile.action/hostnames`
+- **Testovi** (`tests/Unit/TurnstileServiceTest.php`, `tests/Feature/PublicContactTest.php`) — uspešna/odbijena verifikacija, provera action/hostname, HTTP greške i izuzeci; feature testovi sa mockovanim servisom
+
+### Changed
+
+- **PublicContactController** (`app/Http/Controllers/PublicContactController.php`) — verifikuje `turnstile_token` pre slanja; slanje kroz `mail.transactional_mailer` sa lokalizacijom (`locale(app()->getLocale())`); greške slanja se loguju i vraćaju kroz `contact_error` flash umesto izuzetka
+- **Kontakt forma** (`resources/views/public/contact.blade.php`, `resources/css/app.css`, `resources/js/app.ts`) — poruke uspeha/greške prikazane u `<dialog>` modalu (`contact_sent`/`contact_error`) umesto inline poruke; stilovi modalnog prozora i `contact-turnstile`
+- **Konfiguracija kontakta** (`config/contact.php`) — `recipient` podržava više primalaca (zarezom razdvojena lista iz `CONTACT_EMAIL`)
+
+## [08.09.2026] Mail: Transakcioni mejlovi (nalog kreiran, reset lozinke) i queue worker
+
+### Added
+
+- **TransactionalMailService** (`app/Services/Mail/TransactionalMailService.php`) — slanje kroz `mail.transactional_mailer` uz `locale(app()->getLocale())`
+- **UserMailService** (`app/Services/Mail/UserMailService.php`) — `sendPasswordReset()` i `sendAccountCreated()`; gradi reset/login URL preko `FrontendUrl`
+- **AccountCreated mail** (`app/Mail/AccountCreated.php`, `resources/views/emails/account-created.blade.php`, `account-created-text.blade.php`) — šalje kredencijale (email + plaintext lozinka) i link za prijavu nakon kreiranja naloga
+- **ResetPassword mail** (`app/Mail/ResetPassword.php`, `resources/views/emails/reset-password.blade.php`, `reset-password-text.blade.php`) — prilagođen reset mejl (umesto default Laravel notifikacije) sa expiration informacijom
+- **Email layout** (`resources/views/emails/layout.blade.php`) — zajednički HTML šablon sa brand zaglavljem (embeded logo `public/img/ebiblioteka-logo.png`) i footerom
+- **Lokalizacija mejlova** (`lang/{en,sr-Cyrl,sr-Latn}/emails.php`) — subjecti, pozdravi, labele i CTA tekstovi na tri jezika
+- **Queue worker servis** (`docker-compose.yml`) — `ebiblioteka-queue` kontejner (`queue:work database --queue=emails,default`) za asinhrono slanje
+- **Testovi** (`tests/Feature/Auth/AccountCreatedMailTest.php`, `tests/Feature/Auth/PasswordResetTest.php`) — kreiranje naloga šalje mejl sa kredencijalima; reset lozinke koristi prilagođeni `ResetPassword` mail
+
+### Changed
+
+- **User model** (`app/Models/User.php`) — prepisana `sendPasswordResetNotification()` da koristi `UserMailService`
+- **UsersController::store** (`app/Http/Controllers/UsersController.php`) — čuva plaintext lozinku pre heširanja i šalje `AccountCreated` mejl
+- **AppServiceProvider** (`app/Providers/AppServiceProvider.php`) — uklonjen `ResetPassword::createUrlUsing` (premešten u `UserMailService`)
+- **ContactMessage mail** (`app/Mail/ContactMessage.php`, `resources/views/emails/contact-message.blade.php`, `contact-message-text.blade.php`) — postaje `ShouldQueue`, lokalizovan subject/sadržaj, koristi zajednički layout i tekstualnu verziju
+- **config/mail.php** — dodati `transactional_mailer` (Postmark) i `marketing_mailer` (budući Mailgun), čitljivi iz `MAIL_TRANSACTIONAL_MAILER`/`MAIL_MARKETING_MAILER`
+- **composer.json** — dodati `symfony/http-client` i `symfony/postmark-mailer`; `.env.example` i `phpunit.xml` ažurirani za nove mailere
+
+## [08.09.2026] UI: Uklanjanje Teme 2 (reference tema)
+
+### Removed
+
+- **Reference tema** (`resources/views/themes/ref/`, `resources/css/reference.css`) — kompletan odvojeni vizuelni sistem Teme 2 (layout, nav, footer, home, project, libraries, contact)
+- **PublicTheme** (`app/Support/PublicTheme.php`) i **PublicThemeMiddleware** (`app/Http/Middleware/PublicThemeMiddleware.php`) — mehanizam razrešavanja teme iz query parametra/cookija
+- **Theme switcher** (`resources/views/public/partials/theme-switch.blade.php`) i njegovi stilovi u `resources/css/app.css`
+- **public_theme konfiguracija** (`config/app.php`) i `PublicThemeReferenceTest` (`tests/Feature/PublicThemeReferenceTest.php`)
+
+### Changed
+
+- **Javni kontroleri** (`PublicHomeController`, `PublicProjectController`, `PublicLibraryController`, `PublicContactController`) — `PublicTheme::view()` zamenjen direktnim `view()`
+- **bootstrap/app.php** — `PublicThemeMiddleware` uklonjen iz web middleware grupe
+- **vite.config.js** — uklonjen `reference.css` iz build ulaza
+
+## [08.09.2026] UI: Mobilne liste i brand (logo, header library switcher)
+
+### Added
+
+- **List primitiv** (`frontend/src/components/ui/list.tsx`) — `List`, `ListItem`, `ListItemHeader`, `ListItemTitle`, `ListItemMeta`, `ListItemField` za mobilne kartice
+- **Mobilne liste** (`frontend/src/components/users/users-mobile-list.tsx`, `libraries/libraries-mobile-list.tsx`, `tags/tags-mobile-list.tsx`) — responsive prikaz redova kao kartica na malim ekranima (checkbox selekcija za korisnike, akcije po redu)
+- **Logo** (`frontend/src/assets/ebiblioteka-logo.svg`, `public/img/ebiblioteka-logo.png`) — SVG/PNG brand logo
+- **HeaderLibrarySwitcher** (`frontend/src/components/layout/library-switcher.tsx`) — Ajax pretraga/izbor aktivne biblioteke u header-u (samo superadmin); prazan izbor vraća na „sve biblioteke"
+
+### Changed
+
+- **Brand** (`frontend/src/components/brand.tsx`) — `BrandMark` koristi logo umesto `BookOpen` ikonice
+- **App shell** (`frontend/src/components/layout/app-shell.tsx`) — `LocaleSwitcher` u header-u zamenjen `HeaderLibrarySwitcher`-om
+- **LibrarySwitcher** (`frontend/src/components/layout/library-switcher.tsx`) — dashboard kartica „aktivna biblioteka" samo za ne-superadmina (superadmin vodi iz header-a)
+- **useAuth** (`frontend/src/hooks/useAuth.tsx`) — promena aktivne biblioteke invalidira `users`/`tags`/`libraries` query cache
+- **Stranice** (`users-page.tsx`, `libraries-page.tsx`, `tags-page.tsx`) — tabele sakrivene na malim ekranima u korist mobilnih listi; `tags-page` filter biblioteke preko `LibrarySelect` (superadmin) / selektovanih biblioteka (ostali)
+- **user-detail-page** (`frontend/src/pages/users/user-detail-page.tsx`) — delete flow prebačen iz AlertDialoga u `UserMembershipModal` (mode `delete`)
+- **Frontend build** (`frontend/dist/`) — regenerisani asseti
+
+## [08.09.2026] Admin: bulk akcije nad izabranim korisnicima (članstvo i nalog)
+
+### Added
+
+- **Bulk membership rute** (`routes/api.php`, `app/Http/Controllers/UserMembershipsController.php`) — `POST /users/memberships/deactivate`, `POST /users/memberships/activate`, `DELETE /users/memberships`; rade nad aktivnom bibliotekom aktera (`ActiveLibraryService::resolve`), bez aktivne → 422 `active_library_required`
+- **Bulk nalog rute** (`routes/api.php`, `app/Http/Controllers/UsersController.php`) — `POST /users/bulk/deactivate` (soft brisanje naloga) i `DELETE /users/bulk/force` (trajno brisanje); zaštita sopstvenog naloga (422), FK `RESTRICT` → rollback cele operacije + 422 `cannot_force_delete` (sve-ili-ništa)
+- **Policy bulk abilities** (`app/Policies/UserPolicy.php`) — `bulkManageMemberships` (superadmin), `bulkRemoveMemberships` (superadmin + library_admin), `bulkDelete`, `bulkForceDelete` (superadmin)
+- **Idempotentni toggle** — bulk deactivate preskače već deaktivirane, bulk activate preskače već aktivne; kada niko od izabranih nema odgovarajuće članstvo → 422 `memberships_none_eligible` (nova poruka u `lang/sr-Latn|sr-Cyrl|en`)
+- **Frontend bulk modal** (`frontend/.../user-memberships-bulk-modal.tsx`) — potvrdni dijalog za 5 akcija (deactivate/activate/remove članstvo + deaktivacija/brisanje naloga) sa nazivom izabrane akcije, brojem izabranih, aktivnom bibliotekom (read-only) i opisom akcije; role-gating dugmadi u toolbaru izbora (`users-page.tsx`)
+- **Testovi** (`tests/Feature/Auth/LibraryMembershipTest.php`, `UserCrudApiTest.php`) — toggle skip ponašanje, 422 bez aktivne/bez kvalifikovanih, dozvole po ulogama, bulk remove/soft/force, sam-sele, FK rollback
+
+### Changed
+
+- **API klijent** (`frontend/src/lib/api.ts`) — dodati bulk endpointi (`usersMemberships*`, `usersBulkDeactivate`, `usersBulkForce`)
+- **i18n** (`frontend/src/i18n/locales/*.json`) — ključevi za bulk nalog akcije, poruke brojanja i aktivne biblioteke
+- **Frontend build** (`frontend/dist/`) — regenerisani asseti
+
+## [08.09.2026] Admin: uklanjanje članstva za admina biblioteke i opisi akcija u modalu
+
+### Added
+
+- **UserPolicy::removeMemberships** (`app/Policies/UserPolicy.php`) — nova ability: trajno uklanjanje članstava dozvoljeno superadminu ili `library_admin`-u koji deli biblioteku sa ciljnim korisnikom; `delete`/`forceDelete`/`manageMemberships` ostaju superadmin-only
+- **Ruta** (`routes/api.php`) — `DELETE /users/{user}/libraries` prebačena na `can:removeMemberships,user` (deactivate/activate ostaju na `manageMemberships`)
+- **`can.removeMemberships` u API-ju** (`app/Http/Resources/UserResource.php`) — dodat u `can` mapu; vraćena polja `deactivated_libraries` i `tags` koja su u WIP izmeni bila uklonjena
+- **DB konvencija za brisanje naloga** (`README.md`) — buduće poslovne/istorijske relacije ka `users` (pozajmice, rezervacije, članarine, izdavanja) koriste `ON DELETE RESTRICT`; pivot tabele stanja (`library_user`, `tag_user`) ostaju CASCADE; soft brisanje naloga nije blokirano
+- **Prepoznavanje FK povrede** (`app/Http/Controllers/UsersController.php`) — `forceDestroy` razlikuje FK `RESTRICT`/constraint povredu (PostgreSQL `23503`, MySQL `23000`/`1451`, SQLite `19`/`787`) i vraća 422 `cannot_force_delete`
+- **Opisi akcija u membership modalu** (`frontend/.../user-membership-modal.tsx`, i18n sr-Cyrl/Latn/en) — objašnjenja šta rade uklanjanje članstva, deaktivacija naloga i brisanje celog naloga; admin biblioteke u modalu vidi samo „Ukloni članstvo"
+- **Bulk dodela/uklanjanje tagova po aktivnoj biblioteci** (`app/Http/Controllers/UserTagsController.php`) — bulk `assign`/`remove` više ne primaju `library_id`; biblioteka se rešava iz aktivne biblioteke aktera (`ActiveLibraryService::resolve`), bez aktivne → 422 `active_library_required`
+- **„Biblioteka" filter u pretrazi korisnika samo za superadmina** (`app/Http/Controllers/UsersController.php`) — ne-superadminu se `library_id` ignoriše; superadmin sa `library_id` ne sužava dodatno na aktivnu biblioteku (filter ima prednost)
+- **Vidljivost opisa akcija po roli** (`frontend/.../user-membership-modal.tsx`) — pun blok „Šta se dešava?" vidi samo superadmin; admin biblioteke vidi samo opis uklanjanja članstva
+- **Testovi** (`tests/Feature/Auth/LibraryMembershipTest.php`, `UserCrudApiTest.php`, `UsersApiTest.php`, `UserTagAssignmentTest.php`) — admin može ukloniti članstvo iz svoje biblioteke (204), ne može iz tuđe (422), ne može deactivate/activate (403), ne može soft/force obrisati nalog (403); edit čuva članstva u bibliotekama kojima admin ne upravlja; DB-level FK blokada force delete-a (422); library_admin filter ignoriše `library_id`; superadmin filter ima prednost nad aktivnom bibliotekom; bulk assign/remove koristi aktivnu biblioteku i traži je (422)
+
+### Changed
+
+- **UserMembershipsController::destroy** — za ne-superadmina svaki `library_ids` mora biti u bibliotekama kojima upravlja; inače 422 `library_not_managed`
+- **UsersController::update** — ne-superadmin pri izmeni korisnika spaja skup biblioteka sa postojećim članstvima u bibliotekama kojima ne upravlja (zatvoren „bypass" kojim se članstvo indirektno uklanjalo iz tuđe biblioteke)
+- **Frontend liste korisnika** (`users-page.tsx`) — ikonica za brisanje/uklanjanje (UserX) vidljiva i kada postoji samo `removeMemberships` (library admin); `Power` toggle ostaje superadmin
+- **Bulk tag modal** (`frontend/.../user-tags-bulk-modal.tsx`) — uklonjen Select biblioteke; koristi aktivnu biblioteku (read-only), bez aktivne → poruka i onemogućeno dugme; payload bez `library_id`
+- **Filter panel korisnika** (`frontend/.../user-filters-panel.tsx`) — polje „Biblioteka" prikazano samo superadminu; za admina se `library_id` čisti pre primene filtera
+- **Frontend build** (`frontend/dist/`) — regenerisani asseti
+
 ## [04.09.2026] README i .env.example: projektni pregled i uklanjanje konkretnih vrednosti iz šablona
 
 ### Changed

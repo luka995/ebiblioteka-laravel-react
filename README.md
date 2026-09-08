@@ -102,6 +102,35 @@ Auth endpointi:
 - `POST /api/v1/auth/password/...` — zaboravljena lozinka / reset
 - `PUT  /api/v1/auth/active-library` — kontekst aktivne biblioteke
 
+## Cloudflare Turnstile (kontakt forma)
+
+Javna kontakt forma (`POST /kontakt`) je zaštićena **Cloudflare Turnstile** (Managed mode)
+pored standardne Laravel validacije i rate limiting-a (`5/min` po IP adresi).
+
+- `TURNSTILE_SITE_KEY` — koristi frontend (Blade kontakt forma); javna vrednost.
+- `TURNSTILE_SECRET` — koristi **isključivo** Laravel backend (`TurnstileService`); nikada se ne izlaže frontend-u niti commit-uje.
+- `TURNSTILE_HOSTNAMES` — allowlist frontend hostname-a koji siteverify prihvata (npr. `demo.ebiblioteka.rs`); u produkciji nikada ne navoditi `localhost`/`127.0.0.1`.
+
+Vrednosti se podešavaju u Cloudflare dashboardu (Turnstile → Add widget), a zatim u `.env`:
+`TURNSTILE_SITE_KEY` i `TURNSTILE_SECRET`. Backend uvek verifikuje token server-side
+(fail-closed): bez uspešne verifikacije poruka se ne prihvata. Siteverify dodatno
+proverava `action` (`contact`) i `hostname` prema `TURNSTILE_HOSTNAMES`.
+
+## Referencijalni integritet (brisanje naloga)
+
+Hard brisanje naloga (`users`) na nivou baze štite FK `ON DELETE RESTRICT` na
+svim budućim poslovnim/istorijskim relacijama koje referenciraju nalog
+(pozajmice, rezervacije, članarine, istorija izdavanja i sl.): nalog sa
+zabeleženim zapisima ne može se obrisati — API vraća 422 `cannot_force_delete`.
+Pivot tabele trenutnog stanja (`library_user`, `tag_user`) ostaju `ON DELETE
+CASCADE`. Soft brisanje naloga (deaktivacija) relacijama nije blokirano.
+
+Pravilo pri kreiranju migracija budućih modula:
+
+```php
+$table->foreignId('user_id')->constrained()->restrictOnDelete();
+```
+
 ## Status implementacije
 
 > Bez naznake "u izradi" stavke su implementirane i pokrivene testovima.

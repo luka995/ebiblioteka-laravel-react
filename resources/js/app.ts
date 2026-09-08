@@ -14,3 +14,19 @@ document.querySelectorAll<HTMLAnchorElement>('[data-mobile-menu] a').forEach((li
     menuButton?.setAttribute('aria-expanded', 'false')
   })
 })
+
+const contactModal = document.querySelector<HTMLDialogElement>('[data-contact-modal]')
+
+if (contactModal) {
+  contactModal.showModal()
+
+  contactModal.querySelector('[data-contact-modal-close]')?.addEventListener('click', () => {
+    contactModal.close()
+  })
+
+  contactModal.addEventListener('click', (event) => {
+    if (event.target === contactModal) {
+      contactModal.close()
+    }
+  })
+}

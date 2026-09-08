@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { LibrarySelect, type LibraryOption } from '@/components/libraries/library-select'
+import { useAuth } from '@/hooks/useAuth'
 import type { Library, PaginatedResponse, Tag } from '@/types'
 
 interface TagFormModalProps {
@@ -22,7 +24,10 @@ interface TagFormModalProps {
 export function TagFormModal({ open, onClose, onSuccess, tag }: TagFormModalProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const { user } = useAuth()
   const editing = Boolean(tag)
+  const isSuperAdmin = user?.role === 'superadmin'
+  const [selectedLibrary, setSelectedLibrary] = useState<LibraryOption[]>([])
 
   const librariesQuery = useQuery({
     queryKey: ['libraries', 'options'],
@@ -30,6 +35,7 @@ export function TagFormModal({ open, onClose, onSuccess, tag }: TagFormModalProp
       const response = await api.get<PaginatedResponse<Library>>(`${apiPaths.libraries}?all=1`)
       return response.data
     },
+    enabled: !isSuperAdmin,
   })
 
   const schema = useMemo(
@@ -55,7 +61,16 @@ export function TagFormModal({ open, onClose, onSuccess, tag }: TagFormModalProp
       name: tag?.name ?? '',
       library_id: tag ? String(tag.library_id) : '',
     })
+    setSelectedLibrary(tag ? [{ id: tag.library_id, name: tag.library_name ?? '' }] : [])
   }, [open, tag, form])
+
+  const handleLibraryChange = (options: LibraryOption[]) => {
+    setSelectedLibrary(options)
+    form.setValue('library_id', options[0] ? String(options[0].id) : '', {
+      shouldValidate: false,
+      shouldDirty: true,
+    })
+  }
 
   const onSubmit = form.handleSubmit(async (values) => {
     const payload = {
@@ -118,20 +133,29 @@ export function TagFormModal({ open, onClose, onSuccess, tag }: TagFormModalProp
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('tags.libraryLabel')}</FormLabel>
-                  <Select value={field.value || undefined} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder={t('tags.libraryPlaceholder')} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {librariesQuery.data?.map((library) => (
-                        <SelectItem key={library.id} value={String(library.id)}>
-                          {library.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {isSuperAdmin ? (
+                    <LibrarySelect
+                      multiple={false}
+                      value={selectedLibrary}
+                      onChange={handleLibraryChange}
+                      placeholder={t('tags.libraryPlaceholder')}
+                    />
+                  ) : (
+                    <Select value={field.value || undefined} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder={t('tags.libraryPlaceholder')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {librariesQuery.data?.map((library) => (
+                          <SelectItem key={library.id} value={String(library.id)}>
+                            {library.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

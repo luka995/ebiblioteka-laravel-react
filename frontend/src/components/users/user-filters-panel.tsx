@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { LibrarySelect, type LibraryOption } from '@/components/libraries/library-select'
+import { useAuth } from '@/hooks/useAuth'
 import type { RoleOption } from '@/types'
 
 export interface UserFilters {
@@ -57,6 +58,8 @@ interface UserFiltersPanelProps {
 
 export function UserFiltersPanel({ filters, onApply, onClear }: UserFiltersPanelProps) {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const isSuperAdmin = user?.role === 'superadmin'
   const [draft, setDraft] = useState<UserFilters>(filters)
   const [selectedLibrary, setSelectedLibrary] = useState<LibraryOption[]>([])
 
@@ -80,6 +83,10 @@ export function UserFiltersPanel({ filters, onApply, onClear }: UserFiltersPanel
 
   const setField = (key: keyof UserFilters, value: string) => {
     setDraft((previous) => ({ ...previous, [key]: value }))
+  }
+
+  const apply = () => {
+    onApply(isSuperAdmin ? draft : { ...draft, library_id: '' })
   }
 
   return (
@@ -116,24 +123,26 @@ export function UserFiltersPanel({ filters, onApply, onClear }: UserFiltersPanel
           </Select>
         </div>
 
-        <div className="space-y-1.5">
-          <Label>{t('users.filters.library')}</Label>
-          <LibrarySelect
-            multiple={false}
-            value={selectedLibrary}
-            onChange={(options) => {
-              setSelectedLibrary(options)
-              setField('library_id', options[0] ? String(options[0].id) : '')
-            }}
-          />
-        </div>
+        {isSuperAdmin ? (
+          <div className="space-y-1.5">
+            <Label>{t('users.filters.library')}</Label>
+            <LibrarySelect
+              multiple={false}
+              value={selectedLibrary}
+              onChange={(options) => {
+                setSelectedLibrary(options)
+                setField('library_id', options[0] ? String(options[0].id) : '')
+              }}
+            />
+          </div>
+        ) : null}
       </div>
 
       <div className="mt-4 flex items-center justify-end gap-2">
         <Button variant="ghost" onClick={onClear}>
           {t('users.filters.clear')}
         </Button>
-        <Button variant="brand" onClick={() => onApply(draft)}>
+        <Button variant="brand" onClick={apply}>
           {t('users.filters.apply')}
         </Button>
       </div>

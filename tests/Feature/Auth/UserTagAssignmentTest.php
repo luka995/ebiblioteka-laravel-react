@@ -6,6 +6,7 @@ use App\Models\Place;
 use App\Models\Region;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\ActiveLibraryService;
 
 function tagAssignHeaders(array $extra = []): array
 {
@@ -108,4 +109,55 @@ test('non superadmin cannot assign tags', function () {
         'tag_ids' => [],
     ], tagAssignHeaders())
         ->assertForbidden();
+});
+
+test('bulk assign uses the active library instead of a library select', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeTagAssignLibrary();
+    $tag = Tag::factory()->for($library)->create();
+    $userOne = User::factory()->create();
+    $userTwo = User::factory()->create();
+    $userOne->libraries()->attach($library->id);
+    $userTwo->libraries()->attach($library->id);
+
+    app(ActiveLibraryService::class)->set($admin, $library->id);
+
+    $this->actingAs($admin)->postJson('/api/v1/users/tags/assign', [
+        'user_ids' => [$userOne->id, $userTwo->id],
+        'tag_ids' => [$tag->id],
+    ], tagAssignHeaders())->assertNoContent();
+
+    expect($userOne->fresh()->tags->pluck('id')->all())->toContain($tag->id)
+        ->and($userTwo->fresh()->tags->pluck('id')->all())->toContain($tag->id);
+});
+
+test('bulk remove uses the active library instead of a library select', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeTagAssignLibrary();
+    $tag = Tag::factory()->for($library)->create();
+    $user = User::factory()->create();
+    $user->libraries()->attach($library->id);
+    $user->tags()->attach($tag->id);
+
+    app(ActiveLibraryService::class)->set($admin, $library->id);
+
+    $this->actingAs($admin)->postJson('/api/v1/users/tags/remove', [
+        'user_ids' => [$user->id],
+        'tag_ids' => [$tag->id],
+    ], tagAssignHeaders())->assertNoContent();
+
+    expect($user->fresh()->tags->count())->toBe(0);
+});
+
+test('bulk assign requires an active library', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeTagAssignLibrary();
+    $tag = Tag::factory()->for($library)->create();
+    $user = User::factory()->create();
+    $user->libraries()->attach($library->id);
+
+    $this->actingAs($admin)->postJson('/api/v1/users/tags/assign', [
+        'user_ids' => [$user->id],
+        'tag_ids' => [$tag->id],
+    ], tagAssignHeaders())->assertStatus(422);
 });
