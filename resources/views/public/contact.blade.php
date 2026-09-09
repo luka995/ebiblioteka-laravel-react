@@ -9,7 +9,7 @@
     <main>
         <section class="contact-hero public-wrap">
             <div>
-                <div class="breadcrumbs"><a href="{{ route('home') }}">Почетна</a><span>/</span><strong>Контакт</strong></div>
+                <div class="breadcrumbs"><a href="{{ route('home', [], false) }}">Почетна</a><span>/</span><strong>Контакт</strong></div>
                 <span class="section-label">ЈАВИТЕ НАМ СЕ</span>
                 <h1 class="display">Хајде да<br><span class="serif">разговарамо.</span></h1>
                 <p>Имате питање о еБиблиотеци, желите да повежете своју школу или тражите решење за библиотеку? Пишите нам. Прави људи из Академије Филиповић одговориће вам у најкраћем року.</p>
@@ -55,7 +55,7 @@
                     </dialog>
                 @endif
 
-                <form action="{{ route('contact.store') }}" method="post">
+                <form action="{{ route('contact.store', [], false) }}" method="post">
                     @csrf
                     <div class="contact-form-grid">
                         <div class="contact-field">

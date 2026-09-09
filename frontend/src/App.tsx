@@ -14,6 +14,7 @@ import { LibraryDetailPage } from '@/pages/libraries/library-detail-page'
 import { RegionsPage } from '@/pages/regions/regions-page'
 import { PlacesPage } from '@/pages/places/places-page'
 import { TagsPage } from '@/pages/tags/tags-page'
+import { NewsPage } from '@/pages/news/news-page'
 import { ProfilePage } from '@/pages/profile/profile-page'
 import { SettingsPage } from '@/pages/settings/settings-page'
 
@@ -48,6 +49,7 @@ function App() {
           <Route path="/regions" element={<RegionsPage />} />
           <Route path="/places" element={<PlacesPage />} />
           <Route path="/tags" element={<TagsPage />} />
+          <Route path="/news" element={<NewsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>

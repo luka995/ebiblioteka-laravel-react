@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\LibrariesController;
+use App\Http\Controllers\NewsController;
 use App\Http\Controllers\PlacesController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegionsController;
@@ -63,4 +64,11 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::post('/tags', [TagsController::class, 'store'])->middleware('can:create,App\Models\Tag');
     Route::put('/tags/{tag}', [TagsController::class, 'update'])->middleware('can:update,tag');
     Route::delete('/tags/{tag}', [TagsController::class, 'destroy'])->middleware('can:delete,tag');
+
+    Route::get('/news', [NewsController::class, 'index'])->middleware('can:viewAny,App\Models\News');
+    Route::post('/news', [NewsController::class, 'store'])->middleware('can:create,App\Models\News');
+    Route::post('/news/upload-image', [NewsController::class, 'uploadImage'])->middleware('can:create,App\Models\News');
+    Route::get('/news/{news}', [NewsController::class, 'show'])->middleware('can:view,news');
+    Route::put('/news/{news}', [NewsController::class, 'update'])->middleware('can:update,news');
+    Route::delete('/news/{news}', [NewsController::class, 'destroy'])->middleware('can:delete,news');
 });

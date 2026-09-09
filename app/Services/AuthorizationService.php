@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Library;
+use App\Models\News;
 use App\Models\Place;
 use App\Models\Region;
 use App\Models\Tag;
@@ -61,6 +62,7 @@ class AuthorizationService
             'regions' => $this->collectionPermissions($actor, Region::class),
             'places' => $this->collectionPermissions($actor, Place::class),
             'tags' => $this->collectionPermissions($actor, Tag::class),
+            'news' => $this->collectionPermissions($actor, News::class),
         ];
     }
 }

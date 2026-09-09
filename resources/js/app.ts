@@ -30,3 +30,23 @@ if (contactModal) {
     }
   })
 }
+
+const newsLightbox = document.querySelector<HTMLDialogElement>('[data-news-lightbox]')
+
+if (newsLightbox) {
+  document.querySelectorAll<HTMLButtonElement>('[data-news-lightbox-trigger]').forEach((trigger) => {
+    trigger.addEventListener('click', () => {
+      newsLightbox.showModal()
+    })
+  })
+
+  newsLightbox.querySelector('[data-news-lightbox-close]')?.addEventListener('click', () => {
+    newsLightbox.close()
+  })
+
+  newsLightbox.addEventListener('click', (event) => {
+    if (event.target === newsLightbox) {
+      newsLightbox.close()
+    }
+  })
+}

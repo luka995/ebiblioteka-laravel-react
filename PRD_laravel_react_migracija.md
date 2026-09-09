@@ -698,6 +698,8 @@ Autorizacija:
   - godina izdanja,
   - UDK broj,
   - opis knjige.
+- Uz COBISS, podrzani su i eksterni izvori kao dodatak/fallback: Google Books API i
+  Open Library API. Detaljan redosled provere izvora definisan je u sekciji 4.5.1.
 - Pre cuvanja zapisa bibliotekar mora da ima mogucnost pregleda i izmene preuzetih
   podataka.
 - Ako kamera ili citac ne uspe da ocita oznaku, korisniku se prikazuje rucni unos
@@ -705,6 +707,21 @@ Autorizacija:
 - Rucni unos ima iste validacije i isti tok cuvanja kao podaci dobijeni skeniranjem.
 - Ako spoljasnji izvor nije dostupan ili ne vrati podatke, unos knjige se nastavlja
   kroz rucni unos bez blokiranja procesa.
+
+### Preporučeni workflow unosa knjige (ISBN)
+
+1. **Unos:** Korisnik ukuca ili skenira bar-kod (ISBN) knjige.
+2. **Fetch metadata:** Backend prvo proverava internu bazu (da ne ponavlja API
+   poziv). Ako knjige nema, poziva Google Books API, a zatim Open Library API kao
+   fallback. COBISS ili druga konfigurisana bibliotečka baza ostaje podržani izvor
+   (sekcija 4.5) uz ove eksterne servise.
+3. **Autofill forme:** Forma se popunjava dobijenim podacima (Autor, Naslov,
+   Izdavač, Povez, Godina, Opis, Slika).
+4. **Potvrda i korigovanje:** Korisnik proverava podatke i po potrebi izmeni/dopuni
+   polja.
+5. **Dodela signature/primerka:** Na sledećem koraku sistem automatski generiše
+   ili korisnik ručno unosi Inventarni broj primerka i UDK signaturu za smeštaj na
+   policu.
 
 ### Inventurna kontrola skeniranjem
 

@@ -1,7 +1,7 @@
 import { type ReactNode, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BadgeCheck, BookOpen, Building2, KeyRound, LayoutDashboard, LogOut, Map, MapPin, Menu, Settings, Tag, Users, X } from 'lucide-react'
+import { BadgeCheck, BookOpen, Building2, KeyRound, LayoutDashboard, LogOut, Map, MapPin, Menu, Newspaper, Settings, Tag, Users, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { BrandMark } from '@/components/brand'
 import { HeaderLibrarySwitcher } from '@/components/layout/library-switcher'
@@ -32,6 +32,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/regions', labelKey: 'nav.regions', icon: Map, permission: 'regions.viewAny' },
   { to: '/places', labelKey: 'nav.places', icon: MapPin, permission: 'places.viewAny' },
   { to: '/tags', labelKey: 'nav.tags', icon: Tag, permission: 'tags.viewAny' },
+  { to: '/news', labelKey: 'nav.news', icon: Newspaper, permission: 'news.viewAny' },
 ]
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -140,6 +141,7 @@ function pageTitleFor(pathname: string): string {
   if (pathname.startsWith('/regions')) return 'nav.regions'
   if (pathname.startsWith('/places')) return 'nav.places'
   if (pathname.startsWith('/tags')) return 'nav.tags'
+  if (pathname.startsWith('/news')) return 'nav.news'
   if (pathname.startsWith('/profile')) return 'nav.account'
   if (pathname.startsWith('/settings')) return 'nav.settings'
   return 'nav.dashboard'

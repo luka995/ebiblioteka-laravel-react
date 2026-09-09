@@ -11,3 +11,13 @@ export function laravelBaseUrl(): string {
 
   return isLocalHost() ? 'http://localhost:81' : 'https://demo.ebiblioteka.rs'
 }
+
+/**
+ * Pretvara root-relative putanju (npr. /storage/news/slika.png) u pun URL
+ * prema backendu. Admin (drugi origin) ne može da koristi relativnu putanju.
+ */
+export function storageUrl(path: string | null | undefined): string | null {
+  if (!path) return null
+  if (/^https?:\/\//.test(path)) return path
+  return `${laravelBaseUrl()}${path.startsWith('/') ? path : `/${path}`}`
+}

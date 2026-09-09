@@ -13,6 +13,7 @@
     "regions": "Regions",
     "places": "Places",
     "tags": "Tags",
+    "news": "News",
     "logout": "Log out",
     "account": "My account",
     "settings": "Settings"
@@ -273,6 +274,36 @@
     "clearSelection": "Clear selection",
     "selectAll": "Select all on page",
     "noLibraries": "The user is not attached to any library."
+  },
+  "news": {
+    "title": "News",
+    "add": "New article",
+    "search": "Search news...",
+    "empty": "No news articles.",
+    "openPublic": "Open on the public site",
+    "columns": {
+      "image": "Image",
+      "title": "Title",
+      "date": "Date"
+    },
+    "formTitle": "New article",
+    "formSubtitle": "Write and publish an article on the public site.",
+    "editTitle": "Edit article",
+    "editSubtitle": "Update the article content.",
+    "created": "Article published.",
+    "updated": "Article updated.",
+    "deleted": "Article deleted.",
+    "deleteConfirmTitle": "Delete article?",
+    "deleteConfirmText": "Are you sure you want to delete the article \"{{title}}\"?",
+    "fields": {
+      "title": "Title",
+      "titlePlaceholder": "Article title",
+      "date": "Publish date",
+      "image": "Thumbnail",
+      "chooseImage": "Choose image",
+      "removeImage": "Remove image",
+      "body": "Content"
+    }
   },
   "fields": {
     "firstName": "First name",

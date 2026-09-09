@@ -13,6 +13,7 @@
     "regions": "Regije",
     "places": "Mesta",
     "tags": "Tagovi",
+    "news": "Novosti",
     "logout": "Odjava",
     "account": "Moj nalog",
     "settings": "Podešavanja"
@@ -273,6 +274,36 @@
     "clearSelection": "Poništi izbor",
     "selectAll": "Izaberi sve na stranici",
     "noLibraries": "Korisnik nije pridružen nijednoj biblioteci."
+  },
+  "news": {
+    "title": "Novosti",
+    "add": "Nova novost",
+    "search": "Pretražite novosti...",
+    "empty": "Nema novosti.",
+    "openPublic": "Otvorite na javnom sajtu",
+    "columns": {
+      "image": "Slika",
+      "title": "Naslov",
+      "date": "Datum"
+    },
+    "formTitle": "Nova novost",
+    "formSubtitle": "Napišite i objavite novost na javnom sajtu.",
+    "editTitle": "Izmeni novost",
+    "editSubtitle": "Ažurirajte sadržaj novosti.",
+    "created": "Novost je objavljena.",
+    "updated": "Novost je izmenjena.",
+    "deleted": "Novost je obrisana.",
+    "deleteConfirmTitle": "Obriši novost?",
+    "deleteConfirmText": "Da li ste sigurni da želite da obrišete novost „{{title}}“?",
+    "fields": {
+      "title": "Naslov",
+      "titlePlaceholder": "Naslov novosti",
+      "date": "Datum objave",
+      "image": "Sličica (slika)",
+      "chooseImage": "Izaberi sliku",
+      "removeImage": "Ukloni sliku",
+      "body": "Sadržaj"
+    }
   },
   "fields": {
     "firstName": "Ime",

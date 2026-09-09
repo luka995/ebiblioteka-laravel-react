@@ -4,24 +4,7 @@
 
 @section('content')
 <div class="public-shell" id="top">
-    <header class="public-nav">
-        <a class="public-brand" href="#top" aria-label="еБиблиотека почетна">
-            <span class="public-brand-mark"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open" aria-hidden="true"><path d="M12 5v16"></path><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"></path></svg></span>
-            <span>еБиблиотека</span>
-        </a>
-        <nav class="public-links" data-mobile-menu aria-label="Главна навигација">
-            <a href="{{ route('libraries.index') }}">Каталог</a>
-            <a href="{{ route('libraries.index') }}">Библиотеке</a>
-            <a href="#preporuke">Препоруке</a>
-            <a href="{{ route('project.about') }}">О пројекту</a>
-            <a href="{{ route('contact.create') }}">Контакт</a>
-            <a class="mobile-login" href="{{ \App\Support\FrontendUrl::url() }}">Пријава</a>
-        </nav>
-        <div class="public-actions">
-            <a class="button button-blue" href="{{ \App\Support\FrontendUrl::url() }}">Пријава</a>
-        </div>
-        <button class="public-menu-toggle" data-menu-toggle type="button" aria-label="Отвори мени" aria-expanded="false">☰</button>
-    </header>
+    @include('public.partials.nav')
 
     <main>
         <section class="public-wrap hero-section" id="katalog">
@@ -29,7 +12,7 @@
                 <span class="section-label">ДИГИТАЛНИ ПРОСТОР ЗА ЧИТАОЦЕ</span>
                 <h1 class="display">Ваша школска библиотека — <span class="highlight">на једном месту.</span></h1>
                 <p>Претражите књижни фонд, проверите доступност и резервишите књигу — брзо, једноставно и у сваком тренутку.</p>
-                <form class="hero-search" action="{{ route('libraries.index') }}" method="get">
+                <form class="hero-search" action="{{ route('libraries.index', [], false) }}" method="get">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
                     <input name="q" type="search" placeholder="Претражите наслове, ауторе..." aria-label="Претражите каталог">
                     <button type="submit">Претражи <span>↗</span></button>
@@ -60,7 +43,7 @@
             <span class="section-label">ЗАШТО еБИБЛИОТЕКА</span>
             <div class="about-grid">
                 <h2 class="display">Библиотека не мора да буде <span class="serif">компликована.</span></h2>
-                <div class="about-copy"><p>Од прве препоруке до последње странице, еБиблиотека окупља оно што је важно: књиге, људе и места на којима се чита.</p><a class="text-link" href="{{ route('project.about') }}">Упознајте пројекат <span>↗</span></a></div>
+                <div class="about-copy"><p>Од прве препоруке до последње странице, еБиблиотека окупља оно што је важно: књиге, људе и места на којима се чита.</p><a class="text-link" href="{{ route('project.about', [], false) }}">Упознајте пројекат <span>↗</span></a></div>
             </div>
         </section>
 
@@ -79,20 +62,29 @@
         </section>
 
         <section class="public-wrap library-section" id="biblioteke">
-            <div class="library-intro"><span class="section-label">МРЕЖА БИБЛИОТЕКА</span><h2 class="display">Ваша следећа <span class="serif">станица.</span></h2><p>Упознајте библиотеке које своје полице отварају дигитално. Пронађите место за себе, близу вас.</p><a class="button button-outline" href="{{ route('libraries.index') }}">Погледајте све библиотеке <span>↗</span></a></div>
+            <div class="library-intro"><span class="section-label">МРЕЖА БИБЛИОТЕКА</span><h2 class="display">Ваша следећа <span class="serif">станица.</span></h2><p>Упознајте библиотеке које своје полице отварају дигитално. Пронађите место за себе, близу вас.</p><a class="button button-outline" href="{{ route('libraries.index', [], false) }}">Погледајте све библиотеке <span>↗</span></a></div>
             <div class="library-list">
                 @foreach ($libraries as $index => $library)
-                    <a class="library-item" href="{{ route('libraries.show', $library['slug']) }}"><span class="library-number">0{{ $index + 1 }}</span><span class="library-emblem" style="background: {{ $library['color'] }}">{{ $library['mark'] }}</span><span class="library-name"><strong>{{ \App\Support\Text::cyr($library['name']) }}</strong><small>{{ \App\Support\Text::cyr($library['city']) }}</small></span><span class="library-count">{{ \App\Support\Text::cyr($library['count']) }}</span><span class="library-arrow">↗</span></a>
+                    <a class="library-item" href="{{ route('libraries.show', $library['slug'], false) }}"><span class="library-number">0{{ $index + 1 }}</span><span class="library-emblem" style="background: {{ $library['color'] }}">{{ $library['mark'] }}</span><span class="library-name"><strong>{{ \App\Support\Text::cyr($library['name']) }}</strong><small>{{ \App\Support\Text::cyr($library['city']) }}</small></span><span class="library-count">{{ \App\Support\Text::cyr($library['count']) }}</span><span class="library-arrow">↗</span></a>
                 @endforeach
                 <div class="library-more">+ још 24 библиотеке ускоро</div>
             </div>
         </section>
 
         <section class="public-wrap news-section" id="novosti">
-            <div class="section-heading"><div><span class="section-label">ИЗ НАШЕ ЗАЈЕДНИЦЕ</span><h2 class="display">Читајте између <span class="serif">редова.</span></h2></div><a class="text-link" href="#novosti">Све новости <span>↗</span></a></div>
+            <div class="section-heading"><div><span class="section-label">ИЗ НАШЕ ЗАЈЕДНИЦЕ</span><h2 class="display">Читајте између <span class="serif">редова.</span></h2></div><a class="text-link" href="{{ route('news.index', [], false) }}">Све новости <span>↗</span></a></div>
             <div class="news-grid">
                 @foreach ($news as $index => $item)
-                    <article class="news-card {{ $index === 0 ? 'news-card-featured' : '' }}"><div class="news-top"><span>{{ \App\Support\Text::cyr($item['category']) }}</span><span>{{ \App\Support\Text::cyr($item['date']) }}</span></div><h3>{{ \App\Support\Text::cyr($item['title']) }}</h3><a href="#novosti" aria-label="Прочитајте: {{ \App\Support\Text::cyr($item['title']) }}">↗</a></article>
+                    <article class="news-card {{ $index === 0 ? 'news-card-featured' : '' }}">
+                        @if ($item->image_url)
+                            <div class="news-thumb"><img src="{{ $item->image_url }}" alt="" loading="lazy"></div>
+                        @endif
+                        <div class="news-body">
+                            <div class="news-top"><span>НОВОСТ</span><span>{{ $item->date->format('d.m.Y.') }}</span></div>
+                            <h3><a href="{{ route('news.show', $item->slug, false) }}">{{ \App\Support\Text::cyr($item->title) }}</a></h3>
+                        </div>
+                        <a class="news-more" href="{{ route('news.show', $item->slug, false) }}" aria-label="Прочитајте: {{ \App\Support\Text::cyr($item->title) }}">↗</a>
+                    </article>
                 @endforeach
             </div>
         </section>
@@ -104,7 +96,7 @@
 
         <footer class="public-wrap public-footer">
         <div class="footer-main"><a class="public-brand" href="#top"><span class="public-brand-mark"><svg xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open" aria-hidden="true"><path d="M12 5v16"></path><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"></path></svg></span><span>еБиблиотека</span></a><p>Библиотека за модерна времена.</p></div>
-        <nav class="footer-links" aria-label="Подножје"><a href="{{ route('libraries.index') }}">Каталог</a><a href="{{ route('libraries.index') }}">Библиотеке</a><a href="#preporuke">Препоруке</a><a href="{{ route('project.about') }}">О пројекту</a><a href="{{ route('contact.create') }}">Контакт</a></nav>
+        <nav class="footer-links" aria-label="Подножје"><a href="{{ route('libraries.index', [], false) }}">Каталог</a><a href="{{ route('libraries.index', [], false) }}">Библиотеке</a><a href="#preporuke">Препоруке</a><a href="{{ route('project.about', [], false) }}">О пројекту</a><a href="{{ route('contact.create', [], false) }}">Контакт</a></nav>
         <div class="footer-bottom"><span>© 2026 еБиблиотека</span><span>Са пажњом према читаоцима.</span></div>
     </footer>
 </div>

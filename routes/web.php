@@ -3,6 +3,7 @@
 use App\Http\Controllers\PublicContactController;
 use App\Http\Controllers\PublicHomeController;
 use App\Http\Controllers\PublicLibraryController;
+use App\Http\Controllers\PublicNewsController;
 use App\Http\Controllers\PublicProjectController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,3 +15,5 @@ Route::get('/biblioteke', [PublicLibraryController::class, 'index'])->name('libr
 Route::get('/biblioteke/{library}/kategorija/{category}', [PublicLibraryController::class, 'category'])->name('libraries.category');
 Route::get('/biblioteke/{library}/kategorija/{category}/knjiga/{book}', [PublicLibraryController::class, 'book'])->name('libraries.book');
 Route::get('/biblioteke/{library}', [PublicLibraryController::class, 'show'])->name('libraries.show');
+Route::get('/novosti', [PublicNewsController::class, 'index'])->name('news.index');
+Route::get('/novosti/{news:slug}', [PublicNewsController::class, 'show'])->name('news.show');

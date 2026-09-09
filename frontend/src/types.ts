@@ -89,6 +89,19 @@ export interface Library {
   can?: ResourceCan
 }
 
+export interface News {
+  id: number
+  title: string
+  slug: string
+  body: string
+  date: string
+  image: string | null
+  image_url: string | null
+  created_at: string
+  updated_at: string
+  can?: ResourceCan
+}
+
 export interface Paginated<T> {
   data: T[]
   links?: unknown

@@ -23,7 +23,7 @@ test('contact page presents academy information and a contact form', function ()
     $response->assertSee('Академија Филиповић');
     $response->assertSee('Установа или организација');
     $response->assertSee('Ваша порука');
-    $response->assertSee(route('contact.store'));
+    $response->assertSee(route('contact.store', [], false));
 });
 
 test('contact form validates and sends the message to the academy', function () {

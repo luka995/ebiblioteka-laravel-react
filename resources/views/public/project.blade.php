@@ -9,11 +9,11 @@
     <main>
         <section class="project-hero public-wrap">
             <div class="project-hero-main">
-                <div class="breadcrumbs"><a href="{{ route('home') }}">Почетна</a><span>/</span><strong>О пројекту</strong></div>
+                <div class="breadcrumbs"><a href="{{ route('home', [], false) }}">Почетна</a><span>/</span><strong>О пројекту</strong></div>
                 <span class="section-label">НОВА ВЕРЗИЈА еБИБЛИОТЕКЕ</span>
                 <h1 class="display">Библиотека<br><span class="serif">која прати</span><br>ваш дан.</h1>
                 <p class="project-lead">Академија Филиповић развија нову верзију софтвера <strong>еБиблиотека.rs</strong> — са мање администрације за библиотекаре и једноставнијим приступом књигама за ученике, наставнике и родитеље.</p>
-                <div class="project-hero-actions"><a class="button button-blue" href="{{ route('libraries.index') }}">Истражите каталог <span>↗</span></a><a class="text-link" href="https://akademijafilipovic.com" target="_blank" rel="noreferrer">Сазнајте више о Академији <span>↗</span></a></div>
+                <div class="project-hero-actions"><a class="button button-blue" href="{{ route('libraries.index', [], false) }}">Истражите каталог <span>↗</span></a><a class="text-link" href="https://akademijafilipovic.com" target="_blank" rel="noreferrer">Сазнајте више о Академији <span>↗</span></a></div>
             </div>
             <div class="project-hero-panel">
                 <div class="project-panel-top"><span>еБиблиотека</span><span>01 / 04</span></div>
@@ -48,7 +48,7 @@
 
         <section class="project-cta public-wrap">
             <div><span class="section-label">ПОГЛЕДАЈТЕ КАКО РАДИ</span><h2 class="display">Добра библиотека<br><span class="serif">почиње добрим подацима.</span></h2></div>
-            <div class="project-cta-copy"><p>Истражите јавни каталог нове еБиблиотеке и погледајте како библиотеке, категорије и наслови изгледају у новом дигиталном простору.</p><a class="button button-yellow" href="{{ route('libraries.index') }}">Отворите каталог <span>↗</span></a></div>
+            <div class="project-cta-copy"><p>Истражите јавни каталог нове еБиблиотеке и погледајте како библиотеке, категорије и наслови изгледају у новом дигиталном простору.</p><a class="button button-yellow" href="{{ route('libraries.index', [], false) }}">Отворите каталог <span>↗</span></a></div>
         </section>
     </main>
 

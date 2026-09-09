@@ -116,6 +116,40 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return (await response.json()) as T
 }
 
+async function upload<T>(path: string, file: File, fields: Record<string, string> = {}): Promise<T> {
+  await ensureCsrf()
+
+  const formData = new FormData()
+  formData.append('image', file)
+  Object.entries(fields).forEach(([key, value]) => formData.append(key, value))
+
+  const response = await fetch(`${laravelBaseUrl()}${path}`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: {
+      Accept: 'application/json',
+      'X-Locale': currentLocaleHeader(),
+      'X-XSRF-TOKEN': readCookie('XSRF-TOKEN') ?? '',
+    },
+    body: formData,
+  })
+
+  if (!response.ok) {
+    let data: unknown = null
+    try {
+      data = await response.json()
+    } catch {
+      // ignore
+    }
+    if (response.status === 401) {
+      unauthorizedHandler?.()
+    }
+    throw new ApiError(response.status, data)
+  }
+
+  return (await response.json()) as T
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: 'POST', body }),
@@ -123,6 +157,7 @@ export const api = {
   patch: <T>(path: string, body?: unknown) => request<T>(path, { method: 'PATCH', body }),
   delete: <T>(path: string, body?: unknown) => request<T>(path, { method: 'DELETE', body }),
   del: <T>(path: string, body?: unknown) => request<T>(path, { method: 'DELETE', body }),
+  upload: <T>(path: string, file: File, fields?: Record<string, string>) => upload<T>(path, file, fields),
 }
 
 export const apiPaths = {
@@ -157,6 +192,9 @@ export const apiPaths = {
   places: '/api/v1/places',
   tags: '/api/v1/tags',
   tag: (id: number) => `/api/v1/tags/${id}`,
+  news: '/api/v1/news',
+  newsItem: (id: number) => `/api/v1/news/${id}`,
+  newsUploadImage: '/api/v1/news/upload-image',
   region: (id: number) => `/api/v1/regions/${id}`,
   place: (id: number) => `/api/v1/places/${id}`,
   roles: '/api/v1/roles',

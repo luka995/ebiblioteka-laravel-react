@@ -1,5 +1,25 @@
 # Changelog
 
+## [09.09.2026] News modul: vesti sa rich-text editorom i javnim stranicama
+
+### Added
+
+- **News model i migracija** (`app/Models/News.php`, `database/migrations/2026_09_09_000001_create_news_table.php`) — `title`, `slug`, `body`, `date`, `image`; `image_url` pristupnik vraća root-relative URL sličice iz storage diska
+- **News CRUD API** (`app/Http/Controllers/NewsController.php`, `app/Http/Requests/StoreNewsRequest.php`, `app/Http/Requests/UpdateNewsRequest.php`, `app/Http/Resources/NewsResource.php`) — `index/show/store/update/destroy` plus `POST /news/upload-image` (upload inline slika iz rich-text editora u `news` direktorijum)
+- **NewsPolicy** (`app/Policies/NewsPolicy.php`, `app/Services/AuthorizationService.php`, `routes/api.php`) — autorizacija po `viewAny/create/view/update/delete`; `news` dodato u globalne permisije
+- **NewsFactory i NewsSeeder** (`database/factories/NewsFactory.php`, `database/seeders/NewsSeeder.php`, `database/seeders/DatabaseSeeder.php`) — tri uvodne vesti (idempotentno po `slug`-u)
+- **Javne stranice vesti** (`app/Http/Controllers/PublicNewsController.php`, `resources/views/public/news/index.blade.php`, `resources/views/public/news/show.blade.php`, `routes/web.php`) — listing `/novosti` i detalj `/novosti/{news:slug}`; detalj ima naslovnu sliku sa lightbox dijalogom (`<dialog>`) i „Још новости" sekciju
+- **Admin frontend za vesti** (`frontend/src/pages/news/news-page.tsx`, `frontend/src/components/news/news-form-modal.tsx`, `frontend/src/components/ui/rich-text-editor.tsx`, `frontend/src/lib/api.ts`, `frontend/src/types.ts`) — tabela vesti, forma za kreiranje/izmenu i rich-text editor (TipTap + `@tiptap/extension-image`) sa upload-om slika kroz toolbar, paste i drag&drop
+- **i18n** (`frontend/src/i18n/locales/{en,sr-Cyrl,sr-Latn}.json`) — prevodi za news modul na tri jezika
+- **Testovi** (`tests/Feature/Auth/NewsCrudApiTest.php`, `tests/Feature/PublicNewsTest.php`) — CRUD autorizacija i javni listing/detalj
+
+### Changed
+
+- **Navigacija** (`resources/views/public/partials/nav.blade.php`, `resources/views/public/home.blade.php`) — link „Новости" i „Све новости ↗" vode na `news.index`; nav izdvojen u partial (home koristi `@include`), anchor vs route po `request()->routeIs('home')`
+- **Javni layout** (`resources/views/public/{contact,libraries,project}.blade.php`, `resources/views/public/partials/footer.blade.php`) — usaglašeno korišćenje nav partial-a i dodati linkovi ka novostima
+- **Stilovi vesti** (`resources/css/app.css`, `resources/js/app.ts`) — `news-detail-hero`/`news-detail-cover`/`.news-lightbox` stilovi, lightbox JS logika (otvaranje/zatvaranje dijaloga)
+- **PRD** (`PRD_laravel_react_migracija.md`) — dokumentacija news modula
+
 ## [08.09.2026] Security: Cloudflare Turnstile zaštita kontakt forme
 
 ### Added
