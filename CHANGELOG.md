@@ -1,5 +1,12 @@
 # Changelog
 
+## [10.09.2026] Auth: prikaz/skrivanje lozinke na prijavi
+
+### Changed
+
+- **Login stranica** (`frontend/src/pages/auth/login-page.tsx`) — dodato dugme sa `Eye`/`EyeOff` ikonom unutar password polja koje prebacuje `type` između `password` i `text` (`showPassword` stanje); input dobija `pr-10` da ne preklapa ikonu
+- **i18n** (`frontend/src/i18n/locales/{en,sr-Cyrl,sr-Latn}.json`) — dodati ključevi `auth.showPassword` i `auth.hidePassword` sa prevodima na tri jezika (uključujući `aria-label`)
+
 ## [09.09.2026] News modul: vesti sa rich-text editorom i javnim stranicama
 
 ### Added

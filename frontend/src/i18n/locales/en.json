@@ -28,6 +28,8 @@
     "remember": "Remember me on this device",
     "submit": "Sign in",
     "forgotLink": "Forgot your password?",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "loginError": "Sign in failed. Check your email and password.",
     "forgotTitle": "Forgot password",
     "forgotSubtitle": "Enter the email address of your account and we will send you a link to reset your password.",

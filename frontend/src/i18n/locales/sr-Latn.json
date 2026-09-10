@@ -28,6 +28,8 @@
     "remember": "Zapamti me na ovom uređaju",
     "submit": "Prijava",
     "forgotLink": "Zaboravili ste lozinku?",
+    "showPassword": "Prikaži lozinku",
+    "hidePassword": "Sakrij lozinku",
     "loginError": "Prijava nije uspela. Proverite adresu i lozinku.",
     "forgotTitle": "Zaboravljena lozinka",
     "forgotSubtitle": "Unesite email adresu naloga i poslaćemo vam link za promenu lozinke.",
