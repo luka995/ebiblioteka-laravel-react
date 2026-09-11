@@ -1,5 +1,33 @@
 # Changelog
 
+## [11.09.2026] Korisnici: EAN-13 bar-kodovi, štampa nalepnica i pretraga u oba pisma
+
+### Added
+
+- **EAN-13 bar-kod generator** (`app/Support/BarCode.php`) — server-side generisanje sa kontrolnom cifrom (`calculateChecksum`), `validate()` i `generateFromBaseNumber()` za inventarne brojeve; atomska dodela osnove kroz `bar_code_seq` tabelu sa `lockForUpdate` u transakciji
+- **Sekvenca bar-kodova** (`database/migrations/2026_09_11_000003_create_bar_code_seq_table.php`) — legacy-kompatibilna `bar_code_seq` tabela (inicijalna vrednost 0) radi jednostavnije kasnije migracije podataka
+- **SVG bar-kod i DTO nalepnice** (`app/Support/BarCodeImage.php`, `app/Support/BarcodeLabel.php`) — rezolucijski nezavisan EAN-13 prikaz (95 modula, spajanje susednih crta) i nosilac podataka jedne nalepnice sa rezervisanim `captions`
+- **PDF servis nalepnica** (`app/Services/BarcodePdfService.php`, `app/Enums/BarcodePrintFormat.php`, `composer.json`) — TCPDF `write1DBarcode` bez GD zavisnosti; `label` (62×29 mm, jedan bar-kod po strani) i `a4` (4×12 mreža, 48 nalepnica, row-major)
+- **Zahtevi i resurs** (`app/Http/Requests/PrintUserBarcodeRequest.php`, `app/Http/Requests/PrintUserBulkBarcodeRequest.php`, `app/Http/Resources/UserDetailResource.php`) — validacija `format`/`user_ids` i `bar_code_svg` u detaljima korisnika
+- **Bulk bar-kod endpointi i autorizacija** (`app/Http/Controllers/UsersController.php`, `app/Policies/UserPolicy.php`, `routes/api.php`) — `POST /users/bulk/barcode` (regeneracija) i `POST /users/bulk/barcode/print` (štampa), plus `GET /users/{user}/barcode` i `GET /users/{user}/barcode/print`; `guardBulkBarcodeScope()` ograničava admina biblioteke na članove aktivne biblioteke, a štampa odbija korisnike bez validnog bar-koda (422)
+- **Frontend bar-kod komponente** (`frontend/src/components/users/user-barcode.tsx`, `barcode-print-format-picker.tsx`, `user-barcode-print-modal.tsx`, `user-barcode-bulk-print-modal.tsx`, `user-barcode-bulk-modal.tsx`, `frontend/src/pages/users/user-detail-page.tsx`, `frontend/src/pages/users/users-page.tsx`) — prikaz bar-koda, izbor formata i modalne akcije za pojedinačnu i bulk štampu/regeneraciju
+- **Preuzimanje PDF-a** (`frontend/src/lib/api.ts`) — `api.download()` sa POST + CSRF i `downloadBlob()` helper
+- **Transliterovana pretraga** (`app/Support/Text.php`, `app/Queries/Concerns/AppliesTransliteratedSearch.php`, `app/Queries/LibraryFilters.php`, `app/Queries/TagFilters.php`) — `Text::lat()`, `Text::searchVariants()` i zajednički trait koji gradi ILIKE uslove za oba pisma; ekstrahovani filteri za biblioteke i tagove
+- **i18n i validacija** (`lang/{en,sr-Cyrl,sr-Latn}/barcode.php`, `frontend/src/i18n/locales/{en,sr-Cyrl,sr-Latn}.json`, `lang/{en,sr-Cyrl,sr-Latn}/validation.php`) — prevodi formata i akcija, `users_without_barcode` poruka
+- **Testovi** (`tests/Unit/{BarCode,BarCodeImage,BarcodePdfService,BarcodePrintFormat,Text}Test.php`, `tests/Feature/Auth/{UserBarcode,UserBarcodePrint,UserBulkBarcode,UserBulkBarcodePrint,SearchTransliteration}Test.php`) — checksum, SVG sekvenca, PDF layout, transliteracija, scope i autorizacija
+
+### Changed
+
+- **Kreiranje korisnika** (`app/Http/Requests/StoreUserRequest.php`, `app/Http/Controllers/UsersController.php`) — klijentski `bar_code` se ignoriše; server uvek dodeljuje validan EAN-13
+- **Izmena korisnika** (`app/Http/Requests/UpdateUserRequest.php`, `app/Http/Controllers/UsersController.php`, `frontend/src/components/users/user-form-modal.tsx`) — umesto ručnog unosa bar-koda, opcija `regenerate_barcode` (checkbox) eksplicitno traži novi kod
+- **Pretraga korisnika** (`app/Queries/UserFilters.php`, `frontend/src/components/users/user-filters-panel.tsx`) — `UserFilters` koristi transliterovane varijante i normalizuje skenirani bar-kod (dodaje vodeću nulu na 12 cifara); filter panel je `<form>` sa submit-om
+- **Filteri biblioteka i tagova** (`app/Http/Controllers/LibrariesController.php`, `app/Http/Controllers/TagsController.php`) — inline pretraga zamenjena `LibraryFilters`/`TagFilters` klasama
+- **PRD** (`PRD_laravel_react_migracija.md`, `PRD_laravel_react_migracija.html`) — dokumentovana EAN-13 generacija, `bar_code_seq` i pravilo bez skraćivanja inventarnog broja
+
+### Removed
+
+- **`GET /users/barcode/next`** (`routes/api.php`, `app/Http/Controllers/UsersController.php`, `frontend/src/lib/api.ts`) — uklonjen endpoint i `nextBarcode()` metoda; frontend više ne poziva `barcodeNext`
+
 ## [11.09.2026] Kategorije i autori: CRUD moduli sa hijerarhijom i autorizacijom
 
 ### Added

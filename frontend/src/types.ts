@@ -40,6 +40,7 @@ export interface User {
   city: string | null
   post_code: string | null
   bar_code: string | null
+  bar_code_svg?: string | null
   email_verified_at: string | null
   created_at: string
   updated_at: string

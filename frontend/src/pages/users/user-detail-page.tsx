@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, CalendarClock, KeyRound, LibraryBig, Pencil, Tag, Trash2 } from 'lucide-react'
+import { ArrowLeft, CalendarClock, KeyRound, LibraryBig, Pencil, Printer, Tag, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api, apiPaths } from '@/lib/api'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -13,6 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageLoader } from '@/components/ui/loader'
 import { UserFormModal } from '@/components/users/user-form-modal'
+import { UserBarcode } from '@/components/users/user-barcode'
+import { UserBarcodePrintModal } from '@/components/users/user-barcode-print-modal'
 import { UserMembershipModal } from '@/components/users/user-membership-modal'
 import { UserTagModal } from '@/components/users/user-tag-modal'
 import { useAuth } from '@/hooks/useAuth'
@@ -55,6 +57,7 @@ export function UserDetailPage() {
   const [membershipOpen, setMembershipOpen] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [tagOpen, setTagOpen] = useState(false)
+  const [printOpen, setPrintOpen] = useState(false)
 
   const userQuery = useQuery({
     queryKey: ['users', userId],
@@ -169,6 +172,13 @@ export function UserDetailPage() {
               </Button>
             ) : null}
           </div>
+
+          <UserBarcode value={target.bar_code} svg={target.bar_code_svg}>
+            <Button variant="outline" size="sm" onClick={() => setPrintOpen(true)}>
+              <Printer />
+              {t('users.printBarcode')}
+            </Button>
+          </UserBarcode>
         </CardContent>
       </Card>
 
@@ -275,6 +285,10 @@ export function UserDetailPage() {
             void queryClient.invalidateQueries({ queryKey: ['users'] })
           }}
         />
+      ) : null}
+
+      {printOpen ? (
+        <UserBarcodePrintModal open={printOpen} user={target} onClose={() => setPrintOpen(false)} />
       ) : null}
 
       <ChangePasswordDialog open={passwordOpen} onClose={() => setPasswordOpen(false)} target={target} />

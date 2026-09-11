@@ -46,6 +46,12 @@ const TEXT_FIELDS: Array<{ key: keyof UserFilters; label: string }> = [
 
 const ALL_VALUE = 'all'
 
+function normalizeBarcode(value: string): string {
+  const trimmed = value.trim()
+
+  return /^\d{12}$/.test(trimmed) ? `0${trimmed}` : trimmed
+}
+
 export function countActiveFilters(filters: UserFilters): number {
   return Object.values(filters).filter((value) => value !== '').length
 }
@@ -86,11 +92,19 @@ export function UserFiltersPanel({ filters, onApply, onClear }: UserFiltersPanel
   }
 
   const apply = () => {
-    onApply(isSuperAdmin ? draft : { ...draft, library_id: '' })
+    const normalized = { ...draft, bar_code: normalizeBarcode(draft.bar_code) }
+
+    onApply(isSuperAdmin ? normalized : { ...normalized, library_id: '' })
   }
 
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <form
+      className="rounded-lg border bg-card p-4"
+      onSubmit={(event) => {
+        event.preventDefault()
+        apply()
+      }}
+    >
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {TEXT_FIELDS.map(({ key, label }) => (
           <div key={key} className="space-y-1.5">
@@ -99,6 +113,9 @@ export function UserFiltersPanel({ filters, onApply, onClear }: UserFiltersPanel
               id={`filter-${key}`}
               value={draft[key]}
               onChange={(event) => setField(key, event.target.value)}
+              onBlur={(event) => {
+                if (key === 'bar_code') setField(key, normalizeBarcode(event.currentTarget.value))
+              }}
             />
           </div>
         ))}
@@ -139,13 +156,13 @@ export function UserFiltersPanel({ filters, onApply, onClear }: UserFiltersPanel
       </div>
 
       <div className="mt-4 flex items-center justify-end gap-2">
-        <Button variant="ghost" onClick={onClear}>
+        <Button type="button" variant="ghost" onClick={onClear}>
           {t('users.filters.clear')}
         </Button>
-        <Button variant="brand" onClick={apply}>
+        <Button type="submit" variant="brand">
           {t('users.filters.apply')}
         </Button>
       </div>
-    </div>
+    </form>
   )
 }

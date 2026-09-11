@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Eye, Filter, Pencil, Plus, Power, Tag, UserX } from 'lucide-react'
+import { Barcode, Eye, Filter, Pencil, Plus, Power, Printer, Tag, UserX } from 'lucide-react'
 import { toast } from 'sonner'
 import { api, apiPaths } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,8 @@ import {
   type BulkMembershipMode,
 } from '@/components/users/user-memberships-bulk-modal'
 import { UserTagsBulkModal } from '@/components/users/user-tags-bulk-modal'
+import { UserBarcodeBulkModal } from '@/components/users/user-barcode-bulk-modal'
+import { UserBarcodeBulkPrintModal } from '@/components/users/user-barcode-bulk-print-modal'
 import {
   countActiveFilters,
   EMPTY_USER_FILTERS,
@@ -83,6 +85,8 @@ export function UsersPage() {
   const [bulkTagOpen, setBulkTagOpen] = useState(false)
   const [bulkMembershipMode, setBulkMembershipMode] = useState<BulkMembershipMode | null>(null)
   const [bulkMembershipIds, setBulkMembershipIds] = useState<number[]>([])
+  const [bulkBarcodeOpen, setBulkBarcodeOpen] = useState(false)
+  const [bulkBarcodePrintOpen, setBulkBarcodePrintOpen] = useState(false)
 
   const usersQuery = useUsersQuery(page, filters)
 
@@ -208,6 +212,22 @@ export function UsersPage() {
             >
               <Tag />
               {t('tags.bulkRemove')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBulkBarcodeOpen(true)}
+            >
+              <Barcode />
+              {t('users.bulkRegenerateBarcode')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBulkBarcodePrintOpen(true)}
+            >
+              <Printer />
+              {t('users.bulkPrintBarcode')}
             </Button>
             <Button
               variant="outline"
@@ -437,6 +457,27 @@ export function UsersPage() {
             clearSelection()
             void usersQuery.refetch()
           }}
+        />
+      ) : null}
+
+      {bulkBarcodeOpen ? (
+        <UserBarcodeBulkModal
+          open={bulkBarcodeOpen}
+          userIds={Array.from(selectedIds)}
+          onClose={() => setBulkBarcodeOpen(false)}
+          onSuccess={(message) => {
+            toast.success(message)
+            clearSelection()
+            void usersQuery.refetch()
+          }}
+        />
+      ) : null}
+
+      {bulkBarcodePrintOpen ? (
+        <UserBarcodeBulkPrintModal
+          open={bulkBarcodePrintOpen}
+          userIds={Array.from(selectedIds)}
+          onClose={() => setBulkBarcodePrintOpen(false)}
         />
       ) : null}
 

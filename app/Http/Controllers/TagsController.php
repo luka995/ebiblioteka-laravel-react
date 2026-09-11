@@ -6,6 +6,7 @@ use App\Http\Requests\StoreTagRequest;
 use App\Http\Requests\UpdateTagRequest;
 use App\Http\Resources\TagResource;
 use App\Models\Tag;
+use App\Queries\TagFilters;
 use App\Services\AuthorizationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,13 +24,11 @@ class TagsController extends Controller
             ->withCount('users')
             ->when(! $request->user()->isSuperAdmin(), function ($q) use ($request) {
                 $q->whereIn('library_id', $request->user()->libraries()->pluck('libraries.id'));
-            })
-            ->when($request->filled('library_id'), fn ($q) => $q->where('library_id', $request->integer('library_id')))
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $term = trim((string) $request->string('search'));
-                $q->where('name', 'ilike', "%{$term}%");
-            })
-            ->orderBy('name');
+            });
+
+        (new TagFilters)->apply($query, $request->only(['search', 'library_id']));
+
+        $query->orderBy('name');
 
         $permissions = $auth->collectionPermissions($request->user(), Tag::class);
 

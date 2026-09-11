@@ -610,6 +610,14 @@ Mapiranje iz Symfony/FOS:<br>
 <li>Verifikacija integriteta i brojeva (legacy vs PostgreSQL)</li>
 <li>Pilot rollout po jednoj biblioteci</li>
 </ol>
+<h3>Barkodovi korisnika i fizickih jedinica</h3>
+<ul>
+<li>Korisnicki barkod je server-side generisan validan EAN-13. Osnova se dobija iz legacy-kompatibilne <code>bar_code_seq</code> tabele, uz atomsku transakciju i zakljucavanje reda.</li>
+<li>PostgreSQL <code>SEQUENCE</code> je moguca alternativa, ali se zadrzava legacy tabela radi jednostavnije kasnije migracije podataka.</li>
+<li>Barkod fizicke jedinice generise se pri njenom kreiranju iz inventarnog broja: inventarni broj se dopunjava nulama do 12 cifara, a zatim se izracunava EAN-13 kontrolna cifra.</li>
+<li>Inventarni broj duzi od 12 cifara je tvrda greska pri cuvanju i ne sme se automatski skracivati.</li>
+<li>Stampanje nalepnica samo ucitava i stampa vec sacuvan barkod, bez ponovnog generisanja.</li>
+</ul>
 <h2>7.2 Kriticne tacke</h2>
 <ul>
 <li>Mapiranje razlika tipova i SQL semantike iz legacy baze ka PostgreSQL</li>

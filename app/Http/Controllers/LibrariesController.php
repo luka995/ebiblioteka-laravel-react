@@ -6,6 +6,7 @@ use App\Http\Requests\StoreLibraryRequest;
 use App\Http\Requests\UpdateLibraryRequest;
 use App\Http\Resources\LibraryResource;
 use App\Models\Library;
+use App\Queries\LibraryFilters;
 use App\Services\AuthorizationService;
 use App\Services\LibraryMembershipService;
 use Illuminate\Http\JsonResponse;
@@ -25,14 +26,10 @@ class LibrariesController extends Controller
                 $query->whereIn('id', $request->user()->libraries()->pluck('libraries.id'));
             })
             ->when(! $request->boolean('deleted'), fn ($query) => $query->where('deleted', false))
-            ->when($request->filled('search'), function ($query) use ($request) {
-                $term = trim((string) $request->string('search'));
-                $query->where(function ($query) use ($term) {
-                    $query->where('name', 'ilike', "%{$term}%")
-                        ->orWhere('address', 'ilike', "%{$term}%")
-                        ->orWhereHas('place', fn ($place) => $place->where('name', 'ilike', "%{$term}%"));
-                });
-            })
+            ->when(
+                $request->filled('search'),
+                fn ($query) => (new LibraryFilters)->apply($query, $request->only('search'))
+            )
             ->latest();
 
         $permissions = $auth->collectionPermissions($request->user(), Library::class);

@@ -48,6 +48,7 @@ return [
         'category_has_children' => 'Kategorija se ne može obrisati jer sadrži potkategorije.',
         'category_parent_invalid' => 'Izabrana roditeljska kategorija nije važeća.',
         'author_duplicate' => 'Autor sa tim imenom već postoji u izabranoj biblioteci.',
+        'users_without_barcode' => 'Broj izabranih korisnika bez važećeg bar-koda: :count.',
     ],
 
     'attributes' => [

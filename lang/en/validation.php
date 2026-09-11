@@ -195,6 +195,7 @@ return [
         'category_has_children' => 'The category cannot be deleted because it contains subcategories.',
         'category_parent_invalid' => 'The selected parent category is invalid.',
         'author_duplicate' => 'An author with that name already exists in the selected library.',
+        'users_without_barcode' => 'Selected users without a valid barcode: :count.',
     ],
 
     /*

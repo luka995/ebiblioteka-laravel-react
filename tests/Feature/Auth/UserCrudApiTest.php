@@ -5,6 +5,7 @@ use App\Models\Library;
 use App\Models\Place;
 use App\Models\Region;
 use App\Models\User;
+use App\Support\BarCode;
 
 function crudApiHeaders(array $extra = []): array
 {
@@ -45,7 +46,10 @@ test('superadmin can update a user without changing password', function () {
     $place = Place::factory()->for($region)->create();
     $library = Library::factory()->for($place)->create();
 
-    $user = User::factory()->create(['email' => 'before@example.com']);
+    $user = User::factory()->create([
+        'email' => 'before@example.com',
+        'bar_code' => '0000000001236',
+    ]);
 
     $this->actingAs($admin)->putJson("/api/v1/users/{$user->id}", [
         'first_name' => 'Ana',
@@ -64,7 +68,26 @@ test('superadmin can update a user without changing password', function () {
 
     expect($fresh->email)->toBe('after@example.com')
         ->and($fresh->password)->toBe($user->password)
+        ->and($fresh->bar_code)->toBe('0000000001236')
         ->and($fresh->libraries->pluck('id')->all())->toContain($library->id);
+});
+
+test('superadmin can regenerate a users barcode explicitly', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $user = User::factory()->create(['bar_code' => '0000000001236']);
+
+    $this->actingAs($admin)->putJson("/api/v1/users/{$user->id}", [
+        'first_name' => $user->first_name,
+        'last_name' => $user->last_name,
+        'email' => $user->email,
+        'role' => $user->role->value,
+        'regenerate_barcode' => true,
+    ], crudApiHeaders())
+        ->assertOk()
+        ->assertJsonPath('data.bar_code', fn ($barcode) => BarCode::validate($barcode));
+
+    expect($user->fresh()->bar_code)->not->toBe('0000000001236')
+        ->and(BarCode::validate($user->fresh()->bar_code))->toBeTrue();
 });
 
 test('superadmin can soft delete a user', function () {

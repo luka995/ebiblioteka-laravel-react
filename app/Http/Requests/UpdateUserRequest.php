@@ -47,12 +47,7 @@ class UpdateUserRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],
             'post_code' => ['nullable', 'string', 'max:20'],
-            'bar_code' => [
-                'nullable',
-                'string',
-                'digits:13',
-                Rule::unique('users', 'bar_code')->ignore($user),
-            ],
+            'regenerate_barcode' => ['sometimes', 'boolean'],
             'libraries' => ['nullable', 'array'],
             'libraries.*' => ['integer', Rule::exists('libraries', 'id')],
         ];

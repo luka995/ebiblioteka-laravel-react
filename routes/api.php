@@ -29,10 +29,13 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::delete('/users/memberships', [UserMembershipsController::class, 'bulkRemove'])->middleware('can:bulkRemoveMemberships,App\Models\User');
     Route::post('/users/bulk/deactivate', [UsersController::class, 'bulkDestroy'])->middleware('can:bulkDelete,App\Models\User');
     Route::delete('/users/bulk/force', [UsersController::class, 'bulkForceDestroy'])->middleware('can:bulkForceDelete,App\Models\User');
+    Route::post('/users/bulk/barcode', [UsersController::class, 'bulkRegenerateBarcode'])->middleware('can:bulkRegenerateBarcode,App\Models\User');
+    Route::post('/users/bulk/barcode/print', [UsersController::class, 'bulkPrintBarcode'])->middleware('can:bulkPrintBarcode,App\Models\User');
 
-    Route::get('/users/barcode/next', [UsersController::class, 'nextBarcode'])->middleware('can:create,App\Models\User');
     Route::get('/users', [UsersController::class, 'index'])->middleware('can:viewAny,App\Models\User');
     Route::post('/users', [UsersController::class, 'store'])->middleware('can:create,App\Models\User');
+    Route::get('/users/{user}/barcode', [UsersController::class, 'barcode'])->middleware('can:view,user');
+    Route::get('/users/{user}/barcode/print', [UsersController::class, 'printBarcode'])->middleware('can:view,user');
     Route::get('/users/{user}', [UsersController::class, 'show'])->middleware('can:view,user');
     Route::put('/users/{user}', [UsersController::class, 'update'])->middleware('can:update,user');
     Route::put('/users/{user}/password', [UsersController::class, 'updatePassword'])->middleware('can:update,user');

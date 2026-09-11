@@ -87,4 +87,24 @@ class UserPolicy
     {
         return $actor->isSuperAdmin();
     }
+
+    /**
+     * Bulk regeneracija bar-kodova — superadmin ili admin biblioteke.
+     *
+     * Admin biblioteke je u kontroleru ograničen na članove aktivne biblioteke.
+     */
+    public function bulkRegenerateBarcode(User $actor): bool
+    {
+        return $actor->isSuperAdmin() || $actor->isLibraryAdmin();
+    }
+
+    /**
+     * Bulk stampa bar-kodova — superadmin ili admin biblioteke.
+     *
+     * Admin biblioteke je u kontroleru ograničen na članove aktivne biblioteke.
+     */
+    public function bulkPrintBarcode(User $actor): bool
+    {
+        return $actor->isSuperAdmin() || $actor->isLibraryAdmin();
+    }
 }

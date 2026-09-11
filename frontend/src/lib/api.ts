@@ -116,6 +116,69 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return (await response.json()) as T
 }
 
+interface DownloadOptions {
+  method?: 'GET' | 'POST'
+  body?: unknown
+}
+
+async function download(path: string, options: DownloadOptions = {}): Promise<Blob> {
+  const method = options.method ?? 'GET'
+  const mutating = method !== 'GET'
+
+  if (mutating) {
+    await ensureCsrf()
+  }
+
+  const headers: Record<string, string> = {
+    Accept: 'application/json',
+    'X-Locale': currentLocaleHeader(),
+  }
+
+  let body: string | undefined
+
+  if (options.body !== undefined) {
+    headers['Content-Type'] = 'application/json'
+    body = JSON.stringify(options.body)
+  }
+
+  if (mutating) {
+    headers['X-XSRF-TOKEN'] = readCookie('XSRF-TOKEN') ?? ''
+  }
+
+  const response = await fetch(`${laravelBaseUrl()}${path}`, {
+    method,
+    credentials: 'include',
+    headers,
+    body,
+  })
+
+  if (!response.ok) {
+    let data: unknown = null
+    try {
+      data = await response.json()
+    } catch {
+      // ignore
+    }
+    if (response.status === 401) {
+      unauthorizedHandler?.()
+    }
+    throw new ApiError(response.status, data)
+  }
+
+  return await response.blob()
+}
+
+export function downloadBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.append(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(url)
+}
+
 async function upload<T>(path: string, file: File, fields: Record<string, string> = {}): Promise<T> {
   await ensureCsrf()
 
@@ -158,6 +221,7 @@ export const api = {
   delete: <T>(path: string, body?: unknown) => request<T>(path, { method: 'DELETE', body }),
   del: <T>(path: string, body?: unknown) => request<T>(path, { method: 'DELETE', body }),
   upload: <T>(path: string, file: File, fields?: Record<string, string>) => upload<T>(path, file, fields),
+  download: (path: string, options?: DownloadOptions) => download(path, options),
 }
 
 export const apiPaths = {
@@ -171,6 +235,8 @@ export const apiPaths = {
   resetPassword: '/api/v1/auth/reset-password',
   users: '/api/v1/users',
   user: (id: number) => `/api/v1/users/${id}`,
+  userBarcode: (id: number) => `/api/v1/users/${id}/barcode`,
+  userBarcodePrint: (id: number, format: string) => `/api/v1/users/${id}/barcode/print?format=${format}`,
   userPassword: (id: number) => `/api/v1/users/${id}/password`,
   userForce: (id: number) => `/api/v1/users/${id}/force`,
   userLibrariesDeactivate: (id: number) => `/api/v1/users/${id}/libraries/deactivate`,
@@ -184,7 +250,8 @@ export const apiPaths = {
   usersMembershipsRemove: '/api/v1/users/memberships',
   usersBulkDeactivate: '/api/v1/users/bulk/deactivate',
   usersBulkForce: '/api/v1/users/bulk/force',
-  barcodeNext: '/api/v1/users/barcode/next',
+  usersBulkBarcode: '/api/v1/users/bulk/barcode',
+  usersBulkBarcodePrint: '/api/v1/users/bulk/barcode/print',
   libraries: '/api/v1/libraries',
   library: (id: number) => `/api/v1/libraries/${id}`,
   libraryRestore: (id: number) => `/api/v1/libraries/${id}/restore`,

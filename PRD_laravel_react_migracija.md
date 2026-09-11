@@ -975,8 +975,16 @@ Odluke primenjene u prvoj fazi (login/forgot/reset, role model, dashboard shell)
   korisniku se ne uvodi. Model "mesto" (place) pripada regiji; biblioteka pripada
   mestu (bez dupliranja region/city na biblioteci kao u legacy-ju).
 - **`users` tabela** je proširena: role (enum), `username`, `first_name`,
-  `last_name`, `jmbg`, `address`, `city`, `post_code`, `bar_code` (auto-generisano
-  kroz API, 13 cifara).
+  `last_name`, `jmbg`, `address`, `city`, `post_code`, `bar_code` (server-side
+  generisan validan EAN-13). Za korisnike se osnova dobija iz legacy-kompatibilne
+  `bar_code_seq` tabele u atomskoj transakciji sa zakljucavanjem reda. PostgreSQL
+  `SEQUENCE` je moguca alternativa, ali je zadrzana legacy tabela radi jednostavnije
+  kasnije migracije podataka.
+- Barkod fizicke jedinice generise se pri njenom kreiranju iz inventarnog broja:
+  inventarni broj se dopunjava nulama do 12 cifara, a zatim se izracunava EAN-13
+  kontrolna cifra. Inventarni broj duzi od 12 cifara je tvrda greska pri cuvanju;
+  ne sme se automatski skracivati. Stampanje nalepnica samo ucitava i stampa
+  vec sacuvan barkod, bez ponovnog generisanja.
 - **Dashboard (React)**: `/login`, `/forgot-password`, `/reset-password`
   (query: email+token), a iza autentikacije `/` (dashboard početna, prazan widget
   prostor — widgeti po tipu naloga dolaze kasnije), `/users`, `/libraries`.

@@ -2,21 +2,30 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\BarcodePrintFormat;
+use App\Http\Requests\PrintUserBarcodeRequest;
+use App\Http\Requests\PrintUserBulkBarcodeRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserPasswordRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Http\Resources\UserDetailResource;
 use App\Http\Resources\UserResource;
+use App\Models\Library;
 use App\Models\User;
 use App\Queries\UserFilters;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
+use App\Services\BarcodePdfService;
 use App\Services\LibraryMembershipService;
 use App\Services\Mail\UserMailService;
 use App\Support\BarCode;
+use App\Support\BarCodeImage;
+use App\Support\BarcodeLabel;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -73,7 +82,7 @@ class UsersController extends Controller
         $user = new User($data);
         $user->name = trim($data['first_name'].' '.$data['last_name']);
         $user->password = Hash::make($plainPassword);
-        $user->bar_code = $data['bar_code'] ?? BarCode::generate();
+        $user->bar_code = BarCode::generate();
         $user->save();
 
         $memberships->syncMemberships($user, $data['libraries'] ?? []);
@@ -83,19 +92,44 @@ class UsersController extends Controller
         return new UserResource($user->load(['libraries', 'librariesWithTrashed', 'tags']));
     }
 
-    public function nextBarcode(): JsonResponse
+    public function show(User $user): UserDetailResource
     {
-        return response()->json(['bar_code' => BarCode::generate()]);
+        return new UserDetailResource($user->load(['libraries', 'librariesWithTrashed', 'tags']));
     }
 
-    public function show(User $user): UserResource
+    public function barcode(User $user): Response
     {
-        return new UserResource($user->load(['libraries', 'librariesWithTrashed', 'tags']));
+        if ($user->bar_code === null || ! BarCode::validate($user->bar_code)) {
+            abort(404);
+        }
+
+        return response(BarCodeImage::render($user->bar_code), 200, [
+            'Content-Type' => 'image/svg+xml; charset=UTF-8',
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
+    }
+
+    public function printBarcode(PrintUserBarcodeRequest $request, User $user, BarcodePdfService $pdf): Response
+    {
+        if ($user->bar_code === null || ! BarCode::validate($user->bar_code)) {
+            abort(404);
+        }
+
+        $format = BarcodePrintFormat::from($request->validated('format'));
+
+        $contents = $pdf->render([new BarcodeLabel($user->bar_code)], $format);
+
+        return response($contents, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => sprintf('attachment; filename="barkod-%s.pdf"', $user->bar_code),
+        ]);
     }
 
     public function update(UpdateUserRequest $request, User $user, LibraryMembershipService $memberships): UserResource
     {
         $data = $request->validated();
+        $regenerateBarcode = (bool) ($data['regenerate_barcode'] ?? false);
+        unset($data['regenerate_barcode']);
 
         if (isset($data['password'])) {
             $data['password'] = Hash::make($data['password']);
@@ -103,6 +137,11 @@ class UsersController extends Controller
 
         $user->fill($data);
         $user->name = trim($user->first_name.' '.$user->last_name);
+
+        if ($regenerateBarcode) {
+            $user->bar_code = BarCode::generate();
+        }
+
         $user->save();
 
         if ($request->has('libraries')) {
@@ -205,6 +244,110 @@ class UsersController extends Controller
         }
 
         return response()->json(status: 204);
+    }
+
+    /**
+     * Bulk regeneracija bar-kodova — superadmin (svi) ili admin biblioteke
+     * (samo članovi aktivne biblioteke). Ceo batch je atomski.
+     */
+    public function bulkRegenerateBarcode(Request $request): JsonResponse
+    {
+        $userIds = $this->bulkUserIds($request);
+        $actor = $request->user();
+
+        if ($error = $this->guardBulkBarcodeScope($actor, $userIds)) {
+            return $error;
+        }
+
+        DB::transaction(function () use ($userIds) {
+            User::whereIn('id', $userIds)->get()->each(function (User $user) {
+                $user->bar_code = BarCode::generate();
+                $user->save();
+            });
+        });
+
+        return response()->json(status: 204);
+    }
+
+    /**
+     * Bulk stampa bar-kodova za izabrane korisnike.
+     *
+     * PDF se generise iz postojecih bar-kodova (bez regeneracije). Ako bilo koji
+     * izabrani korisnik ne postoji ili nema vazeci bar-kod, ceo zahtev se odbija.
+     */
+    public function bulkPrintBarcode(PrintUserBulkBarcodeRequest $request, BarcodePdfService $pdf): Response|JsonResponse
+    {
+        $userIds = $request->userIds();
+        $actor = $request->user();
+
+        if ($error = $this->guardBulkBarcodeScope($actor, $userIds)) {
+            return $error;
+        }
+
+        $users = User::whereIn('id', $userIds)
+            ->get()
+            ->sortBy(fn (User $user) => array_search($user->id, $userIds, true))
+            ->values();
+
+        $printable = $users->filter(
+            fn (User $user) => $user->bar_code !== null && BarCode::validate($user->bar_code)
+        );
+
+        if ($printable->count() !== count($userIds)) {
+            return response()->json([
+                'message' => __('validation.custom.users_without_barcode', [
+                    'count' => count($userIds) - $printable->count(),
+                ]),
+            ], 422);
+        }
+
+        $labels = $printable
+            ->map(fn (User $user) => new BarcodeLabel($user->bar_code))
+            ->all();
+
+        $format = BarcodePrintFormat::from($request->validated('format'));
+
+        $contents = $pdf->render($labels, $format);
+
+        return response($contents, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="barkodovi.pdf"',
+        ]);
+    }
+
+    /**
+     * Zajednicka provera opsega za bulk bar-kod operacije: superadmin (svi) ili
+     * admin biblioteke (samo clanovi aktivne biblioteke).
+     *
+     * @param  array<int, int>  $userIds
+     */
+    private function guardBulkBarcodeScope(User $actor, array $userIds): ?JsonResponse
+    {
+        if ($actor->isSuperAdmin()) {
+            return null;
+        }
+
+        $library = app(ActiveLibraryService::class)->resolve($actor);
+
+        if (! $library instanceof Library) {
+            return response()->json(['message' => __('validation.custom.active_library_required')], 422);
+        }
+
+        $libraryId = (int) $library->id;
+
+        if (! $actor->managesLibrary($libraryId)) {
+            return response()->json(['message' => __('validation.custom.library_not_managed')], 422);
+        }
+
+        $nonMembers = User::whereIn('id', $userIds)
+            ->whereDoesntHave('libraries', fn ($q) => $q->whereKey($libraryId))
+            ->exists();
+
+        if ($nonMembers) {
+            return response()->json(['message' => __('validation.custom.user_not_library_member')], 422);
+        }
+
+        return null;
     }
 
     /**

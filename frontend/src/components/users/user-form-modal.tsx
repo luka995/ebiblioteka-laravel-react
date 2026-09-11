@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { Building2, RefreshCw } from 'lucide-react'
+import { Building2 } from 'lucide-react'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { LibrarySelect, type LibraryOption } from '@/components/libraries/library-select'
 import { useAuth } from '@/hooks/useAuth'
 import type { RoleOption, User } from '@/types'
@@ -30,7 +31,7 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
   const editing = Boolean(user)
   const isSuperAdmin = actor?.role === 'superadmin'
   const [selectedLibraries, setSelectedLibraries] = useState<LibraryOption[]>([])
-  const [barCode, setBarCode] = useState<string>('')
+  const [regenerateBarcode, setRegenerateBarcode] = useState(false)
 
   const rolesQuery = useQuery({
     queryKey: ['roles', 'assignable'],
@@ -98,18 +99,8 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
       post_code: user?.post_code ?? '',
     })
     setSelectedLibraries(isSuperAdmin ? (user?.libraries ?? []) : [])
-    setBarCode(user?.bar_code ?? '')
-    if (!user) void regenerateBarcode()
+    setRegenerateBarcode(false)
   }, [open, user, form]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const regenerateBarcode = async () => {
-    try {
-      const response = await api.get<{ bar_code: string }>(apiPaths.barcodeNext)
-      setBarCode(response.bar_code)
-    } catch {
-      // ignore
-    }
-  }
 
   const onSubmit = form.handleSubmit(async (values) => {
     const libraryIds = isSuperAdmin
@@ -128,7 +119,7 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
       address: values.address || null,
       city: values.city || null,
       post_code: values.post_code || null,
-      bar_code: barCode,
+      ...(editing ? { regenerate_barcode: regenerateBarcode } : {}),
       ...(libraryIds !== null ? { libraries: libraryIds } : {}),
       ...(values.password ? { password: values.password } : {}),
     }
@@ -356,21 +347,16 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
               </div>
             ) : null}
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <Label htmlFor="bar_code">{t('fields.barcode')}</Label>
-                <button
-                  type="button"
-                  onClick={() => void regenerateBarcode()}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                >
-                  <RefreshCw className="size-3" />
-                  {t('users.regenerate')}
-                </button>
-              </div>
-              <Input id="bar_code" readOnly value={barCode} className="bg-muted/60 font-mono" />
-              <p className="text-xs text-muted-foreground">{t('users.barcodeAuto')}</p>
-            </div>
+            {editing ? (
+              <label className="flex items-start gap-3 rounded-md border bg-muted/40 px-3 py-2.5 text-sm">
+                <Checkbox
+                  checked={regenerateBarcode}
+                  onCheckedChange={(checked) => setRegenerateBarcode(checked === true)}
+                  className="mt-0.5"
+                />
+                <span>{t('users.regenerateBarcode')}</span>
+              </label>
+            ) : null}
 
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="outline" onClick={onClose}>

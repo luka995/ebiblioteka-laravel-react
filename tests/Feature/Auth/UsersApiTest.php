@@ -6,6 +6,7 @@ use App\Models\Place;
 use App\Models\Region;
 use App\Models\User;
 use App\Services\ActiveLibraryService;
+use App\Support\BarCode;
 
 function adminApiHeaders(array $extra = []): array
 {
@@ -63,20 +64,49 @@ test('superadmin can create a user with a library membership and auto barcode', 
 
     expect($created->role)->toBe(UserRole::User)
         ->and($created->bar_code)->toMatch('/^\d{13}$/')
+        ->and(BarCode::validate($created->bar_code))->toBeTrue()
         ->and($created->libraries->pluck('id')->all())->toContain($library->id);
 });
 
-test('next barcode endpoint returns a unique 13 digit code', function () {
+test('server ignores a client-provided barcode when creating a user', function () {
     $admin = User::factory()->superAdmin()->create();
-    User::factory()->create(['bar_code' => '1000000000001']);
 
-    $response = $this->actingAs($admin)->getJson('/api/v1/users/barcode/next', adminApiHeaders());
+    $response = $this->actingAs($admin)->postJson('/api/v1/users', [
+        'first_name' => 'Milan',
+        'last_name' => 'Milić',
+        'email' => 'milan@example.com',
+        'password' => 'secret123',
+        'role' => 'user',
+        'bar_code' => '1234567890128',
+    ], adminApiHeaders());
 
-    $response->assertOk();
-    $code = $response->json('bar_code');
+    $response->assertCreated();
+    $created = User::where('email', 'milan@example.com')->firstOrFail();
 
-    expect($code)->toMatch('/^\d{13}$/')
-        ->and(User::where('bar_code', $code)->exists())->toBeFalse();
+    expect($created->bar_code)->not->toBe('1234567890128')
+        ->and(BarCode::validate($created->bar_code))->toBeTrue();
+});
+
+test('server allocates sequential EAN bases for users', function () {
+    $admin = User::factory()->superAdmin()->create();
+
+    $create = fn (string $email) => $this->actingAs($admin)->postJson('/api/v1/users', [
+        'first_name' => 'Test',
+        'last_name' => 'Korisnik',
+        'email' => $email,
+        'password' => 'secret123',
+        'role' => 'user',
+    ], adminApiHeaders())->assertCreated();
+
+    $create('first@example.com');
+    $create('second@example.com');
+
+    $first = User::where('email', 'first@example.com')->value('bar_code');
+    $second = User::where('email', 'second@example.com')->value('bar_code');
+
+    expect((int) substr($second, 0, 12))->toBe(((int) substr($first, 0, 12)) + 1)
+        ->and(BarCode::validate($first))->toBeTrue()
+        ->and(BarCode::validate($second))->toBeTrue();
 });
 
 test('roles assignable reflects actor role', function () {
@@ -219,6 +249,21 @@ test('superadmin can filter users by column', function () {
         ->assertOk()
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.city', 'Beograd');
+});
+
+test('barcode search restores a dropped leading zero from a twelve digit scan', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $target = User::factory()->create([
+        'email' => 'barcode@example.com',
+        'bar_code' => '0123456789012',
+    ]);
+    User::factory()->create(['email' => 'other@example.com', 'bar_code' => '0123456789020']);
+
+    $this->actingAs($admin)
+        ->getJson('/api/v1/users?bar_code=123456789012', adminApiHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $target->id);
 });
 
 test('superadmin can filter users by role', function () {

@@ -3,17 +3,21 @@
 namespace App\Queries;
 
 use App\Enums\UserRole;
+use App\Queries\Concerns\AppliesTransliteratedSearch;
+use App\Support\BarCode;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Kolonska pretraga korisnika (Laravel ekvivalent Yii2 SearchModel klase).
  *
  * Prima mapu filter parametara i gradi upit po pojedinačnim kolonama,
- * zamenjujući catch-all `search` ILIKE pretragu.
+ * zamenjujući catch-all `search` ILIKE pretragu. Tekstualne kolone se
+ * pretražuju i u ćirilici i u latinici.
  */
 class UserFilters
 {
+    use AppliesTransliteratedSearch;
+
     /**
      * Mapiranje filter parametra -> DB kolona (pretraga ILIKE, case-insensitive).
      *
@@ -34,13 +38,15 @@ class UserFilters
      */
     public function apply(Builder $query, array $filters): Builder
     {
-        $operator = DB::connection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
-
         foreach (self::TEXT_FILTERS as $param => $column) {
             $value = trim((string) ($filters[$param] ?? ''));
 
+            if ($param === 'bar_code') {
+                $value = BarCode::normalizeSearchInput($value);
+            }
+
             if ($value !== '') {
-                $query->where($column, $operator, "%{$value}%");
+                $this->whereTransliterated($query, $column, $value);
             }
         }
 
