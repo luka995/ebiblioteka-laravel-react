@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\Author;
+use App\Models\Category;
 use App\Models\Library;
 use App\Models\News;
 use App\Models\Place;
@@ -62,6 +64,8 @@ class AuthorizationService
             'regions' => $this->collectionPermissions($actor, Region::class),
             'places' => $this->collectionPermissions($actor, Place::class),
             'tags' => $this->collectionPermissions($actor, Tag::class),
+            'categories' => $this->collectionPermissions($actor, Category::class),
+            'authors' => $this->collectionPermissions($actor, Author::class),
             'news' => $this->collectionPermissions($actor, News::class),
         ];
     }

@@ -73,6 +73,28 @@ export interface Tag {
   can?: ResourceCan
 }
 
+export interface Category {
+  id: number
+  name: string
+  library_id: number
+  library_name?: string
+  parent_id: number | null
+  parent_name?: string | null
+  parent_full_name?: string | null
+  full_name?: string
+  children_count?: number
+  can?: ResourceCan
+}
+
+export interface Author {
+  id: number
+  name: string
+  display_name: string
+  library_id: number
+  library_name?: string
+  can?: ResourceCan
+}
+
 export interface Library {
   id: number
   name: string

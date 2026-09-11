@@ -16,7 +16,9 @@
     "news": "Novosti",
     "logout": "Odjava",
     "account": "Moj nalog",
-    "settings": "Podešavanja"
+    "settings": "Podešavanja",
+    "categories": "Kategorije",
+    "authors": "Autori"
   },
   "auth": {
     "heroTitle": "Radni prostor za biblioteke i čitaoce",
@@ -363,5 +365,57 @@
     "showing": "Prikaz {{from}}–{{to}} od {{total}}",
     "previous": "Prethodna strana",
     "next": "Sledeća strana"
+  },
+  "categories": {
+    "title": "Kategorije",
+    "add": "Nova kategorija",
+    "search": "Pretražite kategorije...",
+    "empty": "Nema kategorija.",
+    "columns": {
+      "name": "Naziv",
+      "library": "Biblioteka",
+      "children": "Potkategorije"
+    },
+    "formTitle": "Nova kategorija",
+    "formSubtitle": "Dodajte kategoriju u okviru biblioteke.",
+    "editTitle": "Izmeni kategoriju",
+    "editSubtitle": "Ažurirajte podatke kategorije.",
+    "created": "Kategorija je kreirana.",
+    "updated": "Kategorija je izmenjena.",
+    "deleted": "Kategorija je obrisana.",
+    "deleteConfirmTitle": "Obriši kategoriju?",
+    "deleteConfirmText": "Da li ste sigurni da želite da obrišete kategoriju „{{name}}“?",
+    "libraryLabel": "Biblioteka",
+    "libraryPlaceholder": "Izaberite biblioteku",
+    "libraryRequired": "Izaberite biblioteku.",
+    "parentLabel": "Roditeljska kategorija",
+    "parentPlaceholder": "Pretražite roditeljsku kategoriju...",
+    "selectLibraryHint": "Izaberite biblioteku da biste izabrali roditeljsku kategoriju.",
+    "noResults": "Nema rezultata."
+  },
+  "authors": {
+    "title": "Autori",
+    "add": "Novi autor",
+    "search": "Pretražite autore...",
+    "empty": "Nema autora.",
+    "columns": {
+      "name": "Ime i prezime",
+      "library": "Biblioteka"
+    },
+    "formTitle": "Novi autor",
+    "formSubtitle": "Dodajte autora u okviru biblioteke.",
+    "editTitle": "Izmeni autora",
+    "editSubtitle": "Ažurirajte podatke autora.",
+    "created": "Autor je kreiran.",
+    "updated": "Autor je izmenjen.",
+    "deleted": "Autor je obrisan.",
+    "deleteConfirmTitle": "Obriši autora?",
+    "deleteConfirmText": "Da li ste sigurni da želite da obrišete autora „{{name}}“?",
+    "libraryLabel": "Biblioteka",
+    "libraryPlaceholder": "Izaberite biblioteku",
+    "libraryRequired": "Izaberite biblioteku.",
+    "nameLabel": "Ime i prezime",
+    "namePlaceholder": "Ime i prezime",
+    "nameDescription": "Unesite ime i prezime autora. Ako unesete „Prezime, Ime“, prikaz će ostati takav. Ako unesete klasičan format „Ime Prezime“, podatak će biti sačuvan tako kako ste ga uneli, a samo prikaz će biti formatiran kao „Prezime, Ime“."
   }
 }

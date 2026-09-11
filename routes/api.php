@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AuthorsController;
+use App\Http\Controllers\CategoriesController;
 use App\Http\Controllers\LibrariesController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\PlacesController;
@@ -64,6 +66,16 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::post('/tags', [TagsController::class, 'store'])->middleware('can:create,App\Models\Tag');
     Route::put('/tags/{tag}', [TagsController::class, 'update'])->middleware('can:update,tag');
     Route::delete('/tags/{tag}', [TagsController::class, 'destroy'])->middleware('can:delete,tag');
+
+    Route::get('/categories', [CategoriesController::class, 'index'])->middleware('can:viewAny,App\Models\Category');
+    Route::post('/categories', [CategoriesController::class, 'store'])->middleware('can:create,App\Models\Category');
+    Route::put('/categories/{category}', [CategoriesController::class, 'update'])->middleware('can:update,category');
+    Route::delete('/categories/{category}', [CategoriesController::class, 'destroy'])->middleware('can:delete,category');
+
+    Route::get('/authors', [AuthorsController::class, 'index'])->middleware('can:viewAny,App\Models\Author');
+    Route::post('/authors', [AuthorsController::class, 'store'])->middleware('can:create,App\Models\Author');
+    Route::put('/authors/{author}', [AuthorsController::class, 'update'])->middleware('can:update,author');
+    Route::delete('/authors/{author}', [AuthorsController::class, 'destroy'])->middleware('can:delete,author');
 
     Route::get('/news', [NewsController::class, 'index'])->middleware('can:viewAny,App\Models\News');
     Route::post('/news', [NewsController::class, 'store'])->middleware('can:create,App\Models\News');

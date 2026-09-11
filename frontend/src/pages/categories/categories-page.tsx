@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Pencil, Plus, Search, Tag as TagIcon, Trash2 } from 'lucide-react'
+import { FolderTree, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -21,26 +21,26 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PageLoader } from '@/components/ui/loader'
 import { PaginationBar } from '@/components/pagination-bar'
 import { LibrarySelect, type LibraryOption } from '@/components/libraries/library-select'
-import { TagFormModal } from '@/components/tags/tag-form-modal'
-import { TagsMobileList } from '@/components/tags/tags-mobile-list'
+import { CategoryFormModal } from '@/components/categories/category-form-modal'
+import { CategoriesMobileList } from '@/components/categories/categories-mobile-list'
 import { useAuth } from '@/hooks/useAuth'
-import type { PaginatedResponse, Tag } from '@/types'
+import type { Category, PaginatedResponse } from '@/types'
 
 const PAGE_SIZE = 10
 
-function useTagsQuery(page: number, search: string, libraryId: string) {
+function useCategoriesQuery(page: number, search: string, libraryId: string) {
   return useQuery({
-    queryKey: ['tags', { page, search, libraryId }],
+    queryKey: ['categories', { page, search, libraryId }],
     queryFn: async () => {
       const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
       if (search) query.set('search', search)
       if (libraryId) query.set('library_id', libraryId)
-      return api.get<PaginatedResponse<Tag>>(`${apiPaths.tags}?${query.toString()}`)
+      return api.get<PaginatedResponse<Category>>(`${apiPaths.categories}?${query.toString()}`)
     },
   })
 }
 
-export function TagsPage() {
+export function CategoriesPage() {
   const { t } = useTranslation()
   const { can, user } = useAuth()
   const isSuperAdmin = user?.role === 'superadmin'
@@ -53,8 +53,8 @@ export function TagsPage() {
   const [searchInput, setSearchInput] = useState(search)
   const [filterLibrary, setFilterLibrary] = useState<LibraryOption[]>([])
   const [modalOpen, setModalOpen] = useState(false)
-  const [editingTag, setEditingTag] = useState<Tag | null>(null)
-  const [deletingTag, setDeletingTag] = useState<Tag | null>(null)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [deletingCategory, setDeletingCategory] = useState<Category | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
@@ -66,9 +66,9 @@ export function TagsPage() {
     })
   }, [libraryId])
 
-  const tagsQuery = useTagsQuery(page, search, libraryId)
+  const categoriesQuery = useCategoriesQuery(page, search, libraryId)
 
-  if (!can('tags.viewAny')) {
+  if (!can('categories.viewAny')) {
     return <p className="text-sm text-muted-foreground">{t('errors.forbidden')}</p>
   }
 
@@ -97,16 +97,16 @@ export function TagsPage() {
   }
 
   const confirmDelete = async () => {
-    if (!deletingTag) return
+    if (!deletingCategory) return
     setIsDeleting(true)
     try {
-      await api.delete(apiPaths.tag(deletingTag.id))
+      await api.delete(apiPaths.category(deletingCategory.id))
       const nextPage =
-        tagsQuery.data && tagsQuery.data.data.length === 1 && page > 1 ? page - 1 : page
+        categoriesQuery.data && categoriesQuery.data.data.length === 1 && page > 1 ? page - 1 : page
       setParams({ page: nextPage === page ? page : nextPage })
-      await tagsQuery.refetch()
-      toast.success(t('tags.deleted'), { description: deletingTag.name })
-      setDeletingTag(null)
+      await categoriesQuery.refetch()
+      toast.success(t('categories.deleted'), { description: deletingCategory.name })
+      setDeletingCategory(null)
     } catch (error) {
       if (error instanceof ApiError) {
         toast.error(error.messageText ?? t('errors.unexpected'))
@@ -119,17 +119,17 @@ export function TagsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="font-brand-heading text-2xl font-bold tracking-tight">{t('tags.title')}</h2>
-        {can('tags.create') ? (
+        <h2 className="font-brand-heading text-2xl font-bold tracking-tight">{t('categories.title')}</h2>
+        {can('categories.create') ? (
           <Button
             variant="brand"
             onClick={() => {
-              setEditingTag(null)
+              setEditingCategory(null)
               setModalOpen(true)
             }}
           >
             <Plus />
-            {t('tags.add')}
+            {t('categories.add')}
           </Button>
         ) : null}
       </div>
@@ -145,7 +145,7 @@ export function TagsPage() {
           <Input
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
-            placeholder={t('tags.search')}
+            placeholder={t('categories.search')}
             className="max-w-xs"
           />
           <Button variant="outline" type="submit" aria-label={t('common.search')}>
@@ -165,88 +165,88 @@ export function TagsPage() {
         ) : null}
       </div>
 
-      {tagsQuery.isLoading ? (
+      {categoriesQuery.isLoading ? (
         <PageLoader />
       ) : (
         <div className="rounded-lg border bg-card">
           <div className="hidden lg:block">
             <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="px-4">{t('tags.columns.name')}</TableHead>
-                <TableHead className="px-4">{t('tags.columns.library')}</TableHead>
-                <TableHead className="px-4">{t('tags.columns.usersCount')}</TableHead>
-                <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tagsQuery.data?.data.map((tag) => (
-                <TableRow key={tag.id}>
-                  <TableCell className="px-4">
-                    <div className="flex items-center gap-2 font-medium">
-                      <TagIcon className="size-4 text-muted-foreground" />
-                      {tag.name}
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-4 text-muted-foreground">{tag.library_name ?? '—'}</TableCell>
-                  <TableCell className="px-4 text-muted-foreground">{tag.users_count ?? 0}</TableCell>
-                  <TableCell className="px-4">
-                    <div className="flex items-center justify-end gap-1">
-                      {tag.can?.update ? (
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={t('common.edit')}
-                          onClick={() => {
-                            setEditingTag(tag)
-                            setModalOpen(true)
-                          }}
-                        >
-                          <Pencil />
-                        </Button>
-                      ) : null}
-                      {tag.can?.delete ? (
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          aria-label={t('common.delete')}
-                          onClick={() => setDeletingTag(tag)}
-                        >
-                          <Trash2 />
-                        </Button>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {!tagsQuery.data?.data.length ? (
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                    {t('tags.empty')}
-                  </TableCell>
+                  <TableHead className="px-4">{t('categories.columns.name')}</TableHead>
+                  <TableHead className="px-4">{t('categories.columns.library')}</TableHead>
+                  <TableHead className="px-4">{t('categories.columns.children')}</TableHead>
+                  <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
                 </TableRow>
-              ) : null}
-            </TableBody>
+              </TableHeader>
+              <TableBody>
+                {categoriesQuery.data?.data.map((category) => (
+                  <TableRow key={category.id}>
+                    <TableCell className="px-4">
+                      <div className="flex items-center gap-2 font-medium">
+                        <FolderTree className="size-4 text-muted-foreground" />
+                        {category.full_name ?? category.name}
+                      </div>
+                    </TableCell>
+                    <TableCell className="px-4 text-muted-foreground">{category.library_name ?? '—'}</TableCell>
+                    <TableCell className="px-4 text-muted-foreground">{category.children_count ?? 0}</TableCell>
+                    <TableCell className="px-4">
+                      <div className="flex items-center justify-end gap-1">
+                        {category.can?.update ? (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={t('common.edit')}
+                            onClick={() => {
+                              setEditingCategory(category)
+                              setModalOpen(true)
+                            }}
+                          >
+                            <Pencil />
+                          </Button>
+                        ) : null}
+                        {category.can?.delete ? (
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={t('common.delete')}
+                            onClick={() => setDeletingCategory(category)}
+                          >
+                            <Trash2 />
+                          </Button>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!categoriesQuery.data?.data.length ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                      {t('categories.empty')}
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
             </Table>
           </div>
 
           <div className="lg:hidden">
-            <TagsMobileList
-              tags={tagsQuery.data?.data ?? []}
-              onEdit={(tag) => {
-                setEditingTag(tag)
+            <CategoriesMobileList
+              categories={categoriesQuery.data?.data ?? []}
+              onEdit={(category) => {
+                setEditingCategory(category)
                 setModalOpen(true)
               }}
-              onDelete={(tag) => setDeletingTag(tag)}
+              onDelete={(category) => setDeletingCategory(category)}
             />
           </div>
 
-          {tagsQuery.data && tagsQuery.data.meta.total > 0 ? (
+          {categoriesQuery.data && categoriesQuery.data.meta.total > 0 ? (
             <PaginationBar
-              currentPage={tagsQuery.data.meta.current_page}
-              lastPage={tagsQuery.data.meta.last_page}
-              total={tagsQuery.data.meta.total}
-              perPage={tagsQuery.data.meta.per_page}
+              currentPage={categoriesQuery.data.meta.current_page}
+              lastPage={categoriesQuery.data.meta.last_page}
+              total={categoriesQuery.data.meta.total}
+              perPage={categoriesQuery.data.meta.per_page}
               onPageChange={(nextPage) => setParams({ page: nextPage })}
             />
           ) : null}
@@ -254,25 +254,27 @@ export function TagsPage() {
       )}
 
       {modalOpen ? (
-        <TagFormModal
+        <CategoryFormModal
           open={modalOpen}
-          tag={editingTag}
+          category={editingCategory}
           onClose={() => {
             setModalOpen(false)
-            setEditingTag(null)
+            setEditingCategory(null)
           }}
           onSuccess={(name) =>
-            toast.success(editingTag ? t('tags.updated') : t('tags.created'), { description: name })
+            toast.success(editingCategory ? t('categories.updated') : t('categories.created'), {
+              description: name,
+            })
           }
         />
       ) : null}
 
-      <AlertDialog open={Boolean(deletingTag)} onOpenChange={(value) => !value && setDeletingTag(null)}>
+      <AlertDialog open={Boolean(deletingCategory)} onOpenChange={(value) => !value && setDeletingCategory(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('tags.deleteConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('categories.deleteConfirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('tags.deleteConfirmText', { name: deletingTag?.name ?? '' })}
+              {t('categories.deleteConfirmText', { name: deletingCategory?.name ?? '' })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

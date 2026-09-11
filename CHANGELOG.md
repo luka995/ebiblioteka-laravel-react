@@ -1,5 +1,22 @@
 # Changelog
 
+## [11.09.2026] Kategorije i autori: CRUD moduli sa hijerarhijom i autorizacijom
+
+### Added
+
+- **Category model i migracija** (`app/Models/Category.php`, `database/migrations/2026_09_11_000001_create_categories_table.php`) — hijerarhijska struktura (`parent_id` self-FK sa `restrictOnDelete`), `fullName()` rekurzivna putanja i `hasAncestor()` za detekciju ciklusa; `cascadeOnDelete` na biblioteku
+- **Author model i migracija** (`app/Models/Author.php`, `database/migrations/2026_09_11_000002_create_authors_table.php`) — `displayName()` formatira klasična imena u „Prezime, Ime" samo za prikaz; unique (`library_id`, `name`)
+- **Categories/Authors CRUD API** (`app/Http/Controllers/CategoriesController.php`, `app/Http/Controllers/AuthorsController.php`, `app/Http/Requests/{Store,Update}{Category,Author}Request.php`, `app/Http/Requests/Concerns/ValidatesCategoryParent.php`, `app/Http/Resources/{Category,Author}Resource.php`, `routes/api.php`) — `index/store/update/destroy`, paginacija, pretraga, `library_id` scope i `all=1`; validacija roditelja (ista biblioteka + zabrana ciklusa); brisanje kategorije sa potkategorijama se odbija (422)
+- **Policy** (`app/Policies/{Category,Author}Policy.php`, `app/Services/AuthorizationService.php`) — `viewAny/view/create/update/delete` za superadmina i bibliotečkog administratora; `categories` i `authors` dodati u globalne permisije
+- **Factory i seeder** (`database/factories/{Category,Author}Factory.php`, `database/seeders/{Category,Author}Seeder.php`, `database/seeders/DatabaseSeeder.php`) — idempotentni razvojni podaci školskog fonda za biblioteku Akademija Filipovic
+- **Admin frontend** (`frontend/src/pages/{categories,authors}/*`, `frontend/src/components/{categories,authors}/*`, `frontend/src/App.tsx`, `frontend/src/lib/api.ts`, `frontend/src/types.ts`) — tabele, mobilne liste, modalne forme i `CategorySelect` sa pretragom; rute `/categories` i `/authors`
+- **Navigacija i i18n** (`frontend/src/components/layout/app-shell.tsx`, `frontend/src/i18n/locales/{en,sr-Cyrl,sr-Latn}.json`, `lang/{en,sr-Cyrl,sr-Latn}/validation.php`) — stavke menija, prevodi na tri jezika i validacione poruke (`category_has_children`, `category_parent_invalid`, `author_duplicate`)
+- **Testovi** (`tests/Feature/Auth/CategoryCrudApiTest.php`, `tests/Feature/Auth/AuthorCrudApiTest.php`, `tests/Feature/Auth/LibraryAdminCategoryAuthorTest.php`) — CRUD, hijerarhija/ciklusi, unique po biblioteci, scope i autorizacija
+
+### Changed
+
+- **Filter biblioteke na tagovima** (`frontend/src/pages/tags/tags-page.tsx`) — uklonjen Select za ne-superadmin korisnike i poravnanje filtera (`sm:items-start`) usaglašeno sa ostalim stranicama
+
 ## [10.09.2026] Auth: prikaz/skrivanje lozinke na prijavi
 
 ### Changed

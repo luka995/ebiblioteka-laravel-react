@@ -192,6 +192,9 @@ return [
         'library_not_managed' => 'You do not have access to this library.',
         'user_not_library_member' => 'The user is not a member of the selected library.',
         'memberships_none_eligible' => 'None of the selected users has a matching membership in the active library.',
+        'category_has_children' => 'The category cannot be deleted because it contains subcategories.',
+        'category_parent_invalid' => 'The selected parent category is invalid.',
+        'author_duplicate' => 'An author with that name already exists in the selected library.',
     ],
 
     /*

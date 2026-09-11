@@ -16,7 +16,9 @@
     "news": "News",
     "logout": "Log out",
     "account": "My account",
-    "settings": "Settings"
+    "settings": "Settings",
+    "categories": "Categories",
+    "authors": "Authors"
   },
   "auth": {
     "heroTitle": "A workspace for libraries and readers",
@@ -363,5 +365,57 @@
     "showing": "Showing {{from}}–{{to}} of {{total}}",
     "previous": "Previous page",
     "next": "Next page"
+  },
+  "categories": {
+    "title": "Categories",
+    "add": "New category",
+    "search": "Search categories...",
+    "empty": "No categories.",
+    "columns": {
+      "name": "Name",
+      "library": "Library",
+      "children": "Subcategories"
+    },
+    "formTitle": "New category",
+    "formSubtitle": "Add a category within a library.",
+    "editTitle": "Edit category",
+    "editSubtitle": "Update the category details.",
+    "created": "Category created.",
+    "updated": "Category updated.",
+    "deleted": "Category deleted.",
+    "deleteConfirmTitle": "Delete category?",
+    "deleteConfirmText": "Are you sure you want to delete the category \"{{name}}\"?",
+    "libraryLabel": "Library",
+    "libraryPlaceholder": "Select a library",
+    "libraryRequired": "Select a library.",
+    "parentLabel": "Parent category",
+    "parentPlaceholder": "Search parent category...",
+    "selectLibraryHint": "Select a library to choose a parent category.",
+    "noResults": "No results."
+  },
+  "authors": {
+    "title": "Authors",
+    "add": "New author",
+    "search": "Search authors...",
+    "empty": "No authors.",
+    "columns": {
+      "name": "Full name",
+      "library": "Library"
+    },
+    "formTitle": "New author",
+    "formSubtitle": "Add an author within a library.",
+    "editTitle": "Edit author",
+    "editSubtitle": "Update the author details.",
+    "created": "Author created.",
+    "updated": "Author updated.",
+    "deleted": "Author deleted.",
+    "deleteConfirmTitle": "Delete author?",
+    "deleteConfirmText": "Are you sure you want to delete the author \"{{name}}\"?",
+    "libraryLabel": "Library",
+    "libraryPlaceholder": "Select a library",
+    "libraryRequired": "Select a library.",
+    "nameLabel": "Full name",
+    "namePlaceholder": "Full name",
+    "nameDescription": "Enter the author's first and last name. If you enter “Last name, First name”, it will be displayed exactly that way. If you enter the classic “First name Last name” format, the value will be saved as entered and only the display will be formatted as “Last name, First name”."
   }
 }

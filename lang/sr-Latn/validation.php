@@ -45,6 +45,9 @@ return [
         'library_not_managed' => 'Nemate pristup ovoj biblioteci.',
         'user_not_library_member' => 'Korisnik nije član izabrane biblioteke.',
         'memberships_none_eligible' => 'Nijedan izabrani korisnik nema odgovarajuće članstvo u aktivnoj biblioteci.',
+        'category_has_children' => 'Kategorija se ne može obrisati jer sadrži potkategorije.',
+        'category_parent_invalid' => 'Izabrana roditeljska kategorija nije važeća.',
+        'author_duplicate' => 'Autor sa tim imenom već postoji u izabranoj biblioteci.',
     ],
 
     'attributes' => [
