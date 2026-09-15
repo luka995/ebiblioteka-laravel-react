@@ -21,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PageLoader } from '@/components/ui/loader'
 import { PaginationBar } from '@/components/pagination-bar'
 import { RegionFormModal } from '@/components/regions/region-form-modal'
+import { RegionsMobileList } from '@/components/regions/regions-mobile-list'
 import { useAuth } from '@/hooks/useAuth'
 import type { PaginatedResponse, Region } from '@/types'
 
@@ -136,6 +137,7 @@ export function RegionsPage() {
         <PageLoader />
       ) : (
         <div className="rounded-lg border bg-card">
+          <div className="hidden lg:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -192,6 +194,18 @@ export function RegionsPage() {
               ) : null}
             </TableBody>
           </Table>
+          </div>
+
+          <div className="lg:hidden">
+            <RegionsMobileList
+              regions={regionsQuery.data?.data ?? []}
+              onEdit={(region) => {
+                setEditingRegion(region)
+                setModalOpen(true)
+              }}
+              onDelete={(region) => setDeletingRegion(region)}
+            />
+          </div>
 
           {regionsQuery.data && regionsQuery.data.meta.total > 0 ? (
             <PaginationBar

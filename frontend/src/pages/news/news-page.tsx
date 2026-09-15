@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PageLoader } from '@/components/ui/loader'
 import { PaginationBar } from '@/components/pagination-bar'
 import { NewsFormModal } from '@/components/news/news-form-modal'
+import { NewsMobileList } from '@/components/news/news-mobile-list'
 import { useAuth } from '@/hooks/useAuth'
 import type { News, PaginatedResponse } from '@/types'
 
@@ -219,56 +220,15 @@ export function NewsPage() {
             </Table>
           </div>
 
-          <div className="p-4 lg:hidden">
-            {newsQuery.data?.data.map((news) => (
-              <div key={news.id} className="flex items-center gap-3 border-b py-3 last:border-0">
-                {news.image_url ? (
-                  <img src={storageUrl(news.image_url) ?? undefined} alt="" className="h-12 w-20 rounded object-cover" />
-                ) : (
-                  <div className="h-12 w-20 rounded bg-muted" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <a
-                    href={publicNewsUrl(news.slug)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="truncate font-medium text-brand hover:underline"
-                    title={t('news.openPublic')}
-                  >
-                    {news.title}
-                  </a>
-                  <p className="text-xs text-muted-foreground">{news.date_formatted}</p>
-                </div>
-                <div className="flex gap-1">
-                  {news.can?.update ? (
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={t('common.edit')}
-                      onClick={() => {
-                        setEditingNews(news)
-                        setModalOpen(true)
-                      }}
-                    >
-                      <Pencil />
-                    </Button>
-                  ) : null}
-                  {news.can?.delete ? (
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={t('common.delete')}
-                      onClick={() => setDeletingNews(news)}
-                    >
-                      <Trash2 />
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-            ))}
-            {!newsQuery.data?.data.length ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">{t('news.empty')}</p>
-            ) : null}
+          <div className="lg:hidden">
+            <NewsMobileList
+              news={newsQuery.data?.data ?? []}
+              onEdit={(item) => {
+                setEditingNews(item)
+                setModalOpen(true)
+              }}
+              onDelete={(item) => setDeletingNews(item)}
+            />
           </div>
 
           {newsQuery.data && newsQuery.data.meta.total > 0 ? (

@@ -392,6 +392,9 @@ export function UsersPage() {
               users={usersQuery.data?.data ?? []}
               selectedIds={selectedIds}
               onToggleRow={toggleRow}
+              onToggleAll={toggleSelectAll}
+              allSelected={allPageSelected}
+              someSelected={somePageSelected}
               onEdit={(item) => {
                 setEditingUser(item)
                 setModalOpen(true)

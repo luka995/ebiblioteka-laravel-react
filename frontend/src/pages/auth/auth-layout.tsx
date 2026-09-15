@@ -10,7 +10,7 @@ export function AuthLayout() {
   const siteUrl = `${laravelBaseUrl()}/`
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="grid min-h-dvh lg:grid-cols-2">
       <div className="relative hidden overflow-hidden bg-brand text-brand-foreground lg:flex lg:flex-col lg:justify-between lg:p-12">
         <div
           aria-hidden
@@ -36,7 +36,7 @@ export function AuthLayout() {
         <p className="relative text-sm text-white/60">{t('tagline')}</p>
       </div>
 
-      <div className="relative flex min-h-screen items-center justify-center bg-background p-6 sm:p-10">
+      <div className="relative flex min-h-dvh items-center justify-center bg-background p-6 sm:p-10">
         <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
           <LocaleSwitcher />
         </div>

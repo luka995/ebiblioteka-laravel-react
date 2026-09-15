@@ -22,6 +22,7 @@ import { PageLoader } from '@/components/ui/loader'
 import { PaginationBar } from '@/components/pagination-bar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PlaceFormModal } from '@/components/places/place-form-modal'
+import { PlacesMobileList } from '@/components/places/places-mobile-list'
 import { useAuth } from '@/hooks/useAuth'
 import type { PaginatedResponse, Place, Region } from '@/types'
 
@@ -166,6 +167,7 @@ export function PlacesPage() {
         <PageLoader />
       ) : (
         <div className="rounded-lg border bg-card">
+          <div className="hidden lg:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -222,6 +224,18 @@ export function PlacesPage() {
               ) : null}
             </TableBody>
           </Table>
+          </div>
+
+          <div className="lg:hidden">
+            <PlacesMobileList
+              places={placesQuery.data?.data ?? []}
+              onEdit={(place) => {
+                setEditingPlace(place)
+                setModalOpen(true)
+              }}
+              onDelete={(place) => setDeletingPlace(place)}
+            />
+          </div>
 
           {placesQuery.data && placesQuery.data.meta.total > 0 ? (
             <PaginationBar

@@ -386,7 +386,8 @@
   "pagination": {
     "showing": "Приказ {{from}}–{{to}} од {{total}}",
     "previous": "Претходна страна",
-    "next": "Следећа страна"
+    "next": "Следећа страна",
+    "pageOf": "Страна {{page}} од {{total}}"
   },
   "categories": {
     "title": "Категорије",

@@ -21,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PageLoader } from '@/components/ui/loader'
 import { PaginationBar } from '@/components/pagination-bar'
 import { BookFormModal } from '@/components/books/book-form-modal'
+import { BooksMobileList } from '@/components/books/books-mobile-list'
 import { useAuth } from '@/hooks/useAuth'
 import type { Book, PaginatedResponse } from '@/types'
 
@@ -152,6 +153,7 @@ export function BooksPage() {
         <PageLoader />
       ) : (
         <div className="rounded-lg border bg-card">
+          <div className="hidden lg:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -217,6 +219,18 @@ export function BooksPage() {
               ) : null}
             </TableBody>
           </Table>
+          </div>
+
+          <div className="lg:hidden">
+            <BooksMobileList
+              books={booksQuery.data?.data ?? []}
+              onEdit={(book) => {
+                setEditingBook(book)
+                setModalOpen(true)
+              }}
+              onDelete={(book) => setDeletingBook(book)}
+            />
+          </div>
 
           {booksQuery.data && booksQuery.data.meta.total > 0 ? (
             <PaginationBar

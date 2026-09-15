@@ -1,5 +1,21 @@
 # Changelog
 
+## [15.09.2026] UI: mobilne liste, paginacija i skraćivanje naslova
+
+### Added
+
+- **Mobilne liste kataloga** (`frontend/src/components/books/books-mobile-list.tsx`, `frontend/src/components/books/book-copies-mobile-list.tsx`, `frontend/src/components/books/books-archive-mobile-lists.tsx`) — prikaz naslova, fizičkih jedinica i arhive kao lista na telefonu (umesto tabele), sa akcijama izmena/brisanje i restore/force-delete, po uzoru na postojeće liste biblioteka
+- **Mobilne liste šifarnika** (`frontend/src/components/places/places-mobile-list.tsx`, `frontend/src/components/regions/regions-mobile-list.tsx`, `frontend/src/components/news/news-mobile-list.tsx`) — mesta, regioni i vesti dobili mobilni prikaz sa ikonom, naslovom i akcijama
+- **„Izaberi sve" na mobilnom** (`frontend/src/components/books/book-copies-mobile-list.tsx`, `frontend/src/components/users/users-mobile-list.tsx`) — checkbox u zaglavlju mobilne liste sa `indeterminate` stanjem, sinhronizovan sa `allPageSelected`/`somePageSelected` logikom tabele
+
+### Changed
+
+- **Prelazak tabela na mobilne liste** (`frontend/src/pages/books/books-page.tsx`, `frontend/src/pages/books/book-copies-page.tsx`, `frontend/src/pages/books/books-archive-page.tsx`, `frontend/src/pages/books/book-detail-page.tsx`, `frontend/src/pages/places/places-page.tsx`, `frontend/src/pages/regions/regions-page.tsx`, `frontend/src/pages/news/news-page.tsx`, `frontend/src/pages/users/users-page.tsx`) — tabele su sakrivene ispod `lg`, a na telefonu se prikazuju nove liste bez horizontalnog skrola; uklonjen stari inline mobilni prikaz vesti
+- **Skraćivanje naslova sa „…"** (`frontend/src/components/ui/list.tsx`, `frontend/src/components/books/books-mobile-list.tsx`, `frontend/src/components/books/book-copies-mobile-list.tsx`, `frontend/src/components/news/news-mobile-list.tsx`) — `ListItemTitle` sada ima `truncate`, a inline linkovi naslova su `block truncate`, pa se dugi naslovi skraćuju umesto da prelivaju sadržaj
+- **Kompaktna paginacija na mobilnom** (`frontend/src/components/pagination-bar.tsx`, `frontend/src/i18n/locales/sr-Cyrl.json`, `sr-Latn.json`, `en.json`) — na malim ekranima prikazuje se samo `Prethodna / Strana X od Y / Sledeća`, a brojevi strana tek od `sm`; dodat `pagination.pageOf` na sva tri jezika
+- **Dinamički viewport i safe-area** (`frontend/src/components/layout/app-shell.tsx`, `frontend/src/components/auth/guards.tsx`, `frontend/src/pages/auth/auth-layout.tsx`) — `h-screen` → `h-dvh`, `min-h-0` na skrol kontejneru i `safe-area-inset-bottom` padding, da donja traka mobilnog browsera (Chrome/Brave) ne krije paginaciju
+- **Prva kartica detalja knjige** (`frontend/src/pages/books/book-detail-page.tsx`) — zaglavlje je `flex-col` na mobilnom (`sm:flex-row`), sadržaj ima `min-w-0`, bedževi se prelamaju, a dugme „Izmeni" i bedž sa inventarnim brojevima više ne prelivaju horizontalno
+
 ## [15.09.2026] Katalog: po-bibliotečni barkod i dedup COBISS seed-a
 
 ### Changed

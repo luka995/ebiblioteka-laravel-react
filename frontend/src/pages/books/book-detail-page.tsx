@@ -20,6 +20,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoader } from '@/components/ui/loader'
 import { BookFormModal } from '@/components/books/book-form-modal'
+import { BookCopiesMobileList } from '@/components/books/book-copies-mobile-list'
 import { BookCopyAddModal } from '@/components/books/book-copy-add-modal'
 import { BookCopyEditModal } from '@/components/books/book-copy-edit-modal'
 import { BookCopyRecErrorDialog, BookCopyWriteOffDialog } from '@/components/books/book-copy-action-dialogs'
@@ -96,6 +97,67 @@ export function BookDetailPage() {
     }
   }
 
+  const selectedIds = useMemo(() => new Set(selected), [selected])
+  const allCopiesSelected = copies.length > 0 && selected.length === copies.length
+  const someCopiesSelected = selected.length > 0
+
+  const toggleRow = (id: number) => {
+    setSelected((current) =>
+      current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
+    )
+  }
+
+  const renderCopyActions = (copy: BookCopy) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon-sm" aria-label={t('common.actions')}>
+          <MoreHorizontal />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem asChild>
+          <Link to={`/books/copies/${copy.id}`}>
+            <Eye />
+            {t('common.view')}
+          </Link>
+        </DropdownMenuItem>
+        {copy.can?.update ? (
+          <DropdownMenuItem onSelect={() => setEditingCopy(copy)}>
+            <Pencil />
+            {t('common.edit')}
+          </DropdownMenuItem>
+        ) : null}
+        {copy.can?.update ? (
+          <DropdownMenuItem onSelect={() => setRecErrorCopy(copy)}>
+            <FileDown />
+            {t('books.copies.recErrorAction')}
+          </DropdownMenuItem>
+        ) : null}
+        {copy.can?.writeOff && copy.status !== 'written_off' ? (
+          <DropdownMenuItem onSelect={() => setWriteOffCopy(copy)}>
+            <ArchiveX />
+            {t('books.copies.writeOffAction')}
+          </DropdownMenuItem>
+        ) : null}
+        {copy.status === 'written_off' ? (
+          <DropdownMenuItem onSelect={() => void cancelWriteOff(copy)}>
+            <RotateCcw />
+            {t('books.copies.cancelWriteOff')}
+          </DropdownMenuItem>
+        ) : null}
+        {copy.can?.delete && !copy.borrowed ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem variant="destructive" onSelect={() => void deleteCopy(copy)}>
+              <Trash2 />
+              {t('common.delete')}
+            </DropdownMenuItem>
+          </>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
   if (bookQuery.isLoading) return <PageLoader />
   if (!book) return <p className="text-sm text-muted-foreground">{t('books.notFound')}</p>
 
@@ -111,8 +173,8 @@ export function BookDetailPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex-row items-start justify-between gap-4">
-          <div className="flex gap-4">
+        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 flex-col gap-4 sm:flex-row">
             {cover ? (
               <img src={cover} alt={book.name} className="h-32 w-22 rounded-md object-cover" />
             ) : book.can?.update ? (
@@ -126,7 +188,7 @@ export function BookDetailPage() {
                 <ImagePlus className="size-6" />
               </button>
             ) : null}
-            <div className="space-y-1">
+            <div className="min-w-0 space-y-1">
               <CardTitle className="font-brand-heading text-lg">{book.name}</CardTitle>
               <p className="text-sm text-muted-foreground">
                 {book.authors?.map((author) => author.display_name).join('; ') || '—'}
@@ -135,7 +197,7 @@ export function BookDetailPage() {
                 {[book.category_primary_name, book.category_secondary_name].filter(Boolean).join(' / ') || '—'}
               </p>
               <p className="text-sm text-muted-foreground">{book.library_name}</p>
-              <div className="flex gap-2 pt-1 text-xs">
+              <div className="flex flex-wrap gap-2 pt-1 text-xs">
                 <Badge variant="secondary">
                   {t('books.availableOf', { available: book.available_count ?? 0, total: book.copies_count ?? 0 })}
                 </Badge>
@@ -144,7 +206,7 @@ export function BookDetailPage() {
             </div>
           </div>
           {book.can?.update ? (
-            <Button variant="outline" onClick={() => setBookModalOpen(true)}>
+            <Button variant="outline" className="self-start sm:self-auto" onClick={() => setBookModalOpen(true)}>
               <Pencil />
               {t('common.edit')}
             </Button>
@@ -179,6 +241,7 @@ export function BookDetailPage() {
         <PageLoader />
       ) : (
         <div className="rounded-lg border bg-card">
+          <div className="hidden lg:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -221,56 +284,7 @@ export function BookDetailPage() {
                   </TableCell>
                   <TableCell className="hidden px-4 text-muted-foreground lg:table-cell">{copy.isbn ?? '—'}</TableCell>
                   <TableCell className="px-4">
-                    <div className="flex justify-end">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon-sm" aria-label={t('common.actions')}>
-                            <MoreHorizontal />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link to={`/books/copies/${copy.id}`}>
-                              <Eye />
-                              {t('common.view')}
-                            </Link>
-                          </DropdownMenuItem>
-                          {copy.can?.update ? (
-                            <DropdownMenuItem onSelect={() => setEditingCopy(copy)}>
-                              <Pencil />
-                              {t('common.edit')}
-                            </DropdownMenuItem>
-                          ) : null}
-                          {copy.can?.update ? (
-                            <DropdownMenuItem onSelect={() => setRecErrorCopy(copy)}>
-                              <FileDown />
-                              {t('books.copies.recErrorAction')}
-                            </DropdownMenuItem>
-                          ) : null}
-                          {copy.can?.writeOff && copy.status !== 'written_off' ? (
-                            <DropdownMenuItem onSelect={() => setWriteOffCopy(copy)}>
-                              <ArchiveX />
-                              {t('books.copies.writeOffAction')}
-                            </DropdownMenuItem>
-                          ) : null}
-                          {copy.status === 'written_off' ? (
-                            <DropdownMenuItem onSelect={() => void cancelWriteOff(copy)}>
-                              <RotateCcw />
-                              {t('books.copies.cancelWriteOff')}
-                            </DropdownMenuItem>
-                          ) : null}
-                          {copy.can?.delete && !copy.borrowed ? (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem variant="destructive" onSelect={() => void deleteCopy(copy)}>
-                                <Trash2 />
-                                {t('common.delete')}
-                              </DropdownMenuItem>
-                            </>
-                          ) : null}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                    <div className="flex justify-end">{renderCopyActions(copy)}</div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -283,6 +297,19 @@ export function BookDetailPage() {
               ) : null}
             </TableBody>
           </Table>
+          </div>
+
+          <div className="lg:hidden">
+            <BookCopiesMobileList
+              copies={copies}
+              selectedIds={selectedIds}
+              onToggleRow={toggleRow}
+              onToggleAll={() => toggleAll(!allCopiesSelected)}
+              allSelected={allCopiesSelected}
+              someSelected={someCopiesSelected}
+              renderActions={renderCopyActions}
+            />
+          </div>
         </div>
       )}
 

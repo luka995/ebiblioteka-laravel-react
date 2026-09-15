@@ -175,7 +175,7 @@ export function AppShell() {
   }, [])
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-dvh overflow-hidden bg-background">
       <aside className="hidden w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground md:block">
         <SidebarContent />
       </aside>
@@ -197,7 +197,7 @@ export function AppShell() {
         </div>
       ) : null}
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex h-16 shrink-0 items-center gap-4 border-b bg-card/60 px-4 backdrop-blur sm:px-6">
           <button
             type="button"
@@ -220,7 +220,7 @@ export function AppShell() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6 sm:pt-6 sm:pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:px-8 lg:pt-8 lg:pb-[max(2rem,env(safe-area-inset-bottom))]">
           <Outlet />
         </main>
       </div>

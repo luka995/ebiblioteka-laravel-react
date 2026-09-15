@@ -36,7 +36,7 @@ function ListItemTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="list-item-title"
-      className={cn("min-w-0 flex-1 leading-none font-medium", className)}
+      className={cn("min-w-0 flex-1 truncate leading-none font-medium", className)}
       {...props}
     />
   )

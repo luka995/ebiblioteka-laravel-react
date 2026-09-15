@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { PageLoader } from '@/components/ui/loader'
 import { PaginationBar } from '@/components/pagination-bar'
 import { BookCopyBarcodePrintModal } from '@/components/books/book-copy-barcode-print-modal'
+import { BookCopiesMobileList } from '@/components/books/book-copies-mobile-list'
 import { BookCopyQuickAddModal } from '@/components/books/book-copy-quick-add-modal'
 import { useAuth } from '@/hooks/useAuth'
 import type { BookCopy, BookCopyStatus, PaginatedResponse } from '@/types'
@@ -205,6 +206,7 @@ export function BookCopiesPage() {
         <PageLoader />
       ) : (
         <div className="rounded-lg border bg-card">
+          <div className="hidden lg:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -268,6 +270,18 @@ export function BookCopiesPage() {
               ) : null}
             </TableBody>
           </Table>
+          </div>
+
+          <div className="lg:hidden">
+            <BookCopiesMobileList
+              copies={rows}
+              selectedIds={selectedIds}
+              onToggleRow={toggleRow}
+              onToggleAll={toggleSelectAll}
+              allSelected={allPageSelected}
+              someSelected={somePageSelected}
+            />
+          </div>
 
           {copiesQuery.data && copiesQuery.data.meta.total > 0 ? (
             <PaginationBar

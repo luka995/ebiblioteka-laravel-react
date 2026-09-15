@@ -8,6 +8,10 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageLoader } from '@/components/ui/loader'
+import {
+  ArchivedBooksMobileList,
+  ArchivedCopiesMobileList,
+} from '@/components/books/books-archive-mobile-lists'
 import { useAuth } from '@/hooks/useAuth'
 import type { Book, BookCopy, PaginatedResponse } from '@/types'
 
@@ -112,6 +116,7 @@ export function BooksArchivePage() {
             <PageLoader />
           ) : (
             <div className="rounded-lg border bg-card">
+              <div className="hidden lg:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -152,6 +157,15 @@ export function BooksArchivePage() {
                   ) : null}
                 </TableBody>
               </Table>
+              </div>
+
+              <div className="lg:hidden">
+                <ArchivedBooksMobileList
+                  books={booksQuery.data?.data ?? []}
+                  onRestore={(book) => void restoreBook(book)}
+                  onForceDelete={(book) => void forceBook(book)}
+                />
+              </div>
             </div>
           )}
         </TabsContent>
@@ -161,6 +175,7 @@ export function BooksArchivePage() {
             <PageLoader />
           ) : (
             <div className="rounded-lg border bg-card">
+              <div className="hidden lg:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -201,6 +216,15 @@ export function BooksArchivePage() {
                   ) : null}
                 </TableBody>
               </Table>
+              </div>
+
+              <div className="lg:hidden">
+                <ArchivedCopiesMobileList
+                  copies={copiesQuery.data?.data ?? []}
+                  onRestore={(copy) => void restoreCopy(copy)}
+                  onForceDelete={(copy) => void forceCopy(copy)}
+                />
+              </div>
             </div>
           )}
         </TabsContent>

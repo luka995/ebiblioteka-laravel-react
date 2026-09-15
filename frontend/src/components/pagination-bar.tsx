@@ -59,7 +59,7 @@ export function PaginationBar({
         {t('pagination.showing', { from, to, total })}
       </p>
 
-      <Pagination className="w-auto justify-end">
+      <Pagination className="w-auto justify-center sm:justify-end">
         <PaginationContent>
           <PaginationItem>
             <PaginationPrevious
@@ -69,17 +69,23 @@ export function PaginationBar({
             />
           </PaginationItem>
 
+          <PaginationItem className="sm:hidden">
+            <span className="px-2 text-sm text-muted-foreground">
+              {t('pagination.pageOf', { page: currentPage, total: lastPage })}
+            </span>
+          </PaginationItem>
+
           {buildPageItems(currentPage, lastPage).map((item, index) => {
             if (item === 'start' || item === 'end') {
               return (
-                <PaginationItem key={`${item}-${index}`}>
+                <PaginationItem key={`${item}-${index}`} className="hidden sm:block">
                   <PaginationEllipsis />
                 </PaginationItem>
               )
             }
 
             return (
-              <PaginationItem key={item}>
+              <PaginationItem key={item} className="hidden sm:block">
                 <PaginationLink
                   isActive={item === currentPage}
                   onClick={() => item !== currentPage && onPageChange(item)}

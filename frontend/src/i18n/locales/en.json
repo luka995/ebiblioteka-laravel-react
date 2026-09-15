@@ -386,7 +386,8 @@
   "pagination": {
     "showing": "Showing {{from}}–{{to}} of {{total}}",
     "previous": "Previous page",
-    "next": "Next page"
+    "next": "Next page",
+    "pageOf": "Page {{page}} of {{total}}"
   },
   "categories": {
     "title": "Categories",
