@@ -28,7 +28,7 @@ class TagsController extends Controller
 
         (new TagFilters)->apply($query, $request->only(['search', 'library_id']));
 
-        $query->orderBy('name');
+        $query->orderBy('name')->orderBy('id');
 
         $permissions = $auth->collectionPermissions($request->user(), Tag::class);
 

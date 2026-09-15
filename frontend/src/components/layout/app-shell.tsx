@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { BadgeCheck, BookOpen, Building2, FolderTree, KeyRound, LayoutDashboard, LogOut, Map, MapPin, Menu, Newspaper, PenLine, Settings, Tag, Users, X } from 'lucide-react'
@@ -157,6 +157,23 @@ export function AppShell() {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
+  // Dashboard ima svoj interni skrol (`main`); dokument ne sme dodatno da
+  // skroluje, inace se u klasicnim scrollbar-ovima vide dva skrolbara.
+  useEffect(() => {
+    const html = document.documentElement
+    const body = document.body
+    const previousHtml = html.style.overflow
+    const previousBody = body.style.overflow
+
+    html.style.overflow = 'hidden'
+    body.style.overflow = 'hidden'
+
+    return () => {
+      html.style.overflow = previousHtml
+      body.style.overflow = previousBody
+    }
+  }, [])
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <aside className="hidden w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground md:block">
@@ -203,7 +220,7 @@ export function AppShell() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

@@ -32,12 +32,14 @@ class ActiveLibraryService
             return Library::query()
                 ->where('deleted', false)
                 ->orderBy('name')
+                ->orderBy('id')
                 ->get();
         }
 
         return $user->libraries()
             ->where('libraries.deleted', false)
             ->orderBy('name')
+            ->orderBy('id')
             ->get();
     }
 

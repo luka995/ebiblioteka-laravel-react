@@ -14,7 +14,7 @@ import {
 import {
   BarcodePrintFormatPicker,
   type BarcodePrintFormat,
-} from '@/components/users/barcode-print-format-picker'
+} from '@/components/barcode/barcode-print-format-picker'
 import type { User } from '@/types'
 
 interface UserBarcodePrintModalProps {

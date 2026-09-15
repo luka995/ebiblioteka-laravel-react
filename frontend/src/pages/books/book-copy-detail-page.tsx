@@ -2,9 +2,9 @@ import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArchiveX, ArrowLeft, FileDown, Pencil, Printer, RotateCcw, Trash2 } from 'lucide-react'
+import { ArchiveX, ArrowLeft, FileDown, Pencil, Plus, Printer, RotateCcw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { api, apiPaths, ApiError, downloadBlob } from '@/lib/api'
+import { api, apiPaths, ApiError } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,7 +20,10 @@ import {
 } from '@/components/ui/alert-dialog'
 import { PageLoader } from '@/components/ui/loader'
 import { BookCopyEditModal } from '@/components/books/book-copy-edit-modal'
+import { BookCopyQuickAddModal } from '@/components/books/book-copy-quick-add-modal'
 import { BookCopyRecErrorDialog, BookCopyWriteOffDialog } from '@/components/books/book-copy-action-dialogs'
+import { BookCopyBarcodePrintModal } from '@/components/books/book-copy-barcode-print-modal'
+import { useAuth } from '@/hooks/useAuth'
 import type { BookCopy, BookCopyStatus } from '@/types'
 
 const STATUS_VARIANTS: Record<BookCopyStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -58,6 +61,7 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
 
 export function BookCopyDetailPage() {
   const { t } = useTranslation()
+  const { can } = useAuth()
   const params = useParams()
   const copyId = Number(params.id)
   const navigate = useNavigate()
@@ -68,7 +72,8 @@ export function BookCopyDetailPage() {
   const [recErrorOpen, setRecErrorOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [isPrinting, setIsPrinting] = useState(false)
+  const [printOpen, setPrintOpen] = useState(false)
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
 
   const copyQuery = useQuery({
     queryKey: ['book-copy', copyId],
@@ -91,22 +96,6 @@ export function BookCopyDetailPage() {
       toast.success(t('books.copies.writeOffCancelled'))
     } catch (error) {
       if (error instanceof ApiError) toast.error(error.messageText ?? t('errors.unexpected'))
-    }
-  }
-
-  const print = async () => {
-    if (!copy) return
-    setIsPrinting(true)
-    try {
-      const blob = await api.download(apiPaths.bookCopiesBulkPrint, {
-        method: 'POST',
-        body: { ids: [copy.id], format: 'label' },
-      })
-      downloadBlob(blob, 'barkod-knjige.pdf')
-    } catch (error) {
-      if (error instanceof ApiError) toast.error(error.messageText ?? t('errors.unexpected'))
-    } finally {
-      setIsPrinting(false)
     }
   }
 
@@ -157,9 +146,15 @@ export function BookCopyDetailPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           {copy.barcode ? (
-            <Button variant="outline" onClick={() => void print()} disabled={isPrinting}>
+            <Button variant="outline" onClick={() => setPrintOpen(true)}>
               <Printer />
               {t('books.copies.printBarcode')}
+            </Button>
+          ) : null}
+          {can('book_copies.create') ? (
+            <Button variant="outline" onClick={() => setQuickAddOpen(true)}>
+              <Plus />
+              {t('books.quickAdd.title')}
             </Button>
           ) : null}
           {canUpdate ? (
@@ -348,6 +343,22 @@ export function BookCopyDetailPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {printOpen ? (
+        <BookCopyBarcodePrintModal open copyIds={[copy.id]} onClose={() => setPrintOpen(false)} />
+      ) : null}
+
+      {quickAddOpen ? (
+        <BookCopyQuickAddModal
+          open
+          initialIsbn={copy.isbn ?? undefined}
+          onClose={() => setQuickAddOpen(false)}
+          onSuccess={() => {
+            refresh()
+            void queryClient.invalidateQueries({ queryKey: ['book', copy.book_id] })
+          }}
+        />
+      ) : null}
     </div>
   )
 }

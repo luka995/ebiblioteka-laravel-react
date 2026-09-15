@@ -74,7 +74,10 @@ class Book extends Model
      */
     public function copies(): HasMany
     {
-        return $this->hasMany(BookCopy::class)->withTrashed();
+        return $this->hasMany(BookCopy::class)
+            ->withTrashed()
+            ->orderByRaw('CAST(order_number AS BIGINT)')
+            ->orderBy('id');
     }
 
     /**
@@ -84,7 +87,9 @@ class Book extends Model
      */
     public function activeCopies(): HasMany
     {
-        return $this->hasMany(BookCopy::class);
+        return $this->hasMany(BookCopy::class)
+            ->orderByRaw('CAST(order_number AS BIGINT)')
+            ->orderBy('id');
     }
 
     /**

@@ -143,8 +143,103 @@ class NbsCatalogProvider implements IsbnProvider
     }
 
     /**
+     * Pretraga COBISS+ kataloga po proizvoljnom upitu (koristi harvest).
+     *
+     * @param  array<string, mixed>  $params  Dopunske pretrage parametre (npr. db, mat).
+     * @return array{total: int, rows: array<int, array{id: string, title: string|null, author: string|null, year: string|null}>}
+     */
+    public function search(string $query, int $start = 0, array $params = []): array
+    {
+        if (! config('isbn.nbs.enabled')) {
+            return ['total' => 0, 'rows' => []];
+        }
+
+        $searchUrl = trim((string) config('isbn.nbs.search_url'));
+
+        if ($searchUrl === '') {
+            return ['total' => 0, 'rows' => []];
+        }
+
+        $queryParams = array_merge(
+            (array) config('isbn.nbs.search_params', []),
+            $params,
+            [
+                (string) config('isbn.nbs.query_param', 'q') => $query,
+                'start' => max(0, $start),
+            ],
+        );
+
+        $html = $this->fetch($searchUrl, $queryParams, 'search', $query);
+
+        if ($html === null) {
+            return ['total' => 0, 'rows' => []];
+        }
+
+        $rows = [];
+
+        foreach ($this->rows($this->document($html)) as $row) {
+            $id = $this->recordId($row['href']);
+
+            if ($id !== null) {
+                $rows[] = [
+                    'id' => $id,
+                    'title' => $row['title'],
+                    'author' => $row['author'],
+                    'year' => $row['year'],
+                ];
+            }
+        }
+
+        return ['total' => $this->totalHits($html), 'rows' => $rows];
+    }
+
+    /**
+     * Dohvata metapodatke zapisa direktno po COBISS ID-u (bez ISBN gejta).
+     *
+     * Koristi se za harvest, gde je zapis pronadjen pretragom po upitu, a
+     * detalji se citaju iz `/full` JSON odgovora.
+     */
+    public function lookupRecord(string $recordId): ?BookMetadata
+    {
+        $recordId = trim($recordId);
+
+        if ($recordId === '' || ! ctype_digit($recordId)) {
+            return null;
+        }
+
+        if (! config('isbn.nbs.enabled')) {
+            return null;
+        }
+
+        $fullUrl = $this->fullUrl($recordId);
+
+        if ($fullUrl === null) {
+            return null;
+        }
+
+        $json = $this->fetchJson($fullUrl, $recordId);
+
+        if ($json === null) {
+            return null;
+        }
+
+        $detail = $this->detailFromJson($json);
+        $isbn = $this->firstIsbn($detail['isbn']);
+
+        $metadata = $this->metadata(
+            ['href' => "bib/{$recordId}", 'title' => null, 'author' => null, 'year' => null],
+            $detail,
+            $isbn,
+        );
+
+        $this->logResolved($this->name(), $isbn ?? $recordId, $metadata->title);
+
+        return $metadata;
+    }
+
+    /**
      * @param  array<string, mixed>  $json
-     * @return array{title: string|null, author: string|null, isbn: string|null, production: string|null, publish_year: string|null, physical: string|null, category: string|null, udk: string|null, note: string|null}
+     * @return array{title: string|null, author: string|null, isbn: string|null, production: string|null, publish_year: string|null, physical: string|null, category: string|null, udk: string|null, note: string|null, language: string|null}
      */
     private function detailFromJson(array $json): array
     {
@@ -158,6 +253,7 @@ class NbsCatalogProvider implements IsbnProvider
             'category' => $this->clean($this->field($json, 'materialDescr')),
             'udk' => $this->firstLine($this->cleanMultiline($this->field($json, 'udkCard'))),
             'note' => $this->cleanMultiline($this->field($json, 'notesCard')),
+            'language' => $this->clean($this->field($json, 'languageCard')),
         ];
     }
 
@@ -173,9 +269,9 @@ class NbsCatalogProvider implements IsbnProvider
 
     /**
      * @param  array{href: string, title: string|null, author: string|null, year: string|null}  $row
-     * @param  array{title: string|null, author: string|null, isbn: string|null, production: string|null, publish_year: string|null, physical: string|null, category: string|null, udk: string|null, note: string|null}  $detail
+     * @param  array{title: string|null, author: string|null, isbn: string|null, production: string|null, publish_year: string|null, physical: string|null, category: string|null, udk: string|null, note: string|null, language: string|null}  $detail
      */
-    private function metadata(array $row, array $detail, string $isbn): BookMetadata
+    private function metadata(array $row, array $detail, ?string $isbn): BookMetadata
     {
         [$place, $publisher, $year] = $this->production($detail['production']);
 
@@ -193,6 +289,7 @@ class NbsCatalogProvider implements IsbnProvider
             coverUrl: null,
             category: $detail['category'],
             udk: $detail['udk'],
+            language: $detail['language'],
         );
     }
 
@@ -252,7 +349,7 @@ class NbsCatalogProvider implements IsbnProvider
                 $part = trim(explode('=', $part, 2)[0]);
             }
 
-            $part = trim((string) preg_replace('/\s*,\s*\d{3,4}(\s*[-–]\s*\d{3,4})?\s*$/u', '', $part));
+            $part = trim((string) preg_replace('/\s*,\s*\d{3,4}\s*[-–]?\s*(\d{3,4})?\s*$/u', '', $part));
 
             if ($part !== '') {
                 $authors[] = $part;
@@ -346,6 +443,31 @@ class NbsCatalogProvider implements IsbnProvider
         $title = trim($parts[0] ?? $title);
 
         return $title === '' ? null : $title;
+    }
+
+    /**
+     * Prvi validan ISBN iz polja (moze sadrzati vise ISBN-a i opis poveza).
+     */
+    private function firstIsbn(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        foreach (preg_split('/[\s,;\/]+/u', $value) ?: [] as $candidate) {
+            $normalized = $this->normalizer->normalize($candidate);
+
+            if ($normalized !== '' && $this->normalizer->isValid($normalized)) {
+                return $normalized;
+            }
+        }
+
+        return null;
+    }
+
+    private function totalHits(string $html): int
+    {
+        return preg_match('/data-hits="(\d+)"/', $html, $matches) ? (int) $matches[1] : 0;
     }
 
     private function recordId(string $href): ?string

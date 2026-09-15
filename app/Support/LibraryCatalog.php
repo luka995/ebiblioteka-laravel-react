@@ -24,6 +24,7 @@ class LibraryCatalog
             ->where('deleted', false)
             ->with('place')
             ->orderBy('name')
+            ->orderBy('id')
             ->get()
             ->values()
             ->map(fn (Library $library, int $index): array => self::library($library, $index))
@@ -39,6 +40,7 @@ class LibraryCatalog
             ->where('library_id', $library->id)
             ->whereNull('parent_id')
             ->orderBy('name')
+            ->orderBy('id')
             ->get()
             ->map(fn (Category $category, int $categoryIndex): array => self::category($category, $categoryIndex))
             ->filter(fn (array $category): bool => $category['books'] !== [])
@@ -77,6 +79,7 @@ class LibraryCatalog
             ])
             ->withMin('activeCopies', 'publish_year')
             ->orderBy('name')
+            ->orderBy('id')
             ->get()
             ->map(fn (Book $book): array => self::book($book, $category))
             ->all();
@@ -98,7 +101,7 @@ class LibraryCatalog
         return [
             'slug' => $book->slug,
             'title' => $book->name,
-            'author' => $book->authors->map(fn ($author): string => $author->displayName())->join(', ') ?: '—',
+            'author' => $book->authors->map(fn ($author): string => $author->displayName())->join('; ') ?: '—',
             'year' => (string) ($book->active_copies_min_publish_year ?? ''),
             'availability' => ($book->available_count ?? 0) > 0 ? 'Dostupno' : 'Nije dostupno',
             'description' => $book->description ?? 'Opis nije dostupan.',

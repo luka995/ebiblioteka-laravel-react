@@ -4,12 +4,18 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Search } from 'lucide-react'
 import { api, apiPaths, ApiError } from '@/lib/api'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { DateInput } from '@/components/ui/date-input'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { BookCopyMetadataFields } from '@/components/books/book-copy-metadata-fields'
+import {
+  copyMetadataPayload,
+  copyQuantityPayload,
+  EMPTY_COPY,
+  type CopyFormValues,
+} from '@/components/books/copy-form'
 import { InventoryDiscrepancyDialog } from '@/components/books/inventory-discrepancy-dialog'
 import type { Book, BookCopy, InventoryDiscrepancy, IsbnLookupResult } from '@/types'
 
@@ -18,54 +24,47 @@ interface BookCopyAddModalProps {
   book: Book
   onClose: () => void
   onSuccess: () => void
+  onUseExistingTitle?: (book: Book) => void
 }
 
-const EMPTY = {
-  copies: '1',
-  orderNumber: '',
-  isbn: '',
-  publisher: '',
-  publishPlace: '',
-  publishYear: '',
-  issueNumber: '',
-  numOfPages: '',
-  dimension: '',
-  part: '',
-  udk: '',
-  binding: '',
-  origin: '',
-  bookNumber: '',
-  placeOnShelf: '',
-  price: '0',
-  dateAdd: '',
-  notice: '',
-}
-
-export function BookCopyAddModal({ open, book, onClose, onSuccess }: BookCopyAddModalProps) {
+export function BookCopyAddModal({ open, book, onClose, onSuccess, onUseExistingTitle }: BookCopyAddModalProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const auto = book.inv_number_auto !== false
-  const [form, setForm] = useState({ ...EMPTY })
+  const [form, setForm] = useState<CopyFormValues>({ ...EMPTY_COPY })
   const [discrepancy, setDiscrepancy] = useState<InventoryDiscrepancy | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isLookingUp, setIsLookingUp] = useState(false)
+  const [lookup, setLookup] = useState<IsbnLookupResult | null>(null)
 
   useEffect(() => {
     if (open) {
-      setForm({ ...EMPTY })
+      setForm({ ...EMPTY_COPY })
       setDiscrepancy(null)
+      setLookup(null)
     }
   }, [open])
 
-  const update = (key: keyof typeof EMPTY, value: string) => setForm((current) => ({ ...current, [key]: value }))
+  const otherTitle = lookup
+    ? lookup.book && lookup.book.id !== book.id
+      ? lookup.book
+      : (lookup.matches.find((match) => match.id !== book.id) ?? null)
+    : null
+
+  const update = (key: keyof CopyFormValues, value: string) =>
+    setForm((current) => ({ ...current, [key]: value }))
 
   const runLookup = async () => {
     if (!form.isbn.trim()) return
+    setIsLookingUp(true)
     try {
       const params = new URLSearchParams({ isbn: form.isbn.trim() })
       if (book.library_id) params.set('library_id', String(book.library_id))
       const result = await api.get<IsbnLookupResult>(`${apiPaths.bookIsbnLookup}?${params.toString()}`)
-      const meta = result.metadata
-      if (meta) {
+      setLookup(result)
+
+      if (result.metadata) {
+        const meta = result.metadata
         setForm((current) => ({
           ...current,
           isbn: meta.isbn ?? current.isbn,
@@ -76,11 +75,29 @@ export function BookCopyAddModal({ open, book, onClose, onSuccess }: BookCopyAdd
           dimension: meta.dimensions ?? current.dimension,
           udk: meta.udk ?? current.udk,
         }))
-      } else {
-        toast.info(t('books.isbn.noMetadata'))
+        return
       }
+
+      if (result.book) {
+        const first = result.existing_copies[0]
+        setForm((current) => ({
+          ...current,
+          isbn: first?.isbn ?? current.isbn,
+          publisher: first?.publisher ?? current.publisher,
+          publishPlace: first?.publish_place ?? current.publishPlace,
+          publishYear: first?.publish_year ?? current.publishYear,
+          numOfPages: first?.num_of_pages != null ? String(first.num_of_pages) : current.numOfPages,
+          dimension: first?.dimension ?? current.dimension,
+          udk: first?.udk ?? current.udk,
+        }))
+        return
+      }
+
+      toast.info(t('books.isbn.noMetadata'))
     } catch (error) {
       if (error instanceof ApiError) toast.error(error.messageText ?? t('errors.unexpected'))
+    } finally {
+      setIsLookingUp(false)
     }
   }
 
@@ -88,28 +105,8 @@ export function BookCopyAddModal({ open, book, onClose, onSuccess }: BookCopyAdd
     setIsSaving(true)
     try {
       const payload: Record<string, unknown> = {
-        isbn: form.isbn.trim() || null,
-        publisher: form.publisher.trim() || null,
-        publish_place: form.publishPlace.trim() || null,
-        publish_year: form.publishYear.trim() || null,
-        issue_number: form.issueNumber.trim() || null,
-        num_of_pages: form.numOfPages === '' ? null : Number(form.numOfPages),
-        dimension: form.dimension.trim() || null,
-        part: form.part.trim() || null,
-        udk: form.udk.trim() || null,
-        binding: form.binding || null,
-        origin: form.origin || null,
-        book_number: form.bookNumber.trim() || null,
-        place_on_shelf: form.placeOnShelf.trim() || null,
-        price: form.price === '' ? 0 : Number(form.price),
-        date_add: form.dateAdd || null,
-        notice: form.notice.trim() || null,
-      }
-
-      if (auto) {
-        payload.copies = Math.max(1, Number(form.copies) || 1)
-      } else {
-        payload.order_number = form.orderNumber.trim()
+        ...copyMetadataPayload(form),
+        ...copyQuantityPayload(form, auto),
       }
 
       const response = await api.post<{ data: BookCopy[] }>(apiPaths.bookCopies(book.id), payload)
@@ -178,103 +175,49 @@ export function BookCopyAddModal({ open, book, onClose, onSuccess }: BookCopyAdd
                   onChange={(event) => update('isbn', event.target.value)}
                   placeholder={t('books.isbn.placeholder')}
                 />
-                <Button type="button" variant="outline" onClick={() => void runLookup()}>
+                <Button type="button" variant="outline" onClick={() => void runLookup()} disabled={isLookingUp}>
                   <Search />
                 </Button>
               </div>
+
+              {lookup?.source ? (
+                <p className="text-xs text-muted-foreground">
+                  {t('books.isbn.source')}:{' '}
+                  <Badge variant="secondary">
+                    {t(`books.isbn.sources.${lookup.source}`, { defaultValue: lookup.source })}
+                  </Badge>
+                </p>
+              ) : null}
+
+              {lookup?.book?.id === book.id && lookup.existing_copies.length ? (
+                <div className="rounded-md border bg-background p-2 text-xs">
+                  <p className="font-medium">
+                    {t('books.isbn.existingCopies', { count: lookup.existing_copies.length })}
+                  </p>
+                  <p className="mt-0.5 text-muted-foreground">{t('books.isbn.existingCopiesHint')}</p>
+                </div>
+              ) : null}
+
+              {otherTitle ? (
+                <div className="rounded-md border border-brand-accent/40 bg-brand-soft/40 p-3 text-sm">
+                  <p className="font-medium">{t('books.duplicate.foundOtherTitle')}</p>
+                  <p className="mt-0.5 text-muted-foreground">{otherTitle.name}</p>
+                  {onUseExistingTitle ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => onUseExistingTitle(otherTitle)}
+                    >
+                      {t('books.duplicate.openTitle')}
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label>{t('books.fields.publisher')}</Label>
-                <Input value={form.publisher} onChange={(event) => update('publisher', event.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('books.fields.publishPlace')}</Label>
-                <Input value={form.publishPlace} onChange={(event) => update('publishPlace', event.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('books.fields.publishYear')}</Label>
-                <Input value={form.publishYear} onChange={(event) => update('publishYear', event.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('books.fields.pages')}</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.numOfPages}
-                  onChange={(event) => update('numOfPages', event.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('books.fields.dimension')}</Label>
-                <Input value={form.dimension} onChange={(event) => update('dimension', event.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('books.fields.udk')}</Label>
-                <Input value={form.udk} onChange={(event) => update('udk', event.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('books.fields.binding')}</Label>
-                <select
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-                  value={form.binding}
-                  onChange={(event) => update('binding', event.target.value)}
-                >
-                  <option value="">{t('common.none')}</option>
-                  <option value="t">{t('books.binding.hard')}</option>
-                  <option value="b">{t('books.binding.paperback')}</option>
-                  <option value="k">{t('books.binding.carton')}</option>
-                  <option value="ko">{t('books.binding.leather')}</option>
-                  <option value="l">{t('books.binding.luxury')}</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('books.fields.origin')}</Label>
-                <select
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-                  value={form.origin}
-                  onChange={(event) => update('origin', event.target.value)}
-                >
-                  <option value="">{t('common.none')}</option>
-                  <option value="ob">{t('books.origin.mandatory')}</option>
-                  <option value="ku">{t('books.origin.purchase')}</option>
-                  <option value="ra">{t('books.origin.exchange')}</option>
-                  <option value="po">{t('books.origin.gift')}</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('books.fields.placeOnShelf')}</Label>
-                <Input value={form.placeOnShelf} onChange={(event) => update('placeOnShelf', event.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('books.fields.price')}</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={form.price}
-                  onChange={(event) => update('price', event.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('books.fields.dateAdd')}</Label>
-                <DateInput value={form.dateAdd} onChange={(value) => update('dateAdd', value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('books.fields.part')}</Label>
-                <Input value={form.part} onChange={(event) => update('part', event.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('books.fields.issueNumber')}</Label>
-                <Input value={form.issueNumber} onChange={(event) => update('issueNumber', event.target.value)} />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>{t('books.fields.notice')}</Label>
-              <Textarea rows={2} value={form.notice} onChange={(event) => update('notice', event.target.value)} />
-            </div>
+            <BookCopyMetadataFields value={form} onChange={update} />
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

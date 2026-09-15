@@ -39,7 +39,8 @@ class AuthorsController extends Controller
                 $term = trim((string) $request->string('search'));
                 $q->where('name', 'ilike', "%{$term}%");
             })
-            ->orderBy('name');
+            ->orderBy('name')
+            ->orderBy('id');
 
         $permissions = $auth->collectionPermissions($user, Author::class);
 

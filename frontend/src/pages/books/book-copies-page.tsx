@@ -2,15 +2,18 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Eye, Search } from 'lucide-react'
+import { Eye, Plus, Printer, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { api, apiPaths } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoader } from '@/components/ui/loader'
 import { PaginationBar } from '@/components/pagination-bar'
+import { BookCopyBarcodePrintModal } from '@/components/books/book-copy-barcode-print-modal'
+import { BookCopyQuickAddModal } from '@/components/books/book-copy-quick-add-modal'
 import { useAuth } from '@/hooks/useAuth'
 import type { BookCopy, BookCopyStatus, PaginatedResponse } from '@/types'
 
@@ -39,6 +42,9 @@ export function BookCopiesPage() {
   const [barcodeInput, setBarcodeInput] = useState(barcode)
   const [orderNumberInput, setOrderNumberInput] = useState(orderNumber)
   const [searchInput, setSearchInput] = useState(search)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [printOpen, setPrintOpen] = useState(false)
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
 
   const copiesQuery = useQuery({
     queryKey: ['book-copies', { page, barcode, orderNumber, search, recError, libraryId }],
@@ -65,6 +71,34 @@ export function BookCopiesPage() {
   if (libraryId === null) {
     return <p className="text-sm text-muted-foreground">{t('books.activeLibraryRequired')}</p>
   }
+
+  const rows = copiesQuery.data?.data ?? []
+  const pageIds = rows.map((item) => item.id)
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id))
+  const somePageSelected = pageIds.some((id) => selectedIds.has(id))
+
+  const toggleSelectAll = () => {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      if (allPageSelected) {
+        pageIds.forEach((id) => next.delete(id))
+      } else {
+        pageIds.forEach((id) => next.add(id))
+      }
+      return next
+    })
+  }
+
+  const toggleRow = (id: number) => {
+    setSelectedIds((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const clearSelection = () => setSelectedIds(new Set())
 
   const setParams = (patch: Record<string, string | number | null>) => {
     setSearchParams(
@@ -94,6 +128,12 @@ export function BookCopiesPage() {
             <option value="1">{t('books.copies.recErrorOnly')}</option>
             <option value="0">{t('books.copies.recErrorNone')}</option>
           </select>
+          {can('book_copies.create') ? (
+            <Button variant="brand" onClick={() => setQuickAddOpen(true)}>
+              <Plus />
+              {t('books.quickAdd.title')}
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -134,6 +174,23 @@ export function BookCopiesPage() {
         </form>
       </div>
 
+      {selectedIds.size > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2">
+          <span className="text-sm text-muted-foreground">
+            {t('tags.selectedCount', { count: selectedIds.size })}
+          </span>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPrintOpen(true)}>
+              <Printer />
+              {t('books.copies.printSelected', { count: selectedIds.size })}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={clearSelection}>
+              {t('tags.clearSelection')}
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {copiesQuery.isLoading ? (
         <PageLoader />
       ) : (
@@ -141,6 +198,13 @@ export function BookCopiesPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10 px-4">
+                  <Checkbox
+                    checked={allPageSelected ? true : somePageSelected ? 'indeterminate' : false}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label={t('books.copies.selectAll')}
+                  />
+                </TableHead>
                 <TableHead className="px-4">{t('books.copies.invNumber')}</TableHead>
                 <TableHead className="px-4">{t('books.copies.barcode')}</TableHead>
                 <TableHead className="px-4">{t('books.columns.name')}</TableHead>
@@ -150,8 +214,15 @@ export function BookCopiesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {copiesQuery.data?.data.map((copy) => (
+              {rows.map((copy) => (
                 <TableRow key={copy.id}>
+                  <TableCell className="px-4">
+                    <Checkbox
+                      checked={selectedIds.has(copy.id)}
+                      onCheckedChange={() => toggleRow(copy.id)}
+                      aria-label={copy.order_number ?? t('books.copies.select')}
+                    />
+                  </TableCell>
                   <TableCell className="px-4 font-medium">
                     <Link to={`/books/copies/${copy.id}`} className="hover:text-brand-accent">
                       {copy.order_number ?? '—'}
@@ -178,9 +249,9 @@ export function BookCopiesPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {!copiesQuery.data?.data.length ? (
+              {!rows.length ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                     {t('books.copies.empty')}
                   </TableCell>
                 </TableRow>
@@ -199,6 +270,19 @@ export function BookCopiesPage() {
           ) : null}
         </div>
       )}
+
+      {printOpen ? (
+        <BookCopyBarcodePrintModal
+          open
+          copyIds={Array.from(selectedIds)}
+          onClose={() => setPrintOpen(false)}
+          onSuccess={clearSelection}
+        />
+      ) : null}
+
+      {quickAddOpen ? (
+        <BookCopyQuickAddModal open onClose={() => setQuickAddOpen(false)} />
+      ) : null}
     </div>
   )
 }

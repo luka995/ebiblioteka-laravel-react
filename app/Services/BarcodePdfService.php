@@ -43,15 +43,15 @@ class BarcodePdfService
 
     private const LABEL_TITLE_FONT = 7.0;
 
-    private const LABEL_BARCODE_Y_EXTENDED = 4.5;
+    private const LABEL_BARCODE_Y_EXTENDED = 5.5;
 
     private const LABEL_BARCODE_HEIGHT_EXTENDED = 13.0;
 
-    private const LABEL_CODE_Y_EXTENDED = 17.5;
+    private const LABEL_CODE_Y_EXTENDED = 18.5;
 
     private const LABEL_CODE_FONT_EXTENDED = 8.0;
 
-    private const LABEL_CAPTION_Y_EXTENDED = 21.5;
+    private const LABEL_CAPTION_Y_EXTENDED = 22.5;
 
     private const LABEL_CAPTION_FONT = 7.0;
 
@@ -83,15 +83,15 @@ class BarcodePdfService
 
     private const A4_TITLE_FONT = 5.5;
 
-    private const A4_BARCODE_Y_OFFSET_EXTENDED = 3.0;
+    private const A4_BARCODE_Y_OFFSET_EXTENDED = 3.6;
 
     private const A4_BARCODE_HEIGHT_EXTENDED = 10.0;
 
-    private const A4_CODE_Y_OFFSET_EXTENDED = 13.0;
+    private const A4_CODE_Y_OFFSET_EXTENDED = 13.6;
 
     private const A4_CODE_FONT_EXTENDED = 6.0;
 
-    private const A4_CAPTION_Y_OFFSET_EXTENDED = 15.9;
+    private const A4_CAPTION_Y_OFFSET_EXTENDED = 16.5;
 
     private const A4_CAPTION_FONT = 5.5;
 

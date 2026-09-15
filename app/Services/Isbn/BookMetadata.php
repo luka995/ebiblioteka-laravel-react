@@ -24,6 +24,7 @@ final readonly class BookMetadata
         public ?string $coverUrl = null,
         public ?string $category = null,
         public ?string $udk = null,
+        public ?string $language = null,
     ) {}
 
     public function withCategory(?string $category): self
@@ -42,6 +43,7 @@ final readonly class BookMetadata
             coverUrl: $this->coverUrl,
             category: $category,
             udk: $this->udk,
+            language: $this->language,
         );
     }
 
@@ -64,6 +66,7 @@ final readonly class BookMetadata
             'cover_url' => $this->coverUrl,
             'category' => $this->category,
             'udk' => $this->udk,
+            'language' => $this->language,
         ];
     }
 }

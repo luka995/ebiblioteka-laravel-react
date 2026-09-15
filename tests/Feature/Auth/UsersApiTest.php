@@ -29,14 +29,15 @@ test('regular user cannot access users management endpoints', function () {
 });
 
 test('superadmin can list users', function () {
-    User::factory()->count(3)->create();
+    $users = User::factory()->count(3)->create();
     $admin = User::factory()->superAdmin()->create();
 
     $this->actingAs($admin)
         ->getJson('/api/v1/users', adminApiHeaders())
         ->assertOk()
         ->assertJsonStructure(['data', 'meta'])
-        ->assertJsonPath('data.0.role', 'user');
+        ->assertJsonFragment(['id' => $users->first()->id])
+        ->assertJsonFragment(['id' => $admin->id]);
 });
 
 test('superadmin can create a user with a library membership and auto barcode', function () {

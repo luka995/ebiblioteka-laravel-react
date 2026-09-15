@@ -449,3 +449,64 @@ test('google books api key is never written to the log', function () {
             && ! str_contains((string) json_encode($context), 'SECRET-GOOGLE-KEY');
     })->once();
 });
+
+test('external metadata without authors matches an existing title by title only', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = isbnLibrary();
+    Book::factory()->for($library)->create(['name' => 'Na Drini ćuprija']);
+
+    Http::fake(['openlibrary.org/*' => Http::response([
+        'ISBN:9780306406157' => ['title' => 'Na Drini ćuprija'],
+    ])]);
+
+    $this->actingAs($admin)->getJson(
+        '/api/v1/books/isbn-lookup?isbn=9780306406157&library_id='.$library->id,
+        isbnLookupHeaders()
+    )
+        ->assertOk()
+        ->assertJsonPath('source', 'open_library')
+        ->assertJsonCount(1, 'matches');
+});
+
+test('external metadata with a different author is not a duplicate', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = isbnLibrary();
+    $book = Book::factory()->for($library)->create(['name' => 'Na Drini ćuprija']);
+    $author = Author::factory()->for($library)->create(['name' => 'Ivo Andrić']);
+    $book->authors()->attach($author->id);
+
+    Http::fake(['openlibrary.org/*' => Http::response(openLibraryResponse('9780306406157', [
+        'authors' => [['name' => 'Petar Petrović']],
+    ]))]);
+
+    $this->actingAs($admin)->getJson(
+        '/api/v1/books/isbn-lookup?isbn=9780306406157&library_id='.$library->id,
+        isbnLookupHeaders()
+    )
+        ->assertOk()
+        ->assertJsonPath('source', 'open_library')
+        ->assertJsonCount(0, 'matches');
+});
+
+test('author matching is script and order insensitive', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = isbnLibrary();
+    $book = Book::factory()->for($library)->create(['name' => 'Приповетке']);
+    $author = Author::factory()->for($library)->create(['name' => 'Андрић, Иво']);
+    $book->authors()->attach($author->id);
+
+    Http::fake(['openlibrary.org/*' => Http::response([
+        'ISBN:9780306406157' => [
+            'title' => 'Приповетке',
+            'authors' => [['name' => 'Ivo Andrić']],
+        ],
+    ])]);
+
+    $this->actingAs($admin)->getJson(
+        '/api/v1/books/isbn-lookup?isbn=9780306406157&library_id='.$library->id,
+        isbnLookupHeaders()
+    )
+        ->assertOk()
+        ->assertJsonPath('source', 'open_library')
+        ->assertJsonPath('matches.0.id', $book->id);
+});

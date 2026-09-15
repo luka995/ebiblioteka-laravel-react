@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { ArchiveX, ArrowLeft, Eye, FileDown, ImagePlus, MoreHorizontal, Pencil, Plus, Printer, RotateCcw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { api, apiPaths, ApiError, downloadBlob } from '@/lib/api'
+import { api, apiPaths, ApiError } from '@/lib/api'
 import { storageUrl } from '@/lib/environment'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -19,17 +19,11 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoader } from '@/components/ui/loader'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { BookFormModal } from '@/components/books/book-form-modal'
 import { BookCopyAddModal } from '@/components/books/book-copy-add-modal'
 import { BookCopyEditModal } from '@/components/books/book-copy-edit-modal'
 import { BookCopyRecErrorDialog, BookCopyWriteOffDialog } from '@/components/books/book-copy-action-dialogs'
+import { BookCopyBarcodePrintModal } from '@/components/books/book-copy-barcode-print-modal'
 import type { Book, BookCopy, BookCopyStatus, PaginatedResponse } from '@/types'
 
 const STATUS_VARIANTS: Record<BookCopyStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -43,6 +37,7 @@ const STATUS_VARIANTS: Record<BookCopyStatus, 'default' | 'secondary' | 'destruc
 export function BookDetailPage() {
   const { t } = useTranslation()
   const params = useParams()
+  const navigate = useNavigate()
   const bookId = Number(params.id)
   const queryClient = useQueryClient()
 
@@ -52,7 +47,7 @@ export function BookDetailPage() {
   const [writeOffCopy, setWriteOffCopy] = useState<BookCopy | null>(null)
   const [recErrorCopy, setRecErrorCopy] = useState<BookCopy | null>(null)
   const [selected, setSelected] = useState<number[]>([])
-  const [printFormat, setPrintFormat] = useState<'label' | 'a4'>('label')
+  const [printOpen, setPrintOpen] = useState(false)
 
   const bookQuery = useQuery({
     queryKey: ['book', bookId],
@@ -101,19 +96,6 @@ export function BookDetailPage() {
     }
   }
 
-  const print = async () => {
-    if (!selected.length) return
-    try {
-      const blob = await api.download(apiPaths.bookCopiesBulkPrint, {
-        method: 'POST',
-        body: { ids: selected, format: printFormat },
-      })
-      downloadBlob(blob, 'barkodovi-knjiga.pdf')
-    } catch (error) {
-      if (error instanceof ApiError) toast.error(error.messageText ?? t('errors.unexpected'))
-    }
-  }
-
   if (bookQuery.isLoading) return <PageLoader />
   if (!book) return <p className="text-sm text-muted-foreground">{t('books.notFound')}</p>
 
@@ -147,7 +129,7 @@ export function BookDetailPage() {
             <div className="space-y-1">
               <CardTitle className="font-brand-heading text-lg">{book.name}</CardTitle>
               <p className="text-sm text-muted-foreground">
-                {book.authors?.map((author) => author.display_name).join(', ') || '—'}
+                {book.authors?.map((author) => author.display_name).join('; ') || '—'}
               </p>
               <p className="text-sm text-muted-foreground">
                 {[book.category_primary_name, book.category_secondary_name].filter(Boolean).join(' / ') || '—'}
@@ -179,21 +161,10 @@ export function BookDetailPage() {
         <h3 className="font-brand-heading text-lg font-semibold">{t('books.copies.title')}</h3>
         <div className="flex flex-wrap items-center gap-2">
           {selected.length ? (
-            <>
-              <Select value={printFormat} onValueChange={(value) => setPrintFormat(value as 'label' | 'a4')}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="label">{t('barcode.formats.label')}</SelectItem>
-                  <SelectItem value="a4">{t('barcode.formats.a4')}</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="outline" onClick={() => void print()}>
-                <Printer />
-                {t('books.copies.printSelected', { count: selected.length })}
-              </Button>
-            </>
+            <Button variant="outline" onClick={() => setPrintOpen(true)}>
+              <Printer />
+              {t('books.copies.printSelected', { count: selected.length })}
+            </Button>
           ) : null}
           {book.can?.update ? (
             <Button variant="brand" onClick={() => setAddModalOpen(true)}>
@@ -328,7 +299,16 @@ export function BookDetailPage() {
       ) : null}
 
       {addModalOpen ? (
-        <BookCopyAddModal open={addModalOpen} book={book} onClose={() => setAddModalOpen(false)} onSuccess={refresh} />
+        <BookCopyAddModal
+          open={addModalOpen}
+          book={book}
+          onClose={() => setAddModalOpen(false)}
+          onSuccess={refresh}
+          onUseExistingTitle={(target) => {
+            setAddModalOpen(false)
+            navigate(`/books/titles/${target.id}`)
+          }}
+        />
       ) : null}
 
       {editingCopy ? (
@@ -359,6 +339,15 @@ export function BookDetailPage() {
           bookId={bookId}
           onClose={() => setRecErrorCopy(null)}
           onSuccess={refresh}
+        />
+      ) : null}
+
+      {printOpen ? (
+        <BookCopyBarcodePrintModal
+          open
+          copyIds={selected}
+          onClose={() => setPrintOpen(false)}
+          onSuccess={() => setSelected([])}
         />
       ) : null}
     </div>

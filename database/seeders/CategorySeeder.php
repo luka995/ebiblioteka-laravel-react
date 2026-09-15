@@ -18,7 +18,7 @@ class CategorySeeder extends Seeder
     /**
      * @return array<int, array{name: string, children?: array<int, string>}>
      */
-    private function categories(): array
+    public function categories(): array
     {
         return [
             [
@@ -80,6 +80,14 @@ class CategorySeeder extends Seeder
             ->where('deleted', false)
             ->firstOrFail();
 
+        $this->seedFor($library);
+    }
+
+    /**
+     * Osigurava osnovno drvo kategorija za datu biblioteku (idempotentno).
+     */
+    public function seedFor(Library $library): void
+    {
         foreach ($this->categories() as $definition) {
             $parent = Category::firstOrCreate([
                 'library_id' => $library->id,

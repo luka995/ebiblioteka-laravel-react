@@ -47,7 +47,8 @@ class IsbnLookupService
                 ->where('library_id', $library->id)
                 ->whereIn('isbn', $forms)
                 ->with(['book.authors', 'book.categoryPrimary', 'book.categorySecondary'])
-                ->orderBy('order_number')
+                ->orderByRaw('CAST(order_number AS BIGINT)')
+                ->orderBy('id')
                 ->get();
 
             if ($copies->isNotEmpty()) {
@@ -81,7 +82,7 @@ class IsbnLookupService
             'metadata' => $metadata,
             'book' => null,
             'existing_copies' => collect(),
-            'matches' => $this->matcher->candidates($library, $metadata->title, $metadata->authors),
+            'matches' => $this->matcher->duplicates($library, $metadata->title, $metadata->authors),
         ];
     }
 }

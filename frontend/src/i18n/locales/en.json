@@ -87,10 +87,6 @@
     "printBarcode": "Print",
     "printBarcodeTitle": "Print barcode",
     "printBarcodeDescription": "Choose the barcode print format.",
-    "printBarcodeFormatLabel": "Barcode printer (62×29 mm)",
-    "printBarcodeFormatLabelHint": "One barcode per label. Also suitable for sending to the user as a PDF (membership card replacement).",
-    "printBarcodeFormatA4": "A4 — 48 labels",
-    "printBarcodeFormatA4Hint": "A4 sheet with 48 labels; for a single user the first label is printed.",
     "printBarcodeSubmit": "Download PDF",
     "printBarcodeSuccess": "PDF downloaded.",
     "bulkPrintBarcode": "Print barcodes",
@@ -447,8 +443,10 @@
   },
   "barcode": {
     "formats": {
-      "label": "Label (62x29mm)",
-      "a4": "A4 sheet (48 labels)"
+      "label": "Barcode printer (62×29 mm)",
+      "labelHint": "One barcode per label; also suitable for sending as a PDF.",
+      "a4": "A4 sheet (48 labels)",
+      "a4Hint": "A4 sheet with 48 labels (4×12)."
     }
   },
   "books": {
@@ -489,7 +487,8 @@
     "fields": {
       "name": "Title",
       "authors": "Authors",
-      "authorsPlaceholder": "Comma separated",
+      "authorsPlaceholder": "Surname, First name ; Surname, First name",
+      "authorsHint": "Separate multiple authors with a semicolon (;). A single author is written as Surname, First name.",
       "categoryPrimary": "Primary category",
       "categorySecondary": "Secondary category",
       "coverUrl": "Cover image URL",
@@ -546,6 +545,25 @@
       "matches": "Similar titles in the library",
       "noMetadata": "No metadata found for this ISBN."
     },
+    "duplicate": {
+      "title": "Title already exists",
+      "hint": "A title with the same name and author already exists in the library. Use the existing one instead of creating a duplicate.",
+      "useExisting": "Use existing",
+      "continueAnyway": "Continue with a new title",
+      "foundOtherTitle": "ISBN belongs to another title",
+      "openTitle": "Open title",
+      "confirmTitle": "A similar title already exists",
+      "confirmText": "A title “{{name}}” with the same authors already exists. Use the existing title or continue with a new one."
+    },
+    "quickAdd": {
+      "title": "Add by ISBN",
+      "subtitle": "Look up an ISBN and add a copy to an existing or a new title.",
+      "newTitle": "New title",
+      "existingTitle": "Existing title",
+      "createNew": "Create new title",
+      "created": "Title and copy created.",
+      "lookupFirst": "Search an ISBN first."
+    },
     "copies": {
       "title": "Physical copies",
       "add": "Add copies",
@@ -564,6 +582,11 @@
       "selectAll": "Select all",
       "select": "Select",
       "printSelected": "Print ({{count}})",
+      "printTitle": "Print barcode",
+      "printDescriptionSingle": "Choose the format for printing the copy barcode.",
+      "printDescriptionBulk": "Choose the format for printing barcodes for {{count}} selected copies.",
+      "printSubmit": "Download PDF",
+      "printSuccess": "The PDF has been downloaded.",
       "empty": "No copies.",
       "listTitle": "Physical copies",
       "searchBarcode": "Search by barcode...",

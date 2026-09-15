@@ -45,6 +45,7 @@ class StoreBookRequest extends FormRequest
                 ? ['required', 'integer', Rule::exists('libraries', 'id')]
                 : ['nullable', 'integer', Rule::exists('libraries', 'id')],
             'with_copies' => ['sometimes', 'boolean'],
+            'confirm_duplicate' => ['sometimes', 'boolean'],
             'copies' => $withCopies && $auto
                 ? ['required', 'integer', 'min:1', 'max:100']
                 : ['nullable', 'integer'],

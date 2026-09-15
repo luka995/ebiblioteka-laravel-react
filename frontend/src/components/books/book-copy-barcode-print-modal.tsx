@@ -16,26 +16,33 @@ import {
   type BarcodePrintFormat,
 } from '@/components/barcode/barcode-print-format-picker'
 
-interface UserBarcodeBulkPrintModalProps {
+interface BookCopyBarcodePrintModalProps {
   open: boolean
   onClose: () => void
-  userIds: number[]
+  copyIds: number[]
+  onSuccess?: () => void
 }
 
-export function UserBarcodeBulkPrintModal({ open, onClose, userIds }: UserBarcodeBulkPrintModalProps) {
+export function BookCopyBarcodePrintModal({
+  open,
+  onClose,
+  copyIds,
+  onSuccess,
+}: BookCopyBarcodePrintModalProps) {
   const { t } = useTranslation()
-  const [format, setFormat] = useState<BarcodePrintFormat>('a4')
+  const [format, setFormat] = useState<BarcodePrintFormat>(copyIds.length > 1 ? 'a4' : 'label')
   const [busy, setBusy] = useState(false)
 
   const run = async () => {
     setBusy(true)
     try {
-      const blob = await api.download(apiPaths.usersBulkBarcodePrint, {
+      const blob = await api.download(apiPaths.bookCopiesBulkPrint, {
         method: 'POST',
-        body: { user_ids: userIds, format },
+        body: { ids: copyIds, format },
       })
-      downloadBlob(blob, 'barkodovi.pdf')
-      toast.success(t('users.bulkPrintBarcodeSuccess'))
+      downloadBlob(blob, 'barkodovi-knjiga.pdf')
+      toast.success(t('books.copies.printSuccess'))
+      onSuccess?.()
       onClose()
     } catch (error) {
       if (error instanceof ApiError) {
@@ -50,20 +57,26 @@ export function UserBarcodeBulkPrintModal({ open, onClose, userIds }: UserBarcod
     <Dialog open={open} onOpenChange={(value) => !value && !busy && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-brand-heading text-xl">{t('users.bulkPrintBarcodeTitle')}</DialogTitle>
+          <DialogTitle className="font-brand-heading text-xl">{t('books.copies.printTitle')}</DialogTitle>
           <DialogDescription>
-            {t('users.bulkPrintBarcodeDescription', { count: userIds.length })}
+            {copyIds.length > 1
+              ? t('books.copies.printDescriptionBulk', { count: copyIds.length })
+              : t('books.copies.printDescriptionSingle')}
           </DialogDescription>
         </DialogHeader>
 
-        <BarcodePrintFormatPicker value={format} onChange={setFormat} name="barcode-bulk-print-format" />
+        <BarcodePrintFormatPicker
+          value={format}
+          onChange={setFormat}
+          name="book-copy-barcode-print-format"
+        />
 
         <DialogFooter>
           <Button variant="outline" disabled={busy} onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button variant="brand" disabled={busy} onClick={() => void run()}>
-            {t('users.printBarcodeSubmit')}
+          <Button variant="brand" disabled={busy || copyIds.length === 0} onClick={() => void run()}>
+            {t('books.copies.printSubmit')}
           </Button>
         </DialogFooter>
       </DialogContent>

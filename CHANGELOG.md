@@ -1,5 +1,31 @@
 # Changelog
 
+## [15.09.2026] Katalog: COBISS uvoz, detekcija duplikata i brzi ISBN unos
+
+### Added
+
+- **COBISS+ harvest** (`app/Console/Commands/HarvestCobissCatalog.php`, `app/Services/Catalog/CobissHarvestService.php`, `config/cobiss.php`) — resumable `cobiss:harvest` komanda koja pretragom prikuplja COBISS ID-eve, čita `/full` JSON i normalizuje zapise u lokalni fixture uz poštovanje `Crawl-delay`; prihvataju se samo zapisi na srpskom (`cobiss.languages`)
+- **NBS provider za harvest** (`app/Services/Isbn/NbsCatalogProvider.php`) — `search()` po proizvoljnom upitu i `lookupRecord()` direktno po COBISS ID-u (bez ISBN gejta), čitanje `languageCard` i izdvajanje prvog validnog ISBN-a iz polja sa više vrednosti
+- **COBISS seeder i mapiranje kategorija** (`database/seeders/CobissBookSeeder.php`, `app/Services/Catalog/CobissCategoryMapper.php`, `database/seeders/CategorySeeder.php`) — idempotentan uvoz realnih naslova/kopija po aktivnim bibliotekama iz lokalnog fixture-a (`database/seeders/data/cobiss_books.json`), uz mapiranje vrste građe/UDK na drvo kategorija (`seedFor()`)
+- **Detekcija duplikata naslova** (`app/Services/Isbn/BookMatcher.php`, `app/Http/Controllers/BooksController.php`, `routes/api.php`) — `duplicates()` sa kanonskim ključem naslova (bez podnaslova/odgovornosti, transliteracija, bez dijakritika) i neosetljivim redosledom autora; novi `GET /books/duplicate-check` i `409` sa `duplicate_books` pri kreiranju naslova bez `confirm_duplicate`
+- **Brzi unos po ISBN-u** (`frontend/src/components/books/book-copy-quick-add-modal.tsx`, `book-copy-barcode-print-modal.tsx`, `book-copy-metadata-fields.tsx`, `copy-form.ts`) — modal za dodavanje kopije/naslova iz ISBN-a sa reuse/create tokom, zajednička polja metapodataka i izdvojen modal za štampu bar-koda
+- **i18n i testovi** (`frontend/src/i18n/locales/*.json`, `tests/Feature/{CobissHarvestTest,CobissCategoryMapperTest,CobissBookSeederTest}.php`, `tests/Feature/Auth/{BookDuplicateApiTest,BookCopyOrderingTest}.php`) — `books.duplicate`, `books.quickAdd`, `barcode.formats.*Hint`; harvest/lookup, mapiranje kategorija, seeder, duplikati i numeričko sortiranje
+
+### Changed
+
+- **Separator autora** (`frontend/src/components/books/copy-form.ts`, `book-form-modal.tsx`, `book-copy-add-modal.tsx`) — autori se razdvajaju tačkom-zarezom (`;`) jer je zarez deo formata „Prezime, Ime"; prikaz autora u katalogu i detaljima ide sa `; `
+- **Numeričko sortiranje inventarnih brojeva** (`app/Http/Controllers/BookCopiesController.php`, `app/Services/Isbn/IsbnLookupService.php`, `app/Models/Book.php`) — `CAST(order_number AS BIGINT)` umesto leksikografskog reda; dosledan `id` tiebreaker na listama (books, authors, categories, tags, regions, places, libraries, users, `ActiveLibraryService`, `LibraryCatalog`)
+- **Izbor formata bar-koda** (`frontend/src/components/barcode/barcode-print-format-picker.tsx`) — komponenta premeštena iz `users/` u `barcode/` i koristi zajednički `barcode.formats` namespace
+- **Zajednička polja kopije** (`book-copy-add-modal.tsx`, `book-form-modal.tsx`) — duplirani meta-podaci kopije i kalkulacija količine izdvojeni u `BookCopyMetadataFields`/`copy-form`, uz `onUseExistingTitle` tok
+- **Scope kategorija po aktivnoj biblioteci** (`app/Http/Controllers/CategoriesController.php`) — superadmin bez eksplicitnog `library_id` dobija kategorije aktivne biblioteke; eksplicitni filter ima prednost, nesuperadmin ne može zaobići aktivnu biblioteku
+- **Dvostruki skrol** (`frontend/src/components/layout/app-shell.tsx`, `frontend/src/components/ui/table.tsx`) — `overflow: hidden` na `html`/`body` dok je dashboard montiran i `overflow-y-hidden` na kontejneru tabele
+
+### Fixed
+
+- **Razmak „extended" nalepnica** (`app/Services/BarcodePdfService.php`) — bar-kod, EAN cifre i naziv biblioteke pomereni za 1 mm u oba formata (`label` i `a4`)
+- **NBS parsiranje autora** (`app/Services/Isbn/NbsCatalogProvider.php`) — ispravljen regex za uklanjanje godina na kraju imena
+- **Detalji naslova** (`frontend/src/pages/books/book-detail-page.tsx`, `book-copy-detail-page.tsx`) — zajednički modal za štampu bar-koda i `;` separator autora
+
 ## [15.09.2026] Datumi: jedinstven `d.m.Y` unos i prikaz kroz forme i API
 
 ### Added

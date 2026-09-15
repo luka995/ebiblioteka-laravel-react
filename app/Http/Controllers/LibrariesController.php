@@ -30,7 +30,8 @@ class LibrariesController extends Controller
                 $request->filled('search'),
                 fn ($query) => (new LibraryFilters)->apply($query, $request->only('search'))
             )
-            ->latest();
+            ->latest()
+            ->orderByDesc('id');
 
         $permissions = $auth->collectionPermissions($request->user(), Library::class);
 

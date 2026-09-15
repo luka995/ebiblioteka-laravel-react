@@ -158,7 +158,7 @@ export function BooksPage() {
                     </Link>
                   </TableCell>
                   <TableCell className="px-4 text-muted-foreground">
-                    {book.authors?.map((author) => author.display_name).join(', ') || '—'}
+                    {book.authors?.map((author) => author.display_name).join('; ') || '—'}
                   </TableCell>
                   <TableCell className="hidden px-4 text-muted-foreground lg:table-cell">
                     {[book.category_primary_name, book.category_secondary_name].filter(Boolean).join(' / ') || '—'}

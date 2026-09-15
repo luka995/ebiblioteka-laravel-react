@@ -241,6 +241,10 @@ export interface IsbnLookupResult {
   matches: Book[]
 }
 
+export interface BookDuplicateCheckResult {
+  matches: Book[]
+}
+
 export interface InventoryDiscrepancy {
   next_auto: number
   max_existing: number

@@ -87,10 +87,6 @@
     "printBarcode": "Štampaj",
     "printBarcodeTitle": "Štampa bar-koda",
     "printBarcodeDescription": "Izaberite format za štampu bar-koda.",
-    "printBarcodeFormatLabel": "Bar-kod štampač (62×29 mm)",
-    "printBarcodeFormatLabelHint": "Jedan bar-kod na nalepnici. Pogodno i za slanje korisniku kao PDF (zamena za člansku kartu).",
-    "printBarcodeFormatA4": "A4 — 48 nalepnica",
-    "printBarcodeFormatA4Hint": "A4 list sa 48 nalepnica; za jednog korisnika štampa se prva nalepnica.",
     "printBarcodeSubmit": "Preuzmi PDF",
     "printBarcodeSuccess": "PDF je preuzet.",
     "bulkPrintBarcode": "Štampaj bar-kodove",
@@ -447,8 +443,10 @@
   },
   "barcode": {
     "formats": {
-      "label": "Nalepnica (62x29mm)",
-      "a4": "A4 list (48 nalepnica)"
+      "label": "Bar-kod štampač (62×29 mm)",
+      "labelHint": "Jedan bar-kod na nalepnici; pogodno i za slanje kao PDF.",
+      "a4": "A4 list (48 nalepnica)",
+      "a4Hint": "A4 list sa 48 nalepnica (4×12)."
     }
   },
   "books": {
@@ -489,7 +487,8 @@
     "fields": {
       "name": "Naslov",
       "authors": "Autori",
-      "authorsPlaceholder": "Razdvojeni zarezom",
+      "authorsPlaceholder": "Prezime, Ime ; Prezime, Ime",
+      "authorsHint": "Više autora razdvojite tačkom i zapetom (;). Jedan autor se piše kao Prezime, Ime.",
       "categoryPrimary": "Primarna kategorija",
       "categorySecondary": "Sekundarna kategorija",
       "coverUrl": "URL slike korica",
@@ -546,6 +545,25 @@
       "matches": "Slični naslovi u biblioteci",
       "noMetadata": "Nema metapodataka za ovaj ISBN."
     },
+    "duplicate": {
+      "title": "Naslov već postoji",
+      "hint": "U biblioteci već postoji naslov sa istim naslovom i autorom. Iskoristite postojeći umesto kreiranja duplikata.",
+      "useExisting": "Iskoristi postojeći",
+      "continueAnyway": "Nastavi sa novim naslovom",
+      "foundOtherTitle": "ISBN pripada drugom naslovu",
+      "openTitle": "Otvori naslov",
+      "confirmTitle": "Sličan naslov već postoji",
+      "confirmText": "Naslov „{{name}}“ sa istim autorima već postoji. Iskoristite postojeći naslov ili nastavite sa novim."
+    },
+    "quickAdd": {
+      "title": "Dodaj po ISBN",
+      "subtitle": "Pretražite po ISBN i dodajte fizičku jedinicu postojećem ili novom naslovu.",
+      "newTitle": "Novi naslov",
+      "existingTitle": "Postojeći naslov",
+      "createNew": "Kreiraj novi naslov",
+      "created": "Naslov i kopija su kreirani.",
+      "lookupFirst": "Prvo pretražite ISBN."
+    },
     "copies": {
       "title": "Fizičke jedinice",
       "add": "Dodaj kopije",
@@ -564,6 +582,11 @@
       "selectAll": "Izaberi sve",
       "select": "Izaberi",
       "printSelected": "Štampa ({{count}})",
+      "printTitle": "Štampa bar-koda",
+      "printDescriptionSingle": "Izaberite format za štampu bar-koda kopije.",
+      "printDescriptionBulk": "Izaberite format za štampu bar-koda za {{count}} izabranih kopija.",
+      "printSubmit": "Preuzmi PDF",
+      "printSuccess": "PDF je preuzet.",
       "empty": "Nema kopija.",
       "listTitle": "Fizičke jedinice",
       "searchBarcode": "Pretraga po barkodu...",

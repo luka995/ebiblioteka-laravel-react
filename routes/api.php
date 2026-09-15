@@ -83,6 +83,7 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::delete('/authors/{author}', [AuthorsController::class, 'destroy'])->middleware('can:delete,author');
 
     Route::get('/books/isbn-lookup', [BooksController::class, 'isbnLookup'])->middleware('can:viewAny,App\Models\Book');
+    Route::get('/books/duplicate-check', [BooksController::class, 'duplicateCheck'])->middleware('can:viewAny,App\Models\Book');
     Route::get('/books/archive', [BooksController::class, 'archive'])->middleware('can:viewAny,App\Models\Book');
     Route::get('/books', [BooksController::class, 'index'])->middleware('can:viewAny,App\Models\Book');
     Route::post('/books/upload-cover', [BooksController::class, 'uploadCover'])->middleware('can:create,App\Models\Book');

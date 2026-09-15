@@ -1,8 +1,10 @@
 <?php
 
+use App\Enums\UserRole;
 use App\Models\Category;
 use App\Models\Library;
 use App\Models\User;
+use App\Services\ActiveLibraryService;
 
 function categoryCrudHeaders(array $extra = []): array
 {
@@ -135,4 +137,60 @@ test('category search matches both cyrillic and latin scripts', function () {
         ->getJson('/api/v1/categories?all=1&library_id='.$library->id.'&search='.urlencode('Петар'), categoryCrudHeaders())
         ->assertOk()
         ->assertJsonFragment(['name' => 'Petar']);
+});
+
+test('superadmin categories list is scoped to the active library', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $libraryA = makeCategoryLibrary();
+    $libraryB = makeCategoryLibrary();
+    $inA = Category::factory()->for($libraryA)->create(['name' => 'A kategorija']);
+    $inB = Category::factory()->for($libraryB)->create(['name' => 'B kategorija']);
+
+    app(ActiveLibraryService::class)->set($admin, $libraryA->id);
+
+    $this->actingAs($admin)->getJson('/api/v1/categories?all=1', categoryCrudHeaders())
+        ->assertOk()
+        ->assertJsonFragment(['id' => $inA->id])
+        ->assertJsonMissing(['id' => $inB->id]);
+});
+
+test('superadmin categories list is unscoped without an active library', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeCategoryLibrary();
+    $category = Category::factory()->for($library)->create(['name' => 'Sve kategorije']);
+
+    $this->actingAs($admin)->getJson('/api/v1/categories?all=1', categoryCrudHeaders())
+        ->assertOk()
+        ->assertJsonFragment(['id' => $category->id]);
+});
+
+test('explicit library_id overrides the active library for superadmin', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $libraryA = makeCategoryLibrary();
+    $libraryB = makeCategoryLibrary();
+    $inA = Category::factory()->for($libraryA)->create(['name' => 'A kategorija']);
+    $inB = Category::factory()->for($libraryB)->create(['name' => 'B kategorija']);
+
+    app(ActiveLibraryService::class)->set($admin, $libraryA->id);
+
+    $this->actingAs($admin)->getJson('/api/v1/categories?all=1&library_id='.$libraryB->id, categoryCrudHeaders())
+        ->assertOk()
+        ->assertJsonFragment(['id' => $inB->id])
+        ->assertJsonMissing(['id' => $inA->id]);
+});
+
+test('non-superadmin cannot override the active library with a foreign library_id', function () {
+    $user = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryA = makeCategoryLibrary();
+    $libraryB = makeCategoryLibrary();
+    $user->libraries()->attach($libraryA->id);
+    $inA = Category::factory()->for($libraryA)->create(['name' => 'A kategorija']);
+    $inB = Category::factory()->for($libraryB)->create(['name' => 'B kategorija']);
+
+    app(ActiveLibraryService::class)->set($user, $libraryA->id);
+
+    $this->actingAs($user)->getJson('/api/v1/categories?all=1&library_id='.$libraryB->id, categoryCrudHeaders())
+        ->assertOk()
+        ->assertJsonFragment(['id' => $inA->id])
+        ->assertJsonMissing(['id' => $inB->id]);
 });

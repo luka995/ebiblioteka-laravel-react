@@ -13,6 +13,7 @@ use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
 use App\Services\BookCopyService;
 use App\Services\BookService;
+use App\Services\Isbn\BookMatcher;
 use App\Services\Isbn\IsbnLookupService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -61,7 +62,7 @@ class BooksController extends Controller
             });
         }
 
-        $query->orderBy('name');
+        $query->orderBy('name')->orderBy('id');
 
         $permissions = $auth->collectionPermissions($user, Book::class);
 
@@ -109,6 +110,40 @@ class BooksController extends Controller
         ]);
     }
 
+    public function duplicateCheck(Request $request, BookMatcher $matcher, ActiveLibraryService $activeLibrary): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'authors' => ['sometimes', 'array'],
+            'authors.*' => ['nullable', 'string', 'max:255'],
+            'library_id' => ['sometimes', 'integer'],
+        ]);
+
+        $user = $request->user();
+
+        if ($user->isSuperAdmin()) {
+            $library = $request->filled('library_id')
+                ? Library::find($request->integer('library_id'))
+                : $activeLibrary->resolve($user);
+        } else {
+            $library = $activeLibrary->resolve($user);
+        }
+
+        if ($library === null) {
+            return response()->json(['matches' => []]);
+        }
+
+        $matches = $matcher->duplicates(
+            $library,
+            (string) $validated['name'],
+            $validated['authors'] ?? [],
+        );
+
+        return response()->json([
+            'matches' => BookResource::collection($matches)->resolve($request),
+        ]);
+    }
+
     public function uploadCover(Request $request): JsonResponse
     {
         $request->validate([
@@ -123,10 +158,24 @@ class BooksController extends Controller
         ]);
     }
 
-    public function store(StoreBookRequest $request, BookService $books, BookCopyService $copies): BookResource
+    public function store(StoreBookRequest $request, BookService $books, BookCopyService $copies, BookMatcher $matcher): BookResource|JsonResponse
     {
         $data = $request->validated();
         $withCopies = (bool) ($data['with_copies'] ?? false);
+
+        if (! (bool) ($data['confirm_duplicate'] ?? false)) {
+            $library = Library::find($data['library_id']);
+            $duplicates = $library === null
+                ? collect()
+                : $matcher->duplicates($library, $data['name'], $data['authors'] ?? []);
+
+            if ($duplicates->isNotEmpty()) {
+                return response()->json([
+                    'message' => __('validation.custom.book_duplicate'),
+                    'duplicate_books' => BookResource::collection($duplicates)->resolve($request),
+                ], 409);
+            }
+        }
 
         $bookData = Arr::only($data, [
             'library_id', 'name', 'category_primary_id', 'category_secondary_id',
@@ -187,7 +236,7 @@ class BooksController extends Controller
             $query->where('library_id', $request->integer('library_id'));
         }
 
-        $query->orderByDesc('deleted_at');
+        $query->orderByDesc('deleted_at')->orderByDesc('id');
 
         $permissions = $auth->collectionPermissions($user, Book::class);
 

@@ -18,13 +18,13 @@ export function BarcodePrintFormatPicker({
   const options: { value: BarcodePrintFormat; label: string; hint: string }[] = [
     {
       value: 'label',
-      label: t('users.printBarcodeFormatLabel'),
-      hint: t('users.printBarcodeFormatLabelHint'),
+      label: t('barcode.formats.label'),
+      hint: t('barcode.formats.labelHint'),
     },
     {
       value: 'a4',
-      label: t('users.printBarcodeFormatA4'),
-      hint: t('users.printBarcodeFormatA4Hint'),
+      label: t('barcode.formats.a4'),
+      hint: t('barcode.formats.a4Hint'),
     },
   ]
 

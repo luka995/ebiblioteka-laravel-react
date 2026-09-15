@@ -73,7 +73,7 @@ class BookCopiesController extends Controller
             $query->where('rec_error', $request->boolean('rec_error'));
         }
 
-        $query->orderBy('order_number');
+        $query->orderByRaw('CAST(order_number AS BIGINT)')->orderBy('id');
 
         $permissions = $auth->collectionPermissions($user, BookCopy::class);
 
@@ -138,7 +138,7 @@ class BookCopiesController extends Controller
             $query->where('book_id', $request->integer('book_id'));
         }
 
-        $query->orderByDesc('deleted_at');
+        $query->orderByDesc('deleted_at')->orderByDesc('id');
 
         $permissions = $auth->collectionPermissions($user, BookCopy::class);
 
@@ -234,7 +234,7 @@ class BookCopiesController extends Controller
         $user = $request->user();
         $ids = $request->copyIds();
 
-        $query = BookCopy::query()->whereIn('id', $ids);
+        $query = BookCopy::query()->with('book')->whereIn('id', $ids);
 
         if (! $user->isSuperAdmin()) {
             $active = $activeLibrary->resolve($user);

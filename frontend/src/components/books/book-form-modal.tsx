@@ -9,14 +9,29 @@ import { storageUrl } from '@/lib/environment'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { DateInput } from '@/components/ui/date-input'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { CategorySelect, type CategoryOption } from '@/components/categories/category-select'
+import { BookCopyMetadataFields } from '@/components/books/book-copy-metadata-fields'
+import {
+  copyMetadataPayload,
+  copyQuantityPayload,
+  EMPTY_COPY,
+  splitAuthors,
+  type CopyFormValues,
+} from '@/components/books/copy-form'
 import { useAuth } from '@/hooks/useAuth'
-import type { Book, IsbnLookupResult } from '@/types'
+import type { Book, BookDuplicateCheckResult, IsbnLookupResult } from '@/types'
 
 interface BookFormModalProps {
   open: boolean
@@ -30,48 +45,6 @@ interface FormValues {
   authors: string
   description: string
   coverUrl: string
-}
-
-interface CopyFormValues {
-  copies: string
-  orderNumber: string
-  isbn: string
-  publisher: string
-  publishPlace: string
-  publishYear: string
-  issueNumber: string
-  numOfPages: string
-  dimension: string
-  part: string
-  udk: string
-  binding: string
-  origin: string
-  bookNumber: string
-  placeOnShelf: string
-  price: string
-  dateAdd: string
-  notice: string
-}
-
-const EMPTY_COPY: CopyFormValues = {
-  copies: '1',
-  orderNumber: '',
-  isbn: '',
-  publisher: '',
-  publishPlace: '',
-  publishYear: '',
-  issueNumber: '',
-  numOfPages: '',
-  dimension: '',
-  part: '',
-  udk: '',
-  binding: '',
-  origin: '',
-  bookNumber: '',
-  placeOnShelf: '',
-  price: '0',
-  dateAdd: '',
-  notice: '',
 }
 
 export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalProps) {
@@ -93,10 +66,15 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
   const [existingBook, setExistingBook] = useState<Book | null>(null)
   const [withCopies, setWithCopies] = useState(false)
   const [copy, setCopy] = useState<CopyFormValues>({ ...EMPTY_COPY })
+  const [duplicates, setDuplicates] = useState<Book[]>([])
+  const [pendingDuplicate, setPendingDuplicate] = useState<Book[] | null>(null)
 
   const form = useForm<FormValues>({
     defaultValues: { name: '', authors: '', description: '', coverUrl: '' },
   })
+
+  const watchedName = form.watch('name')
+  const watchedAuthors = form.watch('authors')
 
   const libraryId = editing ? (book?.library_id ?? null) : (activeLibrary?.id ?? null)
   const invNumberAuto = existingBook
@@ -110,7 +88,7 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
     if (!open) return
     form.reset({
       name: book?.name ?? '',
-      authors: book?.authors?.map((author) => author.name).join(', ') ?? '',
+      authors: book?.authors?.map((author) => author.name).join('; ') ?? '',
       description: book?.description ?? '',
       coverUrl: book?.cover_url ?? '',
     })
@@ -132,13 +110,43 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
     setExistingBook(null)
     setWithCopies(false)
     setCopy({ ...EMPTY_COPY })
+    setDuplicates([])
+    setPendingDuplicate(null)
   }, [open, book, form])
 
-  const parseAuthors = (value: string) =>
-    value
-      .split(',')
-      .map((name) => name.trim())
-      .filter(Boolean)
+  useEffect(() => {
+    if (!open || editing || existingBook) {
+      setDuplicates([])
+      return
+    }
+
+    const name = watchedName.trim()
+
+    if (name.length < 2) {
+      setDuplicates([])
+      return
+    }
+
+    let cancelled = false
+    const handle = window.setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ name })
+        splitAuthors(watchedAuthors).forEach((author) => params.append('authors[]', author))
+        if (libraryId !== null) params.set('library_id', String(libraryId))
+        const result = await api.get<BookDuplicateCheckResult>(
+          `${apiPaths.bookDuplicateCheck}?${params.toString()}`,
+        )
+        if (!cancelled) setDuplicates(result.matches)
+      } catch {
+        // provera duplikata ne sme da blokira formu
+      }
+    }, 400)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(handle)
+    }
+  }, [open, editing, existingBook, watchedName, watchedAuthors, libraryId])
 
   const handleFileChange = async (file: File | undefined) => {
     if (!file) return
@@ -156,30 +164,6 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
     }
   }
 
-  const copyMeta = (): Record<string, unknown> => ({
-    isbn: copy.isbn.trim() || null,
-    publisher: copy.publisher.trim() || null,
-    publish_place: copy.publishPlace.trim() || null,
-    publish_year: copy.publishYear.trim() || null,
-    issue_number: copy.issueNumber.trim() || null,
-    num_of_pages: copy.numOfPages === '' ? null : Number(copy.numOfPages),
-    dimension: copy.dimension.trim() || null,
-    part: copy.part.trim() || null,
-    udk: copy.udk.trim() || null,
-    binding: copy.binding || null,
-    origin: copy.origin || null,
-    book_number: copy.bookNumber.trim() || null,
-    place_on_shelf: copy.placeOnShelf.trim() || null,
-    price: copy.price === '' ? 0 : Number(copy.price),
-    date_add: copy.dateAdd || null,
-    notice: copy.notice.trim() || null,
-  })
-
-  const copyQuantity = (): Record<string, unknown> =>
-    invNumberAuto
-      ? { copies: Math.max(1, Number(copy.copies) || 1) }
-      : { order_number: copy.orderNumber.trim() }
-
   const runLookup = async () => {
     if (!isbn.trim()) return
     setIsLookingUp(true)
@@ -193,6 +177,7 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
         const first = result.existing_copies[0]
         setExistingBook(result.book)
         setWithCopies(true)
+        setDuplicates([])
         setCopy((current) => ({
           ...current,
           isbn: first?.isbn ?? isbn.trim(),
@@ -220,10 +205,11 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
 
       if (result.metadata) {
         if (result.metadata.title) form.setValue('name', result.metadata.title)
-        if (result.metadata.authors.length) form.setValue('authors', result.metadata.authors.join(', '))
+        if (result.metadata.authors.length) form.setValue('authors', result.metadata.authors.join('; '))
         if (result.metadata.description) form.setValue('description', result.metadata.description)
         if (result.metadata.cover_url) form.setValue('coverUrl', result.metadata.cover_url)
         if (result.metadata.category) setCategorySeed(result.metadata.category)
+        setDuplicates(result.matches)
 
         setCopy((current) => ({
           ...current,
@@ -236,6 +222,8 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
           udk: result.metadata?.udk ?? current.udk,
         }))
         setWithCopies(true)
+      } else {
+        setDuplicates([])
       }
     } catch (error) {
       if (error instanceof ApiError) {
@@ -246,32 +234,46 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
     }
   }
 
-  const onSubmit = form.handleSubmit(async (values) => {
+  const submitCopiesTo = async (target: Book) => {
+    const copiesCount = Math.max(1, Number(copy.copies) || 1)
+    await api.post(apiPaths.bookCopies(target.id), {
+      ...copyMetadataPayload(copy),
+      ...copyQuantityPayload(copy, invNumberAuto),
+    })
+    await queryClient.invalidateQueries({ queryKey: ['book', target.id] })
+    await queryClient.invalidateQueries({ queryKey: ['books'] })
+    await queryClient.invalidateQueries({ queryKey: ['book-copies'] })
+    toast.success(t('books.copies.created', { count: invNumberAuto ? copiesCount : 1 }))
+    onSuccess(target.name)
+    onClose()
+  }
+
+  const useExisting = (target: Book) => {
+    setExistingBook(target)
+    setWithCopies(true)
+    setDuplicates([])
+    setPendingDuplicate(null)
+    setCopy((current) => ({
+      ...current,
+      isbn: current.isbn.trim() || isbn.trim(),
+    }))
+  }
+
+  const submit = async (values: FormValues, options: { confirmDuplicate?: boolean } = {}) => {
     if (!editing && libraryId === null) {
       toast.error(t('books.libraryRequired'))
       return
     }
 
-    const copiesCount = Math.max(1, Number(copy.copies) || 1)
-
     try {
       if (!editing && existingBook) {
-        await api.post(apiPaths.bookCopies(existingBook.id), {
-          ...copyMeta(),
-          ...copyQuantity(),
-        })
-        await queryClient.invalidateQueries({ queryKey: ['book', existingBook.id] })
-        await queryClient.invalidateQueries({ queryKey: ['books'] })
-        await queryClient.invalidateQueries({ queryKey: ['book-copies'] })
-        toast.success(t('books.copies.created', { count: invNumberAuto ? copiesCount : 1 }))
-        onSuccess(existingBook.name)
-        onClose()
+        await submitCopiesTo(existingBook)
         return
       }
 
       const payload: Record<string, unknown> = {
         name: values.name.trim(),
-        authors: parseAuthors(values.authors),
+        authors: splitAuthors(values.authors),
         description: values.description.trim() || null,
         image: imagePath,
         cover_url: imagePath ? null : (values.coverUrl.trim() || null),
@@ -282,7 +284,11 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
 
       if (!editing && withCopies) {
         payload.with_copies = true
-        Object.assign(payload, copyMeta(), copyQuantity())
+        Object.assign(payload, copyMetadataPayload(copy), copyQuantityPayload(copy, invNumberAuto))
+      }
+
+      if (options.confirmDuplicate) {
+        payload.confirm_duplicate = true
       }
 
       if (editing && book) {
@@ -299,10 +305,19 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
       onClose()
     } catch (error) {
       if (error instanceof ApiError) {
+        if (error.status === 409) {
+          const data = error.data as { duplicate_books?: Book[] } | undefined
+          if (data?.duplicate_books?.length) {
+            setPendingDuplicate(data.duplicate_books)
+            return
+          }
+        }
         toast.error(error.messageText ?? t('errors.unexpected'))
       }
     }
-  })
+  }
+
+  const onSubmit = form.handleSubmit((values) => submit(values))
 
   const sourceLabel = useMemo(() => {
     if (!lookup?.source) return null
@@ -312,7 +327,8 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
   const showCopySection = !editing && (Boolean(existingBook) || withCopies)
 
   return (
-    <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
+    <>
+      <Dialog open={open} onOpenChange={(value) => !value && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="font-brand-heading text-xl">
@@ -360,20 +376,29 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
                   </p>
                 </div>
               ) : null}
+            </div>
+          ) : null}
 
-              {lookup?.matches.length ? (
-                <div className="mt-2 rounded-md border bg-background p-2 text-xs">
-                  <p className="font-medium">{t('books.isbn.matches')}</p>
-                  <ul className="mt-1 space-y-0.5 text-muted-foreground">
-                    {lookup.matches.map((match) => (
-                      <li key={match.id}>
-                        {match.name}
-                        {match.authors?.length ? ` — ${match.authors.map((a) => a.name).join(', ')}` : ''}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
+          {!existingBook && duplicates.length ? (
+            <div className="rounded-lg border border-brand-accent/40 bg-brand-soft/40 p-3 text-sm">
+              <p className="font-medium">{t('books.duplicate.title')}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t('books.duplicate.hint')}</p>
+              <ul className="mt-2 space-y-2">
+                {duplicates.map((match) => (
+                  <li
+                    key={match.id}
+                    className="flex items-center justify-between gap-2 rounded-md border bg-background p-2"
+                  >
+                    <span className="min-w-0 truncate">
+                      {match.name}
+                      {match.authors?.length ? ` — ${match.authors.map((author) => author.name).join('; ')}` : ''}
+                    </span>
+                    <Button type="button" variant="outline" size="sm" onClick={() => useExisting(match)}>
+                      {t('books.duplicate.useExisting')}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
             </div>
           ) : null}
 
@@ -393,6 +418,7 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
               <div className="space-y-1.5">
                 <Label htmlFor="book-authors">{t('books.fields.authors')}</Label>
                 <Input id="book-authors" placeholder={t('books.fields.authorsPlaceholder')} {...form.register('authors')} />
+                <p className="text-xs text-muted-foreground">{t('books.fields.authorsHint')}</p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -541,100 +567,9 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label>{t('books.fields.publisher')}</Label>
-                  <Input value={copy.publisher} onChange={(event) => updateCopy('publisher', event.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('books.fields.publishPlace')}</Label>
-                  <Input value={copy.publishPlace} onChange={(event) => updateCopy('publishPlace', event.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('books.fields.publishYear')}</Label>
-                  <Input value={copy.publishYear} onChange={(event) => updateCopy('publishYear', event.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('books.fields.pages')}</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={copy.numOfPages}
-                    onChange={(event) => updateCopy('numOfPages', event.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('books.fields.dimension')}</Label>
-                  <Input value={copy.dimension} onChange={(event) => updateCopy('dimension', event.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('books.fields.udk')}</Label>
-                  <Input value={copy.udk} onChange={(event) => updateCopy('udk', event.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('books.fields.binding')}</Label>
-                  <select
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-                    value={copy.binding}
-                    onChange={(event) => updateCopy('binding', event.target.value)}
-                  >
-                    <option value="">{t('common.none')}</option>
-                    <option value="t">{t('books.binding.hard')}</option>
-                    <option value="b">{t('books.binding.paperback')}</option>
-                    <option value="k">{t('books.binding.carton')}</option>
-                    <option value="ko">{t('books.binding.leather')}</option>
-                    <option value="l">{t('books.binding.luxury')}</option>
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('books.fields.origin')}</Label>
-                  <select
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-                    value={copy.origin}
-                    onChange={(event) => updateCopy('origin', event.target.value)}
-                  >
-                    <option value="">{t('common.none')}</option>
-                    <option value="ob">{t('books.origin.mandatory')}</option>
-                    <option value="ku">{t('books.origin.purchase')}</option>
-                    <option value="ra">{t('books.origin.exchange')}</option>
-                    <option value="po">{t('books.origin.gift')}</option>
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('books.fields.placeOnShelf')}</Label>
-                  <Input value={copy.placeOnShelf} onChange={(event) => updateCopy('placeOnShelf', event.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('books.fields.price')}</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={copy.price}
-                    onChange={(event) => updateCopy('price', event.target.value)}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('books.fields.dateAdd')}</Label>
-                  <DateInput value={copy.dateAdd} onChange={(value) => updateCopy('dateAdd', value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('books.fields.part')}</Label>
-                  <Input value={copy.part} onChange={(event) => updateCopy('part', event.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('books.fields.issueNumber')}</Label>
-                  <Input value={copy.issueNumber} onChange={(event) => updateCopy('issueNumber', event.target.value)} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('books.fields.bookNumber')}</Label>
-                  <Input value={copy.bookNumber} onChange={(event) => updateCopy('bookNumber', event.target.value)} />
-                </div>
               </div>
 
-              <div className="space-y-1.5">
-                <Label>{t('books.fields.notice')}</Label>
-                <Textarea rows={2} value={copy.notice} onChange={(event) => updateCopy('notice', event.target.value)} />
-              </div>
+              <BookCopyMetadataFields value={copy} onChange={updateCopy} />
             </div>
           ) : null}
         </div>
@@ -649,5 +584,40 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
         </div>
       </DialogContent>
     </Dialog>
+
+      <AlertDialog open={Boolean(pendingDuplicate)} onOpenChange={(value) => !value && setPendingDuplicate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('books.duplicate.confirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('books.duplicate.confirmText', { name: form.getValues('name') })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                const values = form.getValues()
+                setPendingDuplicate(null)
+                void submit(values, { confirmDuplicate: true })
+              }}
+            >
+              {t('books.duplicate.continueAnyway')}
+            </Button>
+            <Button
+              type="button"
+              variant="brand"
+              onClick={() => {
+                const first = pendingDuplicate?.[0]
+                if (first) useExisting(first)
+              }}
+            >
+              {t('books.duplicate.useExisting')}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

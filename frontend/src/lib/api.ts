@@ -267,6 +267,7 @@ export const apiPaths = {
   bookUploadCover: '/api/v1/books/upload-cover',
   book: (id: number) => `/api/v1/books/${id}`,
   bookIsbnLookup: '/api/v1/books/isbn-lookup',
+  bookDuplicateCheck: '/api/v1/books/duplicate-check',
   bookArchive: '/api/v1/books/archive',
   bookRestore: (id: number) => `/api/v1/books/${id}/restore`,
   bookForce: (id: number) => `/api/v1/books/${id}/force`,

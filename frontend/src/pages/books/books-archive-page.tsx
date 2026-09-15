@@ -125,7 +125,7 @@ export function BooksArchivePage() {
                     <TableRow key={book.id}>
                       <TableCell className="px-4 font-medium">{book.name}</TableCell>
                       <TableCell className="px-4 text-muted-foreground">
-                        {book.authors?.map((author) => author.display_name).join(', ') || '—'}
+                        {book.authors?.map((author) => author.display_name).join('; ') || '—'}
                       </TableCell>
                       <TableCell className="px-4">
                         <div className="flex justify-end gap-1">

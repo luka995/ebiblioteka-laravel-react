@@ -35,8 +35,15 @@ class CategoriesController extends Controller
             } else {
                 $query->where('library_id', $active->id);
             }
-        } elseif ($request->filled('library_id')) {
-            $query->where('library_id', $request->integer('library_id'));
+        } else {
+            // Superadmin: eksplicitni filter ima prednost, inace se suzava na aktivnu biblioteku.
+            $libraryId = $request->filled('library_id')
+                ? $request->integer('library_id')
+                : $active?->id;
+
+            if ($libraryId) {
+                $query->where('library_id', $libraryId);
+            }
         }
 
         $query
@@ -44,7 +51,8 @@ class CategoriesController extends Controller
             ->when($request->filled('search'), function ($q) use ($request) {
                 $this->whereTransliterated($q, 'name', trim((string) $request->string('search')));
             })
-            ->orderBy('name');
+            ->orderBy('name')
+            ->orderBy('id');
 
         $permissions = $auth->collectionPermissions($user, Category::class);
 

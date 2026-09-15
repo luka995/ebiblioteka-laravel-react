@@ -66,6 +66,7 @@ class UsersController extends Controller
 
         $users = $query
             ->latest()
+            ->orderByDesc('id')
             ->paginate($request->integer('per_page', 25))
             ->withQueryString();
 
