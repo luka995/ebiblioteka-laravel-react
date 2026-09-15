@@ -110,6 +110,9 @@ export function LibraryDetailPage() {
               <InfoRow label={t('fields.place')}>{target.place?.name}</InfoRow>
               <InfoRow label={t('fields.region')}>{target.place?.region?.name}</InfoRow>
               <InfoRow label={t('fields.workTime')}>{target.work_time}</InfoRow>
+              <InfoRow label={t('fields.invNumberAuto')}>
+                {target.inv_number_auto ? t('common.auto') : t('common.manual')}
+              </InfoRow>
             </dl>
           </div>
 

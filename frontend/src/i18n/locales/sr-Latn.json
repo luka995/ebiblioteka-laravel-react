@@ -18,7 +18,8 @@
     "account": "Moj nalog",
     "settings": "Podešavanja",
     "categories": "Kategorije",
-    "authors": "Autori"
+    "authors": "Autori",
+    "books": "Knjige"
   },
   "auth": {
     "heroTitle": "Radni prostor za biblioteke i čitaoce",
@@ -344,6 +345,8 @@
     "region": "Regija",
     "tags": "Tagovi",
     "workTime": "Radno vreme",
+    "invNumberAuto": "Automatski inventarski broj",
+    "invNumberAutoHint": "Broj se dodeljuje automatski. Isključite za ručni unos.",
     "optional": "opciono",
     "selectPlaceholder": "Izaberite..."
   },
@@ -376,7 +379,13 @@
     "edit": "Izmeni",
     "delete": "Obriši",
     "clear": "Poništi",
-    "backToList": "Nazad na listu"
+    "backToList": "Nazad na listu",
+    "auto": "Automatski",
+    "manual": "Ručno",
+    "close": "Zatvori",
+    "none": "Bez",
+    "yes": "Da",
+    "no": "Ne"
   },
   "pagination": {
     "showing": "Prikaz {{from}}–{{to}} od {{total}}",
@@ -408,7 +417,8 @@
     "parentLabel": "Roditeljska kategorija",
     "parentPlaceholder": "Pretražite roditeljsku kategoriju...",
     "selectLibraryHint": "Izaberite biblioteku da biste izabrali roditeljsku kategoriju.",
-    "noResults": "Nema rezultata."
+    "noResults": "Nema rezultata.",
+    "createNamed": "Kreiraj kategoriju „{{name}}“"
   },
   "authors": {
     "title": "Autori",
@@ -434,5 +444,201 @@
     "nameLabel": "Ime i prezime",
     "namePlaceholder": "Ime i prezime",
     "nameDescription": "Unesite ime i prezime autora. Ako unesete „Prezime, Ime“, prikaz će ostati takav. Ako unesete klasičan format „Ime Prezime“, podatak će biti sačuvan tako kako ste ga uneli, a samo prikaz će biti formatiran kao „Prezime, Ime“."
+  },
+  "barcode": {
+    "formats": {
+      "label": "Nalepnica (62x29mm)",
+      "a4": "A4 list (48 nalepnica)"
+    }
+  },
+  "books": {
+    "title": "Knjige",
+    "subtitle": "Upravljanje naslovima i fizičkim jedinicama.",
+    "listTitle": "Naslovi",
+    "archiveLink": "Arhiva i inventarni brojevi",
+    "add": "Novi naslov",
+    "search": "Pretraga naslova ili autora...",
+    "empty": "Nema naslova.",
+    "created": "Naslov je dodat.",
+    "updated": "Naslov je izmenjen.",
+    "deleted": "Naslov je obrisan.",
+    "notFound": "Naslov nije pronađen.",
+    "libraryRequired": "Izaberite biblioteku.",
+    "activeLibraryRequired": "Izaberite aktivnu biblioteku da biste prikazali podatke.",
+    "formTitle": "Novi naslov",
+    "formSubtitle": "Dodajte naslov ručno ili preko ISBN-a.",
+    "editTitle": "Izmena naslova",
+    "editSubtitle": "Izmenite podatke naslova.",
+    "deleteConfirmTitle": "Obrisati naslov?",
+    "deleteConfirmText": "Da li ste sigurni da želite da obrišete \"{{name}}\"?",
+    "availableOf": "{{available}} / {{total}} dostupno",
+    "manualMode": "Ručni inventarni brojevi",
+    "autoMode": "Automatski inventarni brojevi",
+    "cards": {
+      "titlesTitle": "Naslovi",
+      "titlesDescription": "Bibliografski zapisi, autori i kategorije.",
+      "copiesTitle": "Fizičke jedinice",
+      "copiesDescription": "Inventarni brojevi, barkodovi i status kopije."
+    },
+    "columns": {
+      "name": "Naslov",
+      "authors": "Autori",
+      "categories": "Kategorije",
+      "copies": "Primerci"
+    },
+    "fields": {
+      "name": "Naslov",
+      "authors": "Autori",
+      "authorsPlaceholder": "Razdvojeni zarezom",
+      "categoryPrimary": "Primarna kategorija",
+      "categorySecondary": "Sekundarna kategorija",
+      "coverUrl": "URL slike korica",
+      "uploadCover": "Otpremi sliku",
+      "uploadCoverHint": "JPG, PNG ili WEBP, do 4 MB.",
+      "removeImage": "Ukloni sliku",
+      "description": "Opis",
+      "library": "Biblioteka",
+      "libraryPlaceholder": "Izaberite biblioteku",
+      "isbn": "ISBN",
+      "publisher": "Izdavač",
+      "publishPlace": "Mesto izdanja",
+      "publishYear": "Godina izdanja",
+      "pages": "Broj strana",
+      "dimension": "Dimenzije",
+      "udk": "UDK",
+      "binding": "Povez",
+      "origin": "Tip nabavke",
+      "bookNumber": "Broj knjige",
+      "placeOnShelf": "Mesto na polici",
+      "price": "Cena (RSD)",
+      "dateAdd": "Datum dodavanja",
+      "part": "Tom",
+      "issueNumber": "Broj izdanja",
+      "seqNumber": "Redni broj",
+      "notice": "Napomena"
+    },
+    "binding": {
+      "hard": "Tvrd",
+      "paperback": "Broširano",
+      "carton": "Karton",
+      "leather": "Koža",
+      "luxury": "Luksuzni"
+    },
+    "origin": {
+      "mandatory": "Obavezni primerak",
+      "purchase": "Kupovina",
+      "exchange": "Razmena",
+      "gift": "Poklon"
+    },
+    "isbn": {
+      "label": "ISBN pretraga",
+      "placeholder": "Skenirajte ili unesite ISBN",
+      "search": "Traži",
+      "source": "Izvor",
+      "sources": {
+        "database": "Interna baza",
+        "open_library": "Open Library",
+        "google_books": "Google Books",
+        "nbs": "NBS katalog"
+      },
+      "existingCopies": "Postojeće kopije sa ovim ISBN-om: {{count}}",
+      "existingCopiesHint": "Naslov već postoji u biblioteci; iskoristite ga umesto duplikata.",
+      "matches": "Slični naslovi u biblioteci",
+      "noMetadata": "Nema metapodataka za ovaj ISBN."
+    },
+    "copies": {
+      "title": "Fizičke jedinice",
+      "add": "Dodaj kopije",
+      "addTitle": "Dodavanje fizičkih jedinica",
+      "section": "Fizičke jedinice",
+      "existingTitle": "Naslov već postoji",
+      "existingHint": "Dodajte fizičke jedinice postojećem naslovu.",
+      "editTitle": "Izmena kopije",
+      "count": "Broj kopija",
+      "orderNumber": "Inventarni broj",
+      "orderNumberPlaceholder": "npr. 1234",
+      "invNumber": "Inv. br.",
+      "barcode": "Barkod",
+      "status": "Status",
+      "isbn": "ISBN",
+      "selectAll": "Izaberi sve",
+      "select": "Izaberi",
+      "printSelected": "Štampa ({{count}})",
+      "empty": "Nema kopija.",
+      "listTitle": "Fizičke jedinice",
+      "searchBarcode": "Pretraga po barkodu...",
+      "searchOrderNumber": "Pretraga po inv. broju...",
+      "searchTitle": "Pretraga po naslovu...",
+      "viewDetail": "Prikaz detalja",
+      "detailTitle": "Detalji kopije",
+      "notFound": "Kopija nije pronađena.",
+      "printBarcode": "Štampa barkoda",
+      "borrowed": "Pozajmljena",
+      "reserved": "Rezervisana",
+      "recError": "Greška u zapisu",
+      "createdAt": "Kreirano",
+      "updatedAt": "Izmenjeno",
+      "deleteConfirmTitle": "Obrisati kopiju?",
+      "deleteConfirmText": "Da li ste sigurni da želite da obrišete kopiju br. {{number}}?",
+      "sections": {
+        "identification": "Identifikacija",
+        "bibliographic": "Bibliografija",
+        "location": "Smeštaj i fond",
+        "state": "Stanje",
+        "writeOff": "Otpis",
+        "timestamps": "Vremenske oznake"
+      },
+      "recErrorAll": "Sve kopije",
+      "recErrorOnly": "Samo greške",
+      "recErrorNone": "Bez grešaka",
+      "created": "Dodato kopija: {{count}}",
+      "updated": "Kopija je izmenjena.",
+      "deleted": "Kopija je obrisana.",
+      "writeOffTitle": "Otpis kopije",
+      "writeOffAction": "Otpiši",
+      "writeOffConfirm": "Potvrdi otpis",
+      "writtenOff": "Kopija je otpisana.",
+      "writeOffCancelled": "Otpis je poništen.",
+      "cancelWriteOff": "Poništi otpis",
+      "reason": "Razlog",
+      "occurredAt": "Datum otpisa",
+      "recErrorTitle": "Pogrešno zavedena",
+      "recErrorAction": "Pogrešno zavedena",
+      "recErrorFlag": "Označeno kao pogrešno zavedeno",
+      "recErrorNotice": "Napomena",
+      "recErrorSaved": "Zapis je sačuvan."
+    },
+    "status": {
+      "available": "Dostupna",
+      "borrowed": "Pozajmljena",
+      "record_error": "Greška u zapisu",
+      "written_off": "Otpisana",
+      "archived": "Arhivirana"
+    },
+    "writeOffReasons": {
+      "out_of_date": "Neaktuelna",
+      "unusable": "Dotrajala/neupotrebljiva"
+    },
+    "reconciliation": {
+      "title": "Inventarni brojevi zahtevaju pažnju",
+      "description": "Dodavanje kopija je blokirano da se ne bi pravili preskoci u inventarnim brojevima. Prvo rešite arhivu.",
+      "nextAuto": "Sledeći auto",
+      "maxExisting": "Najveći postojeći",
+      "maxUsed": "Najveći iskorišćen",
+      "archivedTitle": "Arhivirane kopije u opsegu",
+      "archivedItem": "Br. {{number}} — {{book}}",
+      "openArchive": "Otvori arhivu"
+    },
+    "archive": {
+      "title": "Arhiva",
+      "subtitle": "Soft-obrisani naslovi i kopije. Vratite ih ili trajno obrišite da oslobodite inventarne brojeve.",
+      "sync": "Sinhronizuj sekvencu",
+      "synced": "Sekvenca je poravnata. Sledeći broj: {{next}}",
+      "restore": "Vrati",
+      "forceDelete": "Trajno obriši",
+      "restored": "Vraćeno.",
+      "forceDeleted": "Trajno obrisano.",
+      "empty": "Arhiva je prazna."
+    }
   }
 }

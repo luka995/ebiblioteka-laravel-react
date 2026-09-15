@@ -144,11 +144,13 @@ $table->foreignId('user_id')->constrained()->restrictOnDelete();
 - [x] Regioni / Mesta: CRUD sa zaštitom brisanja
 - [x] Tagovi: CRUD + dodela tagova korisnicima (po korisniku i bulk)
 - [x] Profil: prikaz/izmena, promena lozinke; podešavanja naloga
-- [ ] Catalog (knjige, autori, kategorije) — sledeća faza
-- [ ] Fizičke jedinice, pozajmice, rezervacije, članarine
+- [x] Catalog (knjige, autori, kategorije) — naslovi sa ISBN unosom
+- [x] Fizičke jedinice i inventar — inv. brojevi, barkodovi, otpis i arhiva
+- [ ] Pozajmice / rezervacije / članarine
 - [ ] Razred / Class / Učenik + školske godine
 - [ ] Statistika, izveštaji, analitika za direktore
-- [ ] Skeniranje ISBN/bar-koda, inventurna revizija
+- [ ] Import / Export (Excel, PDF 1:1 sa legacy-jem) — u izradi
+- [ ] Revizija inventara i skeniranje ISBN/bar-koda u PWA
 - [ ] PWA + Capacitor mobilno izdanje
 - [ ] Migracija podataka (ETL iz legacy baze)
 

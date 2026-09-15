@@ -24,6 +24,7 @@ class LibraryResource extends JsonResource
             'name' => $this->name,
             'address' => $this->address,
             'work_time' => $this->work_time,
+            'inv_number_auto' => (bool) $this->inv_number_auto,
             'deleted' => (bool) $this->deleted,
             'place_id' => $this->place_id,
             'place' => $this->whenLoaded('place', fn () => [

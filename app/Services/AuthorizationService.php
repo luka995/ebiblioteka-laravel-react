@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Author;
+use App\Models\Book;
+use App\Models\BookCopy;
 use App\Models\Category;
 use App\Models\Library;
 use App\Models\News;
@@ -66,6 +68,8 @@ class AuthorizationService
             'tags' => $this->collectionPermissions($actor, Tag::class),
             'categories' => $this->collectionPermissions($actor, Category::class),
             'authors' => $this->collectionPermissions($actor, Author::class),
+            'books' => $this->collectionPermissions($actor, Book::class),
+            'book_copies' => $this->collectionPermissions($actor, BookCopy::class),
             'news' => $this->collectionPermissions($actor, News::class),
         ];
     }

@@ -1,5 +1,47 @@
 # Changelog
 
+## [15.09.2026] Datumi: jedinstven `d.m.Y` unos i prikaz kroz forme i API
+
+### Added
+
+- **`DateInput` komponenta** (`frontend/src/components/ui/date-input.tsx`) — maskiran unos datuma kao `dd.mm.yyyy` uz internu ISO (`Y-m-d`) vrednost; provera stvarnog datuma, lepljenje ISO oblika i normalizacija na blur
+- **Formatirani datumi u resursima** (`app/Http/Resources/NewsResource.php`, `BookCopyResource.php`, `BookCopyWriteOffResource.php`) — `date_formatted` (`d.m.Y.`) za datum vesti i `date_add_formatted` za kopiju; `occurred_at`/`cancelled_at`/`created_at`/`updated_at`/`deleted_at` kao `d.m.Y. H:i`
+
+### Changed
+
+- **Forme** (`frontend/src/components/books/{book-form-modal,book-copy-add-modal,book-copy-edit-modal,book-copy-action-dialogs}.tsx`, `frontend/src/components/news/news-form-modal.tsx`) — native `type="date"` polja zamenjena `DateInput` komponentom
+- **Prikaz datuma** (`frontend/src/pages/news/news-page.tsx`, `frontend/src/pages/books/book-copy-detail-page.tsx`, `frontend/src/types.ts`) — uklonjeno klijentsko `formatDate()`; koriste se `date_formatted`/`date_add_formatted` iz API-ja
+
+## [14.09.2026] Knjige i fizičke jedinice: katalog, ISBN unos, inventarni brojevi i arhiva
+
+### Added
+
+- **Migracije** (`database/migrations/2026_09_14_00000{2..8}_*.php`) — `books` (slug, soft delete), `book_authors` (pivot), `book_copies` (puni legacy paritet + soft delete + `rec_error`), `book_copy_write_offs` (append-only otpisi sa snapshotom), `book_inventory_seq` (per-library sekvenca) i `slug` kolone za `libraries`/`categories` (sa backfill-om)
+- **Modeli i concern** (`app/Models/Book.php`, `BookCopy.php`, `BookCopyWriteOff.php`, `BookInventorySequence.php`, `app/Models/Concerns/HasSlug.php`) — relacije, cast-ovi, `activeWriteOff`, `isWrittenOff`; `Library` na kreiranju pravi sekvencu, `Author`/`Category` dopunjeni relacijama
+- **Servisi inventara** (`app/Services/InventoryNumberService.php`, `InventoryReconciliationService.php`, `BookCopyService.php`, `BookCopyWriteOffService.php`, `BookCopyAvailabilityService.php`, `BookService.php`) — atomska dodela inv. broja (`lockForUpdate`), EAN-13 barkod izveden iz broja, blokada preskoka, otpis/poništaj, računata dostupnost i upis naslova sa autorima
+- **Režim numeracije po biblioteci** (`app/Models/Library.php`, `app/Http/Requests/{Store,Update}LibraryRequest.php`, `app/Http/Resources/LibraryResource.php`, `frontend/src/components/libraries/library-form-modal.tsx`, `frontend/src/types.ts`) — `inv_number_auto` (auto/ručni) sa default `true`, checkbox u formi biblioteke i per-library sekvenca na kreiranju
+- **Nalepnice za knjige** (`app/Services/BarcodePdfService.php`, `app/Support/BarcodeLabel.php`) — naslov knjige iznad bar-koda (`title`) i dodatni redovi ispod EAN cifara (`captions`), skraćivanje teksta sa `…`; layout korisničkih nalepnica ostaje nepromenjen
+- **ISBN pipeline** (`app/Services/Isbn/*`, `config/isbn.php`, `app/Providers/AppServiceProvider.php`) — normalizacija ISBN-10/13, redosled izvora **interna baza → Open Library → Google Books → NBS scraping**, keširanje (uključujući negativne rezultate) i `BookMatcher` za postojeće naslove
+- **API i autorizacija** (`app/Http/Controllers/BooksController.php`, `BookCopiesController.php`, `app/Http/Requests/*`, `app/Http/Resources/{Book,BookCopy,BookCopyWriteOff}Resource.php`, `app/Policies/{Book,BookCopy}Policy.php`, `routes/api.php`) — CRUD, arhiva/restore/force, `isbn-lookup`, dodavanje kopija, otpis/poništaj, `rec-error`, bulk štampa i `inventory-sequence/sync`; `globalPermissions` dobija `books`/`book_copies`
+- **Frontend admin** (`frontend/src/pages/books/*`, `frontend/src/components/books/*`, `frontend/src/components/ui/{textarea,date-input}.tsx`, `frontend/src/App.tsx`, `frontend/src/components/layout/app-shell.tsx`, `frontend/src/lib/api.ts`, `frontend/src/types.ts`) — landing sa karticama **Naslovi / Fizičke jedinice**, forme naslova sa ISBN pretragom, dodavanje/izmena kopija, otpis, `rec_error`, štampa nalepnica, reconciliation modal i ekran arhive
+- **Izbor kategorija** (`frontend/src/components/categories/category-select.tsx`, `app/Http/Controllers/CategoriesController.php`) — opcija `allowCreate` za inline kreiranje kategorije, `seed`/`autoSelectSingle` za auto-izbor iz ISBN pretrage i transliterovana pretraga kategorija u oba pisma
+- **Javni katalog** (`app/Support/LibraryCatalog.php`, `tests/Feature/PublicCatalogTest.php`) — realni podaci biblioteka/kategorija/naslova sa računatom dostupnošću umesto hardkodiranog stub-a
+- **i18n** (`frontend/src/i18n/locales/{en,sr-Cyrl,sr-Latn}.json`, `lang/{en,sr-Cyrl,sr-Latn}/{books.php,validation.php}`) — `books` namespace, razlozi otpisa i validacione poruke
+- **Testovi** (`tests/Feature/Auth/{InventoryNumber,BookCrudApi,BookCopyApi,IsbnLookup}Test.php`, `tests/Unit/IsbnNormalizerTest.php`, `tests/Feature/PublicCatalogTest.php`) — sekvenca/barkod, auto/ručni režim, reconciliation blokada, arhiva, otpis, ISBN izvori i padovi providera, javni katalog
+
+### Changed
+
+- **Javni katalog** — `PublicHomeTest` i javne stranice koriste realne biblioteke (slug, kategorije, naslovi) umesto fiksnih slugova iz stub-a
+- **`.env.example`** — dokumentovane `GOOGLE_BOOKS_API_KEY`, `ISBN_HTTP_TIMEOUT`, `ISBN_CACHE_TTL` i NBS scraping promenljive
+- **`README.md`** — status: katalog i fizičke jedinice označeni kao završeni, dodata stavka Import/Export (Excel/PDF)
+
+### Notes
+
+- ISBN se čuva na fizičkoj jedinici (legacy paritet); dedup pre eksternog poziva ide preko `book_copies.isbn`
+- Nema denormalizovanih `available`/`total` — računa se iz kopija (otpisane i arhivirane nisu u fondu)
+- Nema preskoka inventarnih brojeva: discrepancy blokira dodavanje kopija (409) i traži rešavanje arhive; `sync` poravnava sekvencu na najveći postojeći broj
+- NBS scraping je podrazumevano isključen i zahteva `NBS_CATALOG_SEARCH_URL` i XPath izraze
+
 ## [11.09.2026] Korisnici: EAN-13 bar-kodovi, štampa nalepnica i pretraga u oba pisma
 
 ### Added

@@ -21,6 +21,7 @@ class LibraryFactory extends Factory
             'address' => fake()->streetAddress(),
             'place_id' => Place::factory(),
             'work_time' => 'Pon - Pet, 08:00 - 19:00',
+            'inv_number_auto' => true,
             'deleted' => false,
         ];
     }

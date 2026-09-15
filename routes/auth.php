@@ -48,10 +48,11 @@ Route::prefix('v1/auth')->group(function (): void {
                     ->map(fn (Library $library) => [
                         'id' => $library->id,
                         'name' => $library->name,
+                        'inv_number_auto' => (bool) $library->inv_number_auto,
                     ])
                     ->values(),
                 'active_library' => $active instanceof Library
-                    ? ['id' => $active->id, 'name' => $active->name]
+                    ? ['id' => $active->id, 'name' => $active->name, 'inv_number_auto' => (bool) $active->inv_number_auto]
                     : null,
             ]);
     })->middleware('auth')->name('me');

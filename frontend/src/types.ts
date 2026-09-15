@@ -6,6 +6,7 @@ export interface ResourceCan {
   delete: boolean
   restore?: boolean
   forceDelete?: boolean
+  writeOff?: boolean
   manageMemberships?: boolean
   removeMemberships?: boolean
 }
@@ -22,6 +23,7 @@ export interface RoleOption {
 export interface LibraryOption {
   id: number
   name: string
+  inv_number_auto?: boolean
 }
 
 export type ActiveLibrary = LibraryOption | null
@@ -101,6 +103,7 @@ export interface Library {
   name: string
   address: string
   work_time: string | null
+  inv_number_auto: boolean
   deleted: boolean
   place_id: number
   place?: {
@@ -118,11 +121,131 @@ export interface News {
   slug: string
   body: string
   date: string
+  date_formatted: string | null
   image: string | null
   image_url: string | null
   created_at: string
   updated_at: string
   can?: ResourceCan
+}
+
+export interface BookAuthor {
+  id: number
+  name: string
+  display_name: string
+}
+
+export interface Book {
+  id: number
+  name: string
+  slug: string
+  library_id: number
+  library_name?: string
+  inv_number_auto?: boolean
+  category_primary_id: number | null
+  category_primary_name?: string | null
+  category_secondary_id: number | null
+  category_secondary_name?: string | null
+  description: string | null
+  image: string | null
+  image_url?: string | null
+  cover_url: string | null
+  authors?: BookAuthor[]
+  copies_count?: number
+  available_count?: number
+  deleted_at: string | null
+  created_at: string
+  updated_at: string
+  can?: ResourceCan
+}
+
+export type BookCopyStatus = 'available' | 'borrowed' | 'record_error' | 'written_off' | 'archived'
+
+export interface BookCopyWriteOff {
+  id: number
+  book_copy_id: number | null
+  book_id: number | null
+  order_number: string | null
+  reason: 'out_of_date' | 'unusable'
+  reason_label: string
+  occurred_at: string | null
+  notice: string | null
+  cancelled_at: string | null
+  created_by?: string | null
+  cancelled_by?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface BookCopy {
+  id: number
+  library_id: number
+  library_name?: string | null
+  inv_number_auto?: boolean
+  book_id: number
+  book_name?: string | null
+  order_number: string | null
+  seq_number: number | null
+  barcode: string | null
+  isbn: string | null
+  publisher: string | null
+  publish_place: string | null
+  publish_year: string | null
+  issue_number: string | null
+  num_of_pages: number | null
+  dimension: string | null
+  part: string | null
+  udk: string | null
+  binding: string | null
+  origin: string | null
+  book_number: string | null
+  place_on_shelf: string | null
+  price: string | number
+  date_add: string | null
+  date_add_formatted: string | null
+  notice: string | null
+  borrowed: boolean
+  reserved: boolean
+  rec_error: boolean
+  rec_error_notice: string | null
+  status: BookCopyStatus
+  active_write_off: BookCopyWriteOff | null
+  deleted_at: string | null
+  created_at: string
+  updated_at: string
+  can?: ResourceCan
+}
+
+export interface IsbnMetadata {
+  source: string
+  isbn: string | null
+  title: string | null
+  authors: string[]
+  publisher: string | null
+  publish_place: string | null
+  publish_year: string | null
+  pages: number | null
+  dimensions: string | null
+  description: string | null
+  cover_url: string | null
+  category: string | null
+  udk: string | null
+}
+
+export interface IsbnLookupResult {
+  source: string | null
+  isbn: string
+  metadata: IsbnMetadata | null
+  book: Book | null
+  existing_copies: BookCopy[]
+  matches: Book[]
+}
+
+export interface InventoryDiscrepancy {
+  next_auto: number
+  max_existing: number
+  max_used: number
+  archived_copies: BookCopy[]
 }
 
 export interface Paginated<T> {

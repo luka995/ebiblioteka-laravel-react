@@ -5,8 +5,9 @@ namespace App\Support;
 /**
  * Podaci za jednu bar-kod nalepnicu.
  *
- * `captions` je rezervisan za buduce nalepnice (npr. naziv ustanove i naziv
- * knjige) i za korisnike ostaje prazan.
+ * `title` se ispisuje iznad bar-koda (npr. naziv knjige), a `captions` ispod
+ * human-readable EAN cifara (npr. naziv biblioteke). Za korisnicke nalepnice
+ * oba polja ostaju prazna i layout je identican starom.
  */
 final readonly class BarcodeLabel
 {
@@ -15,6 +16,7 @@ final readonly class BarcodeLabel
      */
     public function __construct(
         public string $code,
+        public ?string $title = null,
         public array $captions = [],
     ) {}
 }

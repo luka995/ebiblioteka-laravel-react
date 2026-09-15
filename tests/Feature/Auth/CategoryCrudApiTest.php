@@ -119,3 +119,20 @@ test('regular user cannot access categories', function () {
     $this->actingAs($user)->getJson('/api/v1/categories', categoryCrudHeaders())
         ->assertForbidden();
 });
+
+test('category search matches both cyrillic and latin scripts', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeCategoryLibrary();
+    Category::factory()->for($library)->create(['name' => 'Андрић']);
+    Category::factory()->for($library)->create(['name' => 'Petar']);
+
+    $this->actingAs($admin)
+        ->getJson('/api/v1/categories?all=1&library_id='.$library->id.'&search='.urlencode('Andrić'), categoryCrudHeaders())
+        ->assertOk()
+        ->assertJsonFragment(['name' => 'Андрић']);
+
+    $this->actingAs($admin)
+        ->getJson('/api/v1/categories?all=1&library_id='.$library->id.'&search='.urlencode('Петар'), categoryCrudHeaders())
+        ->assertOk()
+        ->assertJsonFragment(['name' => 'Petar']);
+});

@@ -6,6 +6,7 @@ use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
+use App\Queries\Concerns\AppliesTransliteratedSearch;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
 use Illuminate\Http\JsonResponse;
@@ -14,6 +15,8 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class CategoriesController extends Controller
 {
+    use AppliesTransliteratedSearch;
+
     /**
      * @return AnonymousResourceCollection<int, CategoryResource>|CategoryResource[]
      */
@@ -39,8 +42,7 @@ class CategoriesController extends Controller
         $query
             ->when($request->filled('parent_id'), fn ($q) => $q->where('parent_id', $request->integer('parent_id')))
             ->when($request->filled('search'), function ($q) use ($request) {
-                $term = trim((string) $request->string('search'));
-                $q->where('name', 'ilike', "%{$term}%");
+                $this->whereTransliterated($q, 'name', trim((string) $request->string('search')));
             })
             ->orderBy('name');
 

@@ -49,6 +49,15 @@ return [
         'category_parent_invalid' => 'Izabrana roditeljska kategorija nije važeća.',
         'author_duplicate' => 'Autor sa tim imenom već postoji u izabranoj biblioteci.',
         'users_without_barcode' => 'Broj izabranih korisnika bez važećeg bar-koda: :count.',
+        'book_duplicate' => 'Naslov sa tim imenom već postoji u izabranoj biblioteci.',
+        'book_copy_duplicate_order_number' => 'Inventarni broj je već dodeljen drugoj knjizi.',
+        'book_copy_order_number_skip' => 'Inventarni broj ne može da pravi preskok u odnosu na postojeće brojeve.',
+        'book_copy_order_number_too_long' => 'Inventarni broj ne može imati više od 12 cifara.',
+        'book_copy_book_mismatch' => 'Izabrana fizička jedinica ne pripada datom naslovu.',
+        'book_copy_borrowed' => 'Kopija je pozajmljena i ne može se obrisati.',
+        'inventory_reconciliation_required' => 'Postoji razlika u inventarnim brojevima. Rešite arhivu pre dodavanja kopija.',
+        'book_isbn_invalid' => 'ISBN nije važećeg formata.',
+        'book_copies_without_barcode' => 'Broj izabranih kopija bez važećeg bar-koda: :count.',
     ],
 
     'attributes' => [

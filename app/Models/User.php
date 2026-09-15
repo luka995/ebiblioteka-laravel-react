@@ -71,6 +71,14 @@ class User extends Authenticatable
         return $this->isSuperAdmin() || $this->isLibraryAdmin();
     }
 
+    /**
+     * Osoblje biblioteke (superadmin + library_admin + librarian).
+     */
+    public function isStaff(): bool
+    {
+        return $this->role->isStaff();
+    }
+
     public function canManageLibrary(): bool
     {
         return $this->role->canManageLibrary();

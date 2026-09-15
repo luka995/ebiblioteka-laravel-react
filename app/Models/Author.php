@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable(['name', 'library_id'])]
 class Author extends Model
@@ -20,6 +21,16 @@ class Author extends Model
     public function library(): BelongsTo
     {
         return $this->belongsTo(Library::class);
+    }
+
+    /**
+     * Naslovi koje je napisao ovaj autor.
+     *
+     * @return BelongsToMany<Book, $this>
+     */
+    public function books(): BelongsToMany
+    {
+        return $this->belongsToMany(Book::class, 'book_authors');
     }
 
     /**

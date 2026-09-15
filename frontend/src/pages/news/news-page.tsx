@@ -27,11 +27,6 @@ import type { News, PaginatedResponse } from '@/types'
 
 const PAGE_SIZE = 10
 
-function formatDate(date: string): string {
-  const [year, month, day] = date.split('-')
-  return `${day}.${month}.${year}.`
-}
-
 function publicNewsUrl(slug: string): string {
   return `${laravelBaseUrl()}/novosti/${slug}`
 }
@@ -183,7 +178,7 @@ export function NewsPage() {
                         {news.title}
                       </a>
                     </TableCell>
-                    <TableCell className="px-4 text-muted-foreground">{formatDate(news.date)}</TableCell>
+                    <TableCell className="px-4 text-muted-foreground">{news.date_formatted}</TableCell>
                     <TableCell className="px-4">
                       <div className="flex items-center justify-end gap-1">
                         {news.can?.update ? (
@@ -242,7 +237,7 @@ export function NewsPage() {
                   >
                     {news.title}
                   </a>
-                  <p className="text-xs text-muted-foreground">{formatDate(news.date)}</p>
+                  <p className="text-xs text-muted-foreground">{news.date_formatted}</p>
                 </div>
                 <div className="flex gap-1">
                   {news.can?.update ? (

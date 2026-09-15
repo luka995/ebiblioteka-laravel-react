@@ -25,6 +25,7 @@ class NewsResource extends JsonResource
             'slug' => $this->slug,
             'body' => $this->body,
             'date' => $this->date?->format('Y-m-d'),
+            'date_formatted' => $this->date?->format('d.m.Y.'),
             'image' => $this->image,
             'image_url' => $this->image_url,
             'created_at' => $this->created_at,

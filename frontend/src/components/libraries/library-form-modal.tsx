@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -40,6 +41,7 @@ export function LibraryFormModal({ open, onClose, onSuccess, library }: LibraryF
         place: z.string().min(1, t('errors.required')),
         address: z.string().trim().min(1, t('errors.required')).max(255),
         work_time: z.string().max(255).optional().or(z.literal('')),
+        inv_number_auto: z.boolean(),
       }),
     [t],
   )
@@ -55,6 +57,7 @@ export function LibraryFormModal({ open, onClose, onSuccess, library }: LibraryF
       place: '',
       address: '',
       work_time: '',
+      inv_number_auto: true,
     },
   })
 
@@ -79,6 +82,7 @@ export function LibraryFormModal({ open, onClose, onSuccess, library }: LibraryF
       place: library ? String(library.place_id) : '',
       address: library?.address ?? '',
       work_time: library?.work_time ?? '',
+      inv_number_auto: library?.inv_number_auto ?? true,
     })
   }, [open, library, form]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -88,6 +92,7 @@ export function LibraryFormModal({ open, onClose, onSuccess, library }: LibraryF
       address: values.address,
       place_id: Number(values.place),
       work_time: values.work_time || null,
+      inv_number_auto: values.inv_number_auto,
     }
 
     try {
@@ -228,6 +233,25 @@ export function LibraryFormModal({ open, onClose, onSuccess, library }: LibraryF
                     <Input placeholder={t('fields.workTime')} {...field} />
                   </FormControl>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="inv_number_auto"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-start gap-3 rounded-lg border p-3">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={(value) => field.onChange(value === true)}
+                    />
+                  </FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>{t('fields.invNumberAuto')}</FormLabel>
+                    <p className="text-xs text-muted-foreground">{t('fields.invNumberAutoHint')}</p>
+                  </div>
                 </FormItem>
               )}
             />

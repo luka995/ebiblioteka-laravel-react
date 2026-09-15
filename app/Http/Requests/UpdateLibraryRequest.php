@@ -22,6 +22,7 @@ class UpdateLibraryRequest extends FormRequest
             'address' => ['required', 'string', 'max:255'],
             'place_id' => ['required', 'integer', Rule::exists('places', 'id')],
             'work_time' => ['nullable', 'string', 'max:255'],
+            'inv_number_auto' => ['sometimes', 'boolean'],
         ];
     }
 }

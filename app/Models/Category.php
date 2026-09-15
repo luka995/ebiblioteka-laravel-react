@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasSlug;
 use Database\Factories\CategoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,11 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'library_id', 'parent_id'])]
+#[Fillable(['name', 'slug', 'library_id', 'parent_id'])]
 class Category extends Model
 {
     /** @use HasFactory<CategoryFactory> */
-    use HasFactory;
+    use HasFactory, HasSlug;
 
     /**
      * @return BelongsTo<Library, $this>
@@ -69,5 +70,23 @@ class Category extends Model
         }
 
         return false;
+    }
+
+    /**
+     * Naslovi kojima je ova kategorija primarna.
+     *
+     * @return HasMany<Book, $this>
+     */
+    public function books(): HasMany
+    {
+        return $this->hasMany(Book::class, 'category_primary_id');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function slugScopeColumns(): array
+    {
+        return ['library_id'];
     }
 }

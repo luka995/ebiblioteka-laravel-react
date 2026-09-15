@@ -15,12 +15,14 @@ use TCPDF;
  * write1DBarcode() se koristi da bi se izbegla zavisnost od GD ekstenzije
  * (nije instalirana u kontejneru).
  *
- * Isti layout se koristi za pojedinacnu i bulk stampu, a `BarcodeLabel` nosi
- * podatke nalepnice kako bi se kasnije (knjige) dodali dodatni redovi teksta
- * bez promene rasporeda.
+ * Nalepnica moze da nosi naslov iznad bar-koda i dodatne redove (npr. naziv
+ * biblioteke) ispod EAN cifara. Kada `BarcodeLabel` nema naslov ni dodatne
+ * redove, layout je identican starom (korisnicke nalepnice).
  */
 class BarcodePdfService
 {
+    private const FONT = 'dejavusanscondensed';
+
     private const LABEL_WIDTH = 62.0;
 
     private const LABEL_HEIGHT = 29.0;
@@ -34,6 +36,24 @@ class BarcodePdfService
     private const LABEL_BARCODE_HEIGHT = 13.5;
 
     private const LABEL_CODE_Y = 16.5;
+
+    private const LABEL_TEXT_WIDTH = 58.0;
+
+    private const LABEL_TITLE_Y = 1.0;
+
+    private const LABEL_TITLE_FONT = 7.0;
+
+    private const LABEL_BARCODE_Y_EXTENDED = 4.5;
+
+    private const LABEL_BARCODE_HEIGHT_EXTENDED = 13.0;
+
+    private const LABEL_CODE_Y_EXTENDED = 17.5;
+
+    private const LABEL_CODE_FONT_EXTENDED = 8.0;
+
+    private const LABEL_CAPTION_Y_EXTENDED = 21.5;
+
+    private const LABEL_CAPTION_FONT = 7.0;
 
     private const A4_COLUMNS = 4;
 
@@ -56,6 +76,24 @@ class BarcodePdfService
     private const A4_BARCODE_HEIGHT = 13.5;
 
     private const A4_CODE_Y_OFFSET = 16.0;
+
+    private const A4_TEXT_WIDTH = 44.0;
+
+    private const A4_TITLE_Y_OFFSET = 0.6;
+
+    private const A4_TITLE_FONT = 5.5;
+
+    private const A4_BARCODE_Y_OFFSET_EXTENDED = 3.0;
+
+    private const A4_BARCODE_HEIGHT_EXTENDED = 10.0;
+
+    private const A4_CODE_Y_OFFSET_EXTENDED = 13.0;
+
+    private const A4_CODE_FONT_EXTENDED = 6.0;
+
+    private const A4_CAPTION_Y_OFFSET_EXTENDED = 15.9;
+
+    private const A4_CAPTION_FONT = 5.5;
 
     /**
      * @param  array<int, BarcodeLabel>  $labels
@@ -90,15 +128,29 @@ class BarcodePdfService
         foreach ($labels as $label) {
             $pdf->AddPage();
 
+            $extended = $this->isExtended($label);
+            $barcodeY = $extended ? self::LABEL_BARCODE_Y_EXTENDED : self::LABEL_BARCODE_Y;
+            $barcodeHeight = $extended ? self::LABEL_BARCODE_HEIGHT_EXTENDED : self::LABEL_BARCODE_HEIGHT;
+            $codeY = $extended ? self::LABEL_CODE_Y_EXTENDED : self::LABEL_CODE_Y;
+            $codeFont = $extended ? self::LABEL_CODE_FONT_EXTENDED : 10.0;
+
+            if ($extended && $label->title !== null && $label->title !== '') {
+                $this->drawCenteredText($pdf, $label->title, self::LABEL_WIDTH / 2, self::LABEL_TITLE_Y, self::LABEL_TEXT_WIDTH, self::LABEL_TITLE_FONT);
+            }
+
             $this->drawBarcode(
                 $pdf,
                 $label->code,
                 self::LABEL_BARCODE_X,
-                self::LABEL_BARCODE_Y,
+                $barcodeY,
                 self::LABEL_BARCODE_WIDTH,
-                self::LABEL_BARCODE_HEIGHT,
+                $barcodeHeight,
             );
-            $this->drawCode($pdf, $label->code, self::LABEL_WIDTH / 2, self::LABEL_CODE_Y);
+            $this->drawCode($pdf, $label->code, self::LABEL_WIDTH / 2, $codeY, $codeFont, self::LABEL_BARCODE_WIDTH);
+
+            foreach ($label->captions as $index => $caption) {
+                $this->drawCenteredText($pdf, $caption, self::LABEL_WIDTH / 2, self::LABEL_CAPTION_Y_EXTENDED + $index * 3.4, self::LABEL_TEXT_WIDTH, self::LABEL_CAPTION_FONT);
+            }
         }
 
         return $pdf->Output('', 'S');
@@ -119,25 +171,48 @@ class BarcodePdfService
             foreach ($page as $index => $label) {
                 $column = $index % self::A4_COLUMNS;
                 $row = intdiv($index, self::A4_COLUMNS);
+                $cellX = self::A4_BASE_X + $column * self::A4_CELL_WIDTH;
+                $cellY = self::A4_BASE_Y + $row * self::A4_CELL_HEIGHT;
+
+                $extended = $this->isExtended($label);
+                $barcodeYOffset = $extended ? self::A4_BARCODE_Y_OFFSET_EXTENDED : self::A4_BARCODE_Y_OFFSET;
+                $barcodeHeight = $extended ? self::A4_BARCODE_HEIGHT_EXTENDED : self::A4_BARCODE_HEIGHT;
+                $codeYOffset = $extended ? self::A4_CODE_Y_OFFSET_EXTENDED : self::A4_CODE_Y_OFFSET;
+                $codeFont = $extended ? self::A4_CODE_FONT_EXTENDED : 10.0;
+
+                if ($extended && $label->title !== null && $label->title !== '') {
+                    $this->drawCenteredText($pdf, $label->title, $cellX + self::A4_CELL_WIDTH / 2, $cellY + self::A4_TITLE_Y_OFFSET, self::A4_TEXT_WIDTH, self::A4_TITLE_FONT);
+                }
 
                 $this->drawBarcode(
                     $pdf,
                     $label->code,
-                    self::A4_BASE_X + self::A4_BARCODE_MARGIN_H + $column * self::A4_CELL_WIDTH,
-                    self::A4_BASE_Y + self::A4_BARCODE_Y_OFFSET + $row * self::A4_CELL_HEIGHT,
+                    $cellX + self::A4_BARCODE_MARGIN_H,
+                    $cellY + $barcodeYOffset,
                     self::A4_CELL_WIDTH - 2 * self::A4_BARCODE_MARGIN_H,
-                    self::A4_BARCODE_HEIGHT,
+                    $barcodeHeight,
                 );
                 $this->drawCode(
                     $pdf,
                     $label->code,
-                    self::A4_BASE_X + self::A4_CELL_WIDTH / 2 + $column * self::A4_CELL_WIDTH,
-                    self::A4_BASE_Y + self::A4_CODE_Y_OFFSET + $row * self::A4_CELL_HEIGHT,
+                    $cellX + self::A4_CELL_WIDTH / 2,
+                    $cellY + $codeYOffset,
+                    $codeFont,
+                    self::A4_TEXT_WIDTH,
                 );
+
+                foreach ($label->captions as $captionIndex => $caption) {
+                    $this->drawCenteredText($pdf, $caption, $cellX + self::A4_CELL_WIDTH / 2, $cellY + self::A4_CAPTION_Y_OFFSET_EXTENDED + $captionIndex * 3.0, self::A4_TEXT_WIDTH, self::A4_CAPTION_FONT);
+                }
             }
         }
 
         return $pdf->Output('', 'S');
+    }
+
+    private function isExtended(BarcodeLabel $label): bool
+    {
+        return ($label->title !== null && $label->title !== '') || $label->captions !== [];
     }
 
     /**
@@ -156,7 +231,7 @@ class BarcodePdfService
         $pdf->SetHeaderMargin(0);
         $pdf->SetFooterMargin(0);
         $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
-        $pdf->SetFont('helvetica', '', 10);
+        $pdf->SetFont(self::FONT, '', 10);
 
         return $pdf;
     }
@@ -182,10 +257,56 @@ class BarcodePdfService
         $pdf->write1DBarcode($barcode, 'EAN13', $x, $y, $width, $height, 0.4, $style, 'N');
     }
 
-    private function drawCode(TCPDF $pdf, string $barcode, float $centerX, float $y): void
+    private function drawCode(TCPDF $pdf, string $barcode, float $centerX, float $y, float $fontSize, float $width): void
     {
-        $pdf->SetFont('helvetica', '', 10);
-        $pdf->SetXY($centerX - 25, $y);
-        $pdf->Cell(50, 5, $barcode, 0, 0, 'C');
+        $pdf->SetFont(self::FONT, '', $fontSize);
+        $pdf->SetXY($centerX - $width / 2, $y);
+        $pdf->Cell($width, 5, $barcode, 0, 0, 'C');
+    }
+
+    private function drawCenteredText(TCPDF $pdf, string $text, float $centerX, float $y, float $maxWidth, float $fontSize): void
+    {
+        $text = $this->fitText($pdf, $text, $maxWidth, $fontSize);
+
+        if ($text === '') {
+            return;
+        }
+
+        $pdf->SetFont(self::FONT, '', $fontSize);
+        $pdf->SetXY($centerX - $maxWidth / 2, $y);
+        $pdf->Cell($maxWidth, $fontSize * 0.6, $text, 0, 0, 'C');
+    }
+
+    /**
+     * Skracuje tekst (dodaje `…`) da ne predje zadatu sirinu nalepnice.
+     */
+    private function fitText(TCPDF $pdf, string $text, float $maxWidth, float $fontSize): string
+    {
+        $text = trim($text);
+
+        if ($text === '') {
+            return '';
+        }
+
+        $pdf->SetFont(self::FONT, '', $fontSize);
+
+        if ($pdf->GetStringWidth($text) <= $maxWidth) {
+            return $text;
+        }
+
+        $available = $maxWidth - $pdf->GetStringWidth('…');
+        $result = '';
+
+        for ($i = 0, $length = mb_strlen($text, 'UTF-8'); $i < $length; $i++) {
+            $candidate = $result.mb_substr($text, $i, 1, 'UTF-8');
+
+            if ($pdf->GetStringWidth($candidate) > $available) {
+                break;
+            }
+
+            $result = $candidate;
+        }
+
+        return rtrim($result).'…';
     }
 }

@@ -31,6 +31,24 @@ test('a4 format paginates after 48 barcodes', function () {
     expect(preg_match_all('/MediaBox/', $pdf))->toBe(2);
 });
 
+test('label format renders a title above and captions below a barcode', function () {
+    $label = new BarcodeLabel('4006381333931', 'Na Drini ćuprija', ['Narodna biblioteka']);
+
+    $pdf = app(BarcodePdfService::class)->render([$label], BarcodePrintFormat::Label);
+
+    expect($pdf)->toStartWith('%PDF')
+        ->and(preg_match_all('/MediaBox/', $pdf))->toBe(1);
+});
+
+test('a4 format renders extended labels and keeps pagination', function () {
+    $label = new BarcodeLabel('4006381333931', 'Стари завет', ['Библиотека града']);
+
+    $pdf = app(BarcodePdfService::class)->render(array_fill(0, 49, $label), BarcodePrintFormat::A4);
+
+    expect($pdf)->toStartWith('%PDF')
+        ->and(preg_match_all('/MediaBox/', $pdf))->toBe(2);
+});
+
 test('render rejects an invalid barcode', function () {
     app(BarcodePdfService::class)->render([new BarcodeLabel('123')], BarcodePrintFormat::Label);
 })->throws(InvalidArgumentException::class);

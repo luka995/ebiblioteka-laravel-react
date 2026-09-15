@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { storageUrl } from '@/lib/environment'
 import { Button } from '@/components/ui/button'
+import { DateInput } from '@/components/ui/date-input'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -146,7 +147,7 @@ export function NewsFormModal({ open, onClose, onSuccess, news }: NewsFormModalP
                   <FormItem>
                     <FormLabel>{t('news.fields.date')}</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateInput {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

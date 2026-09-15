@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Search, X } from 'lucide-react'
-import { api, apiPaths } from '@/lib/api'
+import { Plus, Search, X } from 'lucide-react'
+import { toast } from 'sonner'
+import { api, apiPaths, ApiError } from '@/lib/api'
 import { Input } from '@/components/ui/input'
+import { useAuth } from '@/hooks/useAuth'
 import type { Category, PaginatedResponse } from '@/types'
 
 export interface CategoryOption {
@@ -17,6 +19,9 @@ interface CategorySelectProps {
   onChange: (value: CategoryOption | null) => void
   placeholder?: string
   excludeId?: number
+  seed?: string
+  allowCreate?: boolean
+  autoSelectSingle?: boolean
 }
 
 export function CategorySelect({
@@ -25,11 +30,18 @@ export function CategorySelect({
   onChange,
   placeholder,
   excludeId,
+  seed,
+  allowCreate = false,
+  autoSelectSingle = false,
 }: CategorySelectProps) {
   const { t } = useTranslation()
+  const { can } = useAuth()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [expanded, setExpanded] = useState(false)
+  const [seedActive, setSeedActive] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const appliedSeed = useRef('')
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300)
@@ -37,6 +49,7 @@ export function CategorySelect({
   }, [search])
 
   const searching = debouncedSearch.length > 0
+  const canCreate = allowCreate && can('categories.create')
 
   const categoriesQuery = useQuery({
     queryKey: ['categories', 'options', libraryId, debouncedSearch],
@@ -58,6 +71,29 @@ export function CategorySelect({
     [categoriesQuery.data, excludeId],
   )
 
+  useEffect(() => {
+    if (!seed || seed === appliedSeed.current) return
+    appliedSeed.current = seed
+    setSeedActive(true)
+    setSearch(seed)
+    setDebouncedSearch(seed.trim())
+    setExpanded(true)
+  }, [seed])
+
+  useEffect(() => {
+    if (!seedActive) return
+    if (categoriesQuery.isLoading || categoriesQuery.isFetching) return
+
+    if (autoSelectSingle && results.length === 1) {
+      onChange({ id: results[0].id, full_name: results[0].full_name ?? results[0].name })
+      setSearch('')
+      setDebouncedSearch('')
+      setExpanded(false)
+    }
+
+    setSeedActive(false)
+  }, [seedActive, autoSelectSingle, results, categoriesQuery.isLoading, categoriesQuery.isFetching, onChange])
+
   const displayPlaceholder = value
     ? value.full_name
     : (placeholder ?? t('categories.parentPlaceholder'))
@@ -73,6 +109,27 @@ export function CategorySelect({
     setSearch('')
     setDebouncedSearch('')
     setExpanded(false)
+  }
+
+  const createCategory = async (name: string) => {
+    const trimmed = name.trim()
+    if (!libraryId || trimmed === '') return
+    setIsCreating(true)
+    try {
+      const response = await api.post<{ data: Category }>(apiPaths.categories, {
+        name: trimmed,
+        library_id: libraryId,
+        parent_id: null,
+      })
+      onChange({ id: response.data.id, full_name: response.data.full_name ?? response.data.name })
+      setSearch('')
+      setDebouncedSearch('')
+      setExpanded(false)
+    } catch (error) {
+      if (error instanceof ApiError) toast.error(error.messageText ?? t('errors.unexpected'))
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   if (!libraryId) {
@@ -114,7 +171,20 @@ export function CategorySelect({
           {categoriesQuery.isLoading ? (
             <p className="px-2 py-1 text-sm text-muted-foreground">{t('common.loading')}</p>
           ) : results.length === 0 ? (
-            <p className="px-2 py-1 text-sm text-muted-foreground">{t('categories.noResults')}</p>
+            canCreate ? (
+              <button
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => void createCategory(debouncedSearch)}
+                disabled={isCreating}
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm font-medium text-brand-accent transition-colors hover:bg-accent disabled:opacity-50"
+              >
+                <Plus className="size-4" />
+                {t('categories.createNamed', { name: debouncedSearch })}
+              </button>
+            ) : (
+              <p className="px-2 py-1 text-sm text-muted-foreground">{t('categories.noResults')}</p>
+            )
           ) : (
             results.map((category) => (
               <button

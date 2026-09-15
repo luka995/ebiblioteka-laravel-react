@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Services\Isbn\CategoryTranslator;
+use App\Services\Isbn\GoogleBooksProvider;
+use App\Services\Isbn\IsbnMetadataService;
+use App\Services\Isbn\IsbnNormalizer;
+use App\Services\Isbn\NbsCatalogProvider;
+use App\Services\Isbn\OpenLibraryProvider;
 use App\Services\Security\TurnstileService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -17,6 +23,18 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(TurnstileService::class, function (): TurnstileService {
             return new TurnstileService((string) config('services.turnstile.secret'));
+        });
+
+        $this->app->singleton(IsbnMetadataService::class, function ($app): IsbnMetadataService {
+            return new IsbnMetadataService(
+                $app->make(IsbnNormalizer::class),
+                [
+                    $app->make(NbsCatalogProvider::class),
+                    $app->make(OpenLibraryProvider::class),
+                    $app->make(GoogleBooksProvider::class),
+                ],
+                $app->make(CategoryTranslator::class),
+            );
         });
     }
 

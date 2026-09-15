@@ -18,7 +18,8 @@
     "account": "My account",
     "settings": "Settings",
     "categories": "Categories",
-    "authors": "Authors"
+    "authors": "Authors",
+    "books": "Books"
   },
   "auth": {
     "heroTitle": "A workspace for libraries and readers",
@@ -344,6 +345,8 @@
     "region": "Region",
     "tags": "Tags",
     "workTime": "Working hours",
+    "invNumberAuto": "Automatic inventory number",
+    "invNumberAutoHint": "The number is generated automatically. Turn off for manual entry.",
     "optional": "optional",
     "selectPlaceholder": "Select..."
   },
@@ -376,7 +379,13 @@
     "view": "View",
     "edit": "Edit",
     "delete": "Delete",
-    "backToList": "Back to list"
+    "backToList": "Back to list",
+    "auto": "Automatic",
+    "manual": "Manual",
+    "close": "Close",
+    "none": "None",
+    "yes": "Yes",
+    "no": "No"
   },
   "pagination": {
     "showing": "Showing {{from}}–{{to}} of {{total}}",
@@ -408,7 +417,8 @@
     "parentLabel": "Parent category",
     "parentPlaceholder": "Search parent category...",
     "selectLibraryHint": "Select a library to choose a parent category.",
-    "noResults": "No results."
+    "noResults": "No results.",
+    "createNamed": "Create category \"{{name}}\""
   },
   "authors": {
     "title": "Authors",
@@ -434,5 +444,201 @@
     "nameLabel": "Full name",
     "namePlaceholder": "Full name",
     "nameDescription": "Enter the author's first and last name. If you enter “Last name, First name”, it will be displayed exactly that way. If you enter the classic “First name Last name” format, the value will be saved as entered and only the display will be formatted as “Last name, First name”."
+  },
+  "barcode": {
+    "formats": {
+      "label": "Label (62x29mm)",
+      "a4": "A4 sheet (48 labels)"
+    }
+  },
+  "books": {
+    "title": "Books",
+    "subtitle": "Manage titles and physical copies.",
+    "listTitle": "Titles",
+    "archiveLink": "Archive and inventory numbers",
+    "add": "New title",
+    "search": "Search titles or authors...",
+    "empty": "No titles.",
+    "created": "Title created.",
+    "updated": "Title updated.",
+    "deleted": "Title deleted.",
+    "notFound": "Title not found.",
+    "libraryRequired": "Select a library.",
+    "activeLibraryRequired": "Select an active library to display the data.",
+    "formTitle": "New title",
+    "formSubtitle": "Add a title manually or by ISBN.",
+    "editTitle": "Edit title",
+    "editSubtitle": "Update title details.",
+    "deleteConfirmTitle": "Delete title?",
+    "deleteConfirmText": "Are you sure you want to delete \"{{name}}\"?",
+    "availableOf": "{{available}} / {{total}} available",
+    "manualMode": "Manual inventory numbers",
+    "autoMode": "Automatic inventory numbers",
+    "cards": {
+      "titlesTitle": "Titles",
+      "titlesDescription": "Bibliographic records, authors and categories.",
+      "copiesTitle": "Physical copies",
+      "copiesDescription": "Inventory numbers, barcodes and copy status."
+    },
+    "columns": {
+      "name": "Title",
+      "authors": "Authors",
+      "categories": "Categories",
+      "copies": "Copies"
+    },
+    "fields": {
+      "name": "Title",
+      "authors": "Authors",
+      "authorsPlaceholder": "Comma separated",
+      "categoryPrimary": "Primary category",
+      "categorySecondary": "Secondary category",
+      "coverUrl": "Cover image URL",
+      "uploadCover": "Upload image",
+      "uploadCoverHint": "JPG, PNG or WEBP, up to 4 MB.",
+      "removeImage": "Remove image",
+      "description": "Description",
+      "library": "Library",
+      "libraryPlaceholder": "Select a library",
+      "isbn": "ISBN",
+      "publisher": "Publisher",
+      "publishPlace": "Place of publication",
+      "publishYear": "Year of publication",
+      "pages": "Number of pages",
+      "dimension": "Dimensions",
+      "udk": "UDK",
+      "binding": "Binding",
+      "origin": "Acquisition type",
+      "bookNumber": "Book number",
+      "placeOnShelf": "Shelf location",
+      "price": "Price (RSD)",
+      "dateAdd": "Date added",
+      "part": "Volume",
+      "issueNumber": "Issue number",
+      "seqNumber": "Sequence number",
+      "notice": "Note"
+    },
+    "binding": {
+      "hard": "Hardcover",
+      "paperback": "Paperback",
+      "carton": "Carton",
+      "leather": "Leather",
+      "luxury": "Luxury"
+    },
+    "origin": {
+      "mandatory": "Legal deposit",
+      "purchase": "Purchase",
+      "exchange": "Exchange",
+      "gift": "Gift"
+    },
+    "isbn": {
+      "label": "ISBN lookup",
+      "placeholder": "Scan or type ISBN",
+      "search": "Search",
+      "source": "Source",
+      "sources": {
+        "database": "Internal database",
+        "open_library": "Open Library",
+        "google_books": "Google Books",
+        "nbs": "NBS catalog"
+      },
+      "existingCopies": "Existing copies with this ISBN: {{count}}",
+      "existingCopiesHint": "The title already exists in the library; reuse it instead of creating a duplicate.",
+      "matches": "Similar titles in the library",
+      "noMetadata": "No metadata found for this ISBN."
+    },
+    "copies": {
+      "title": "Physical copies",
+      "add": "Add copies",
+      "addTitle": "Add physical copies",
+      "section": "Physical copies",
+      "existingTitle": "Title already exists",
+      "existingHint": "Add physical copies to the existing title.",
+      "editTitle": "Edit copy",
+      "count": "Number of copies",
+      "orderNumber": "Inventory number",
+      "orderNumberPlaceholder": "e.g. 1234",
+      "invNumber": "Inv. no.",
+      "barcode": "Barcode",
+      "status": "Status",
+      "isbn": "ISBN",
+      "selectAll": "Select all",
+      "select": "Select",
+      "printSelected": "Print ({{count}})",
+      "empty": "No copies.",
+      "listTitle": "Physical copies",
+      "searchBarcode": "Search by barcode...",
+      "searchOrderNumber": "Search by inv. no...",
+      "searchTitle": "Search by title...",
+      "viewDetail": "View details",
+      "detailTitle": "Copy details",
+      "notFound": "Copy not found.",
+      "printBarcode": "Print barcode",
+      "borrowed": "Borrowed",
+      "reserved": "Reserved",
+      "recError": "Record error",
+      "createdAt": "Created",
+      "updatedAt": "Updated",
+      "deleteConfirmTitle": "Delete copy?",
+      "deleteConfirmText": "Are you sure you want to delete copy no. {{number}}?",
+      "sections": {
+        "identification": "Identification",
+        "bibliographic": "Bibliographic",
+        "location": "Location and stock",
+        "state": "State",
+        "writeOff": "Write-off",
+        "timestamps": "Timestamps"
+      },
+      "recErrorAll": "All copies",
+      "recErrorOnly": "Record errors only",
+      "recErrorNone": "Without record errors",
+      "created": "Copies added: {{count}}",
+      "updated": "Copy updated.",
+      "deleted": "Copy deleted.",
+      "writeOffTitle": "Write off copy",
+      "writeOffAction": "Write off",
+      "writeOffConfirm": "Confirm write-off",
+      "writtenOff": "Copy written off.",
+      "writeOffCancelled": "Write-off cancelled.",
+      "cancelWriteOff": "Cancel write-off",
+      "reason": "Reason",
+      "occurredAt": "Write-off date",
+      "recErrorTitle": "Record error",
+      "recErrorAction": "Record error",
+      "recErrorFlag": "Marked as wrongly recorded",
+      "recErrorNotice": "Note",
+      "recErrorSaved": "Record saved."
+    },
+    "status": {
+      "available": "Available",
+      "borrowed": "Borrowed",
+      "record_error": "Record error",
+      "written_off": "Written off",
+      "archived": "Archived"
+    },
+    "writeOffReasons": {
+      "out_of_date": "Out of date",
+      "unusable": "Worn out / unusable"
+    },
+    "reconciliation": {
+      "title": "Inventory numbers need attention",
+      "description": "Adding copies is blocked to avoid gaps in inventory numbers. Resolve the archive first.",
+      "nextAuto": "Next auto",
+      "maxExisting": "Max existing",
+      "maxUsed": "Max used",
+      "archivedTitle": "Archived copies in range",
+      "archivedItem": "No. {{number}} — {{book}}",
+      "openArchive": "Open archive"
+    },
+    "archive": {
+      "title": "Archive",
+      "subtitle": "Soft-deleted titles and copies. Restore them or delete permanently to free inventory numbers.",
+      "sync": "Sync sequence",
+      "synced": "Sequence aligned. Next number: {{next}}",
+      "restore": "Restore",
+      "forceDelete": "Delete permanently",
+      "restored": "Restored.",
+      "forceDeleted": "Permanently deleted.",
+      "empty": "Archive is empty."
+    }
   }
 }

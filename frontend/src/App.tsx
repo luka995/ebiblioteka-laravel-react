@@ -16,6 +16,12 @@ import { PlacesPage } from '@/pages/places/places-page'
 import { TagsPage } from '@/pages/tags/tags-page'
 import { CategoriesPage } from '@/pages/categories/categories-page'
 import { AuthorsPage } from '@/pages/authors/authors-page'
+import { BooksLandingPage } from '@/pages/books/books-landing-page'
+import { BooksPage } from '@/pages/books/books-page'
+import { BookDetailPage } from '@/pages/books/book-detail-page'
+import { BookCopiesPage } from '@/pages/books/book-copies-page'
+import { BookCopyDetailPage } from '@/pages/books/book-copy-detail-page'
+import { BooksArchivePage } from '@/pages/books/books-archive-page'
 import { NewsPage } from '@/pages/news/news-page'
 import { ProfilePage } from '@/pages/profile/profile-page'
 import { SettingsPage } from '@/pages/settings/settings-page'
@@ -53,6 +59,12 @@ function App() {
           <Route path="/tags" element={<TagsPage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/authors" element={<AuthorsPage />} />
+          <Route path="/books" element={<BooksLandingPage />} />
+          <Route path="/books/titles" element={<BooksPage />} />
+          <Route path="/books/titles/:id" element={<BookDetailPage />} />
+          <Route path="/books/copies" element={<BookCopiesPage />} />
+          <Route path="/books/copies/:id" element={<BookCopyDetailPage />} />
+          <Route path="/books/archive" element={<BooksArchivePage />} />
           <Route path="/news" element={<NewsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />

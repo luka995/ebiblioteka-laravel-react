@@ -196,6 +196,15 @@ return [
         'category_parent_invalid' => 'The selected parent category is invalid.',
         'author_duplicate' => 'An author with that name already exists in the selected library.',
         'users_without_barcode' => 'Selected users without a valid barcode: :count.',
+        'book_duplicate' => 'A title with that name already exists in the selected library.',
+        'book_copy_duplicate_order_number' => 'The inventory number is already assigned to another copy.',
+        'book_copy_order_number_skip' => 'The inventory number cannot skip ahead of existing numbers.',
+        'book_copy_order_number_too_long' => 'The inventory number cannot contain more than 12 digits.',
+        'book_copy_book_mismatch' => 'The selected copy does not belong to the given title.',
+        'book_copy_borrowed' => 'The copy is borrowed and cannot be deleted.',
+        'inventory_reconciliation_required' => 'There is a gap in inventory numbers. Resolve the archive before adding copies.',
+        'book_isbn_invalid' => 'The ISBN format is invalid.',
+        'book_copies_without_barcode' => 'Selected copies without a valid barcode: :count.',
     ],
 
     /*

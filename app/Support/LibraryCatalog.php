@@ -2,116 +2,117 @@
 
 namespace App\Support;
 
+use App\Models\Book;
+use App\Models\Category;
+use App\Models\Library;
+
+/**
+ * Javni katalog: biblioteke -> kategorije -> naslovi, sa realnim podacima iz
+ * baze. Zadrzava oblik koji ocekuju Blade view-ovi javnog portala.
+ */
 class LibraryCatalog
 {
+    /** @var array<int, string> */
+    private const COLORS = ['#ffd968', '#83d2eb', '#dcd5f3', '#f68b72', '#a8e6a1', '#f3c7e6'];
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public static function all(): array
     {
+        return Library::query()
+            ->where('deleted', false)
+            ->with('place')
+            ->orderBy('name')
+            ->get()
+            ->values()
+            ->map(fn (Library $library, int $index): array => self::library($library, $index))
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function library(Library $library, int $index): array
+    {
+        $categories = Category::query()
+            ->where('library_id', $library->id)
+            ->whereNull('parent_id')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Category $category, int $categoryIndex): array => self::category($category, $categoryIndex))
+            ->filter(fn (array $category): bool => $category['books'] !== [])
+            ->values()
+            ->all();
+
+        $totalBooks = Book::query()->where('library_id', $library->id)->count();
+
         return [
-            [
-                'slug' => 'biblioteka-svetlost',
-                'name' => 'Biblioteka Svetlost',
-                'city' => 'Novi Sad',
-                'address' => 'Bulevar znanja 12',
-                'work_time' => 'Pon - Pet, 08:00 - 19:00',
-                'count' => '12.480 naslova',
-                'mark' => 'BS',
-                'color' => '#ffd968',
-                'description' => 'Mesto gde radoznalost ima svoju adresu. Istražite fond za najmlađe, školske dane i sve velike priče između.',
-                'categories' => [
-                    [
-                        'slug' => 'decje-knjige',
-                        'name' => 'Dečje knjige',
-                        'description' => 'Priče za prve čitalačke pustolovine.',
-                        'color' => '#ffd968',
-                        'books' => [
-                            ['slug' => 'tajna-plavog-kofera', 'title' => 'Tajna plavog kofera', 'author' => 'Jelena Marković', 'year' => '2024', 'availability' => 'Dostupno', 'description' => 'Mila pronalazi stari kofer na tavanu i kreće u potragu za pričom koju je njena baka ostavila između stranica jedne knjige.'],
-                            ['slug' => 'zvezda-na-prozoru', 'title' => 'Zvezda na prozoru', 'author' => 'Nikola Ilić', 'year' => '2023', 'availability' => 'Dostupno', 'description' => 'Topla priča o prijateljstvu, malim hrabrostima i jednoj zvezdi koja svake večeri svetli samo za njih.'],
-                        ],
-                    ],
-                    [
-                        'slug' => 'lektira',
-                        'name' => 'Lektira',
-                        'description' => 'Naslovi koji prate školske dane.',
-                        'color' => '#83d2eb',
-                        'books' => [
-                            ['slug' => 'grad-od-papira', 'title' => 'Grad od papira', 'author' => 'Mira Jovanović', 'year' => '2025', 'availability' => 'Dostupno', 'description' => 'Roman o gradu koji se menja svaki put kada neko otvori knjigu i o ljudima koji uče da ga čitaju zajedno.'],
-                            ['slug' => 'prica-o-plavoj-reci', 'title' => 'Priča o plavoj reci', 'author' => 'Dušan Petrović', 'year' => '2022', 'availability' => 'Uskoro dostupno', 'description' => 'Putovanje kroz zavičaj, uspomene i pitanja koja sazrevaju zajedno sa svojim čitaocem.'],
-                        ],
-                    ],
-                    [
-                        'slug' => 'popularna-nauka',
-                        'name' => 'Popularna nauka',
-                        'description' => 'Svet oko nas, objašnjen jednostavno.',
-                        'color' => '#dcd5f3',
-                        'books' => [
-                            ['slug' => 'mala-skola-zvezda', 'title' => 'Mala škola zvezda', 'author' => 'Sofija Ristić', 'year' => '2026', 'availability' => 'Dostupno', 'description' => 'Od prve planete do najdalje galaksije, ovo je poziv da nebo posmatramo pažljivije.'],
-                        ],
-                    ],
-                ],
-            ],
-            [
-                'slug' => 'citaonica-dunav',
-                'name' => 'Čitaonica Dunav',
-                'city' => 'Sombor',
-                'address' => 'Ulica lipa 7',
-                'work_time' => 'Pon - Sub, 09:00 - 20:00',
-                'count' => '8.920 naslova',
-                'mark' => 'ČD',
-                'color' => '#83d2eb',
-                'description' => 'Mirna čitaonica za velike ideje, školske projekte i popodneva koja imaju dovoljno vremena za još jedno poglavlje.',
-                'categories' => [
-                    [
-                        'slug' => 'romani',
-                        'name' => 'Romani',
-                        'description' => 'Savremene priče i klasici za duge dane.',
-                        'color' => '#83d2eb',
-                        'books' => [
-                            ['slug' => 'zeleni-krovovi', 'title' => 'Zeleni krovovi', 'author' => 'Tara Nikolić', 'year' => '2025', 'availability' => 'Dostupno', 'description' => 'Četvoro prijatelja otkriva da se najvažnije tajne njihovog grada kriju iznad ulica kojima svakog dana prolaze.'],
-                            ['slug' => 'vreme-za-price', 'title' => 'Vreme za priče', 'author' => 'Ognjen Kovač', 'year' => '2021', 'availability' => 'Dostupno', 'description' => 'Knjiga o ljudima koji su shvatili da se pažnja, kao i dobra priča, najbolje poklanja bez žurbe.'],
-                        ],
-                    ],
-                    [
-                        'slug' => 'poezija',
-                        'name' => 'Poezija',
-                        'description' => 'Stihovi za tišinu, razgovor i maštu.',
-                        'color' => '#dcd5f3',
-                        'books' => [
-                            ['slug' => 'vrt-koji-pamti', 'title' => 'Vrt koji pamti', 'author' => 'Ana Vuković', 'year' => '2024', 'availability' => 'Dostupno', 'description' => 'Zbirka stihova o odrastanju, dvorištima koja se menjaju i stvarima koje ostaju u nama.'],
-                        ],
-                    ],
-                ],
-            ],
-            [
-                'slug' => 'gradska-biblioteka',
-                'name' => 'Gradska biblioteka',
-                'city' => 'Kragujevac',
-                'address' => 'Trg čitalaca 1',
-                'work_time' => 'Pon - Pet, 07:30 - 20:00',
-                'count' => '18.240 naslova',
-                'mark' => 'GB',
-                'color' => '#dcd5f3',
-                'description' => 'Gradska biblioteka za učenike, porodice i sve koji veruju da dobra knjiga može da promeni tok dana.',
-                'categories' => [
-                    [
-                        'slug' => 'istorija',
-                        'name' => 'Istorija',
-                        'description' => 'Prošlost koja pomaže da bolje razumemo sadašnjost.',
-                        'color' => '#ffd968',
-                        'books' => [
-                            ['slug' => 'tragovi-vremena', 'title' => 'Tragovi vremena', 'author' => 'Milan Savić', 'year' => '2023', 'availability' => 'Dostupno', 'description' => 'Kratke i živopisne priče o ljudima, mestima i predmetima koji su oblikovali naš grad.'],
-                        ],
-                    ],
-                    [
-                        'slug' => 'umetnost',
-                        'name' => 'Umetnost',
-                        'description' => 'Boje, oblici i ideje koje ostaju.',
-                        'color' => '#f68b72',
-                        'books' => [
-                            ['slug' => 'slike-koje-govore', 'title' => 'Slike koje govore', 'author' => 'Marija Đorđević', 'year' => '2025', 'availability' => 'Dostupno', 'description' => 'Uvod u umetnost kroz četrdeset dela koja pokazuju kako slika može da postavi bolje pitanje od odgovora.'],
-                        ],
-                    ],
-                ],
-            ],
+            'slug' => $library->slug,
+            'name' => $library->name,
+            'city' => $library->place?->name ?? '',
+            'address' => $library->address,
+            'work_time' => $library->work_time ?? '',
+            'count' => number_format($totalBooks, 0, ',', '.').' naslova',
+            'mark' => self::mark($library->name),
+            'color' => self::COLORS[$index % count(self::COLORS)],
+            'description' => 'Biblioteka u '.($library->place?->name ?? '').' sa '.$totalBooks.' naslova u fondu.',
+            'categories' => $categories,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function category(Category $category, int $index): array
+    {
+        $books = Book::query()
+            ->where('category_primary_id', $category->id)
+            ->with('authors')
+            ->withCount([
+                'activeCopies as available_count' => fn ($query) => $query
+                    ->where('borrowed', false)
+                    ->where('rec_error', false)
+                    ->whereDoesntHave('writeOffs', fn ($writeOff) => $writeOff->whereNull('cancelled_at')),
+            ])
+            ->withMin('activeCopies', 'publish_year')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Book $book): array => self::book($book, $category))
+            ->all();
+
+        return [
+            'slug' => $category->slug,
+            'name' => $category->name,
+            'description' => 'Naslovi iz kategorije '.$category->name.'.',
+            'color' => self::COLORS[$index % count(self::COLORS)],
+            'books' => $books,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function book(Book $book, Category $category): array
+    {
+        return [
+            'slug' => $book->slug,
+            'title' => $book->name,
+            'author' => $book->authors->map(fn ($author): string => $author->displayName())->join(', ') ?: '—',
+            'year' => (string) ($book->active_copies_min_publish_year ?? ''),
+            'availability' => ($book->available_count ?? 0) > 0 ? 'Dostupno' : 'Nije dostupno',
+            'description' => $book->description ?? 'Opis nije dostupan.',
+        ];
+    }
+
+    private static function mark(string $name): string
+    {
+        $parts = preg_split('/\s+/', trim($name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        if (count($parts) >= 2) {
+            return mb_strtoupper(mb_substr($parts[0], 0, 1).mb_substr($parts[1], 0, 1));
+        }
+
+        return mb_strtoupper(mb_substr($name, 0, 2));
     }
 }

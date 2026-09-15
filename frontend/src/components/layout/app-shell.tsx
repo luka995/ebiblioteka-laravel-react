@@ -34,6 +34,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/tags', labelKey: 'nav.tags', icon: Tag, permission: 'tags.viewAny' },
   { to: '/categories', labelKey: 'nav.categories', icon: FolderTree, permission: 'categories.viewAny' },
   { to: '/authors', labelKey: 'nav.authors', icon: PenLine, permission: 'authors.viewAny' },
+  { to: '/books', labelKey: 'nav.books', icon: BookOpen, permission: 'books.viewAny' },
   { to: '/news', labelKey: 'nav.news', icon: Newspaper, permission: 'news.viewAny' },
 ]
 
@@ -145,6 +146,7 @@ function pageTitleFor(pathname: string): string {
   if (pathname.startsWith('/tags')) return 'nav.tags'
   if (pathname.startsWith('/categories')) return 'nav.categories'
   if (pathname.startsWith('/authors')) return 'nav.authors'
+  if (pathname.startsWith('/books')) return 'nav.books'
   if (pathname.startsWith('/news')) return 'nav.news'
   if (pathname.startsWith('/profile')) return 'nav.account'
   if (pathname.startsWith('/settings')) return 'nav.settings'

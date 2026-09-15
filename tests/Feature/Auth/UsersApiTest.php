@@ -157,12 +157,56 @@ test('superadmin can create and list a library', function () {
         ->assertCreated()
         ->assertJsonPath('data.name', 'Gradska biblioteka')
         ->assertJsonPath('data.place.id', $place->id)
-        ->assertJsonPath('data.place.region.id', $region->id);
+        ->assertJsonPath('data.place.region.id', $region->id)
+        ->assertJsonPath('data.inv_number_auto', true);
 
     $this->actingAs($admin)->getJson('/api/v1/libraries', adminApiHeaders())
         ->assertOk()
         ->assertJsonStructure(['data', 'meta'])
         ->assertJsonPath('data.0.name', 'Gradska biblioteka');
+});
+
+test('superadmin can toggle automatic inventory number on a library', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $region = Region::factory()->create();
+    $place = Place::factory()->for($region)->create();
+
+    $create = $this->actingAs($admin)->postJson('/api/v1/libraries', [
+        'name' => 'Narodna biblioteka',
+        'address' => 'Knez Mihailova 1',
+        'place_id' => $place->id,
+        'inv_number_auto' => false,
+    ], adminApiHeaders())
+        ->assertCreated()
+        ->assertJsonPath('data.inv_number_auto', false);
+
+    $libraryId = $create->json('data.id');
+
+    $this->actingAs($admin)->putJson("/api/v1/libraries/{$libraryId}", [
+        'name' => 'Narodna biblioteka',
+        'address' => 'Knez Mihailova 1',
+        'place_id' => $place->id,
+        'inv_number_auto' => true,
+    ], adminApiHeaders())
+        ->assertOk()
+        ->assertJsonPath('data.inv_number_auto', true);
+
+    expect(Library::find($libraryId)?->inv_number_auto)->toBeTrue();
+});
+
+test('library inventory number flag must be a boolean', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $region = Region::factory()->create();
+    $place = Place::factory()->for($region)->create();
+
+    $this->actingAs($admin)->postJson('/api/v1/libraries', [
+        'name' => 'Gradska biblioteka',
+        'address' => 'Trg slobode 1',
+        'place_id' => $place->id,
+        'inv_number_auto' => 'not-a-bool',
+    ], adminApiHeaders())
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('inv_number_auto');
 });
 
 test('me returns the authenticated user with role', function () {
