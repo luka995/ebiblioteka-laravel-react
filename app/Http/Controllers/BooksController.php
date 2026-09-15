@@ -54,6 +54,11 @@ class BooksController extends Controller
             $this->whereTransliterated($query, 'name', $term);
         }
 
+        if ($request->filled('isbn')) {
+            $term = trim((string) $request->string('isbn'));
+            $query->whereHas('activeCopies', fn ($copy) => $copy->where('isbn', 'like', '%'.$term.'%'));
+        }
+
         if ($request->filled('category_id')) {
             $categoryId = $request->integer('category_id');
             $query->where(function ($group) use ($categoryId): void {

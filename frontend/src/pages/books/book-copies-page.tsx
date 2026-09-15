@@ -35,23 +35,26 @@ export function BookCopiesPage() {
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const barcode = searchParams.get('barcode') ?? ''
   const orderNumber = searchParams.get('order_number') ?? ''
+  const isbn = searchParams.get('isbn') ?? ''
   const search = searchParams.get('search') ?? ''
   const recError = searchParams.get('rec_error') ?? ''
   const libraryId = activeLibrary?.id ?? null
 
   const [barcodeInput, setBarcodeInput] = useState(barcode)
   const [orderNumberInput, setOrderNumberInput] = useState(orderNumber)
+  const [isbnInput, setIsbnInput] = useState(isbn)
   const [searchInput, setSearchInput] = useState(search)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [printOpen, setPrintOpen] = useState(false)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
 
   const copiesQuery = useQuery({
-    queryKey: ['book-copies', { page, barcode, orderNumber, search, recError, libraryId }],
+    queryKey: ['book-copies', { page, barcode, orderNumber, isbn, search, recError, libraryId }],
     queryFn: async () => {
       const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
       if (barcode) query.set('barcode', barcode)
       if (orderNumber) query.set('order_number', orderNumber)
+      if (isbn) query.set('isbn', isbn)
       if (search) query.set('search', search)
       if (recError !== '') query.set('rec_error', recError)
       if (libraryId !== null) query.set('library_id', String(libraryId))
@@ -145,6 +148,7 @@ export function BookCopiesPage() {
             setParams({
               barcode: barcodeInput.trim() || null,
               order_number: orderNumberInput.trim() || null,
+              isbn: isbnInput.trim() || null,
               search: searchInput.trim() || null,
               page: null,
             })
@@ -166,6 +170,12 @@ export function BookCopiesPage() {
             value={barcodeInput}
             onChange={(event) => setBarcodeInput(event.target.value)}
             placeholder={t('books.copies.searchBarcode')}
+            className="sm:max-w-xs"
+          />
+          <Input
+            value={isbnInput}
+            onChange={(event) => setIsbnInput(event.target.value)}
+            placeholder={t('books.copies.searchIsbn')}
             className="sm:max-w-xs"
           />
           <Button variant="outline" type="submit" aria-label={t('common.search')}>

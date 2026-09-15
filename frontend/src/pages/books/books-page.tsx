@@ -33,19 +33,22 @@ export function BooksPage() {
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const search = searchParams.get('q') ?? ''
+  const isbn = searchParams.get('isbn') ?? ''
   const libraryId = activeLibrary?.id ?? null
 
   const [searchInput, setSearchInput] = useState(search)
+  const [isbnInput, setIsbnInput] = useState(isbn)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingBook, setEditingBook] = useState<Book | null>(null)
   const [deletingBook, setDeletingBook] = useState<Book | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
   const booksQuery = useQuery({
-    queryKey: ['books', { page, search, libraryId }],
+    queryKey: ['books', { page, search, isbn, libraryId }],
     queryFn: async () => {
       const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
       if (search) query.set('search', search)
+      if (isbn) query.set('isbn', isbn)
       if (libraryId !== null) query.set('library_id', String(libraryId))
       return api.get<PaginatedResponse<Book>>(`${apiPaths.books}?${query.toString()}`)
     },
@@ -117,17 +120,27 @@ export function BooksPage() {
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
         <form
-          className="flex gap-2"
+          className="flex flex-col gap-2 sm:flex-row"
           onSubmit={(event) => {
             event.preventDefault()
-            setParams({ q: searchInput.trim() || null, page: null })
+            setParams({
+              q: searchInput.trim() || null,
+              isbn: isbnInput.trim() || null,
+              page: null,
+            })
           }}
         >
           <Input
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             placeholder={t('books.search')}
-            className="max-w-xs"
+            className="sm:max-w-xs"
+          />
+          <Input
+            value={isbnInput}
+            onChange={(event) => setIsbnInput(event.target.value)}
+            placeholder={t('books.searchIsbn')}
+            className="sm:max-w-xs"
           />
           <Button variant="outline" type="submit" aria-label={t('common.search')}>
             <Search />

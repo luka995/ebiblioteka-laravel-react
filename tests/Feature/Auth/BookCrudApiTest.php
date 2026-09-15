@@ -124,6 +124,22 @@ test('librarian sees only books of the active library', function () {
         ->assertJsonMissing(['id' => $foreign->id]);
 });
 
+test('superadmin can filter books by copy isbn', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeBookLibrary();
+
+    $match = Book::factory()->for($library)->create(['name' => 'Sa ISBN-om']);
+    $other = Book::factory()->for($library)->create(['name' => 'Bez ISBN-a']);
+
+    BookCopy::factory()->for($library)->for($match)->create(['isbn' => '9788663580100']);
+    BookCopy::factory()->for($library)->for($other)->create(['isbn' => '9788612345678']);
+
+    $this->actingAs($admin)->getJson('/api/v1/books?isbn=8663580100', bookHeaders())
+        ->assertOk()
+        ->assertJsonFragment(['id' => $match->id])
+        ->assertJsonMissing(['id' => $other->id]);
+});
+
 test('regular user cannot access books', function () {
     $user = User::factory()->create();
 

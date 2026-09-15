@@ -64,6 +64,10 @@ class BookCopiesController extends Controller
             $query->where('order_number', 'like', '%'.trim((string) $request->string('order_number')).'%');
         }
 
+        if ($request->filled('isbn')) {
+            $query->where('isbn', 'like', '%'.trim((string) $request->string('isbn')).'%');
+        }
+
         if ($request->filled('search')) {
             $term = trim((string) $request->string('search'));
             $query->whereHas('book', fn ($book) => $this->whereTransliterated($book, 'name', $term));

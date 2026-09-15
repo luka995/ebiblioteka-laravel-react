@@ -1,5 +1,13 @@
 # Changelog
 
+## [15.09.2026] Katalog: pretraga fizičkih jedinica i naslova po ISBN-u
+
+### Added
+
+- **Pretraga kopija po ISBN-u** (`app/Http/Controllers/BookCopiesController.php`, `frontend/src/pages/books/book-copies-page.tsx`) — novi `isbn` filter (`LIKE %term%`) na `GET /book-copies` i polje u formi pretrage fizičkih jedinica
+- **Pretraga naslova po ISBN-u** (`app/Http/Controllers/BooksController.php`, `frontend/src/pages/books/books-page.tsx`) — `isbn` filter preko aktivnih kopija (`whereHas('activeCopies')`) i polje u formi pretrage naslova
+- **i18n i testovi** (`frontend/src/i18n/locales/*.json`, `tests/Feature/Auth/{BookCopyApiTest,BookCrudApiTest}.php`) — `books.searchIsbn` i `books.copies.searchIsbn` na sva tri jezika; testovi za filtriranje kopija i naslova po ISBN-u
+
 ## [15.09.2026] Katalog: COBISS uvoz, detekcija duplikata i brzi ISBN unos
 
 ### Added

@@ -274,6 +274,20 @@ test('index still filters copies by barcode', function () {
         ->assertJsonMissing(['id' => $other->id]);
 });
 
+test('index filters copies by isbn', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = bookCopyLibrary();
+    $book = bookCopyBook($library);
+
+    $match = BookCopy::factory()->for($library)->for($book)->create(['isbn' => '9788663580100']);
+    $other = BookCopy::factory()->for($library)->for($book)->create(['isbn' => '9788612345678']);
+
+    $this->actingAs($admin)->getJson('/api/v1/book-copies?isbn=8663580100', bookCopyHeaders())
+        ->assertOk()
+        ->assertJsonFragment(['id' => $match->id])
+        ->assertJsonMissing(['id' => $other->id]);
+});
+
 test('regular user cannot access copies', function () {
     $user = User::factory()->create();
 
