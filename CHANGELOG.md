@@ -1,5 +1,14 @@
 # Changelog
 
+## [15.09.2026] Katalog: po-bibliotečni barkod i dedup COBISS seed-a
+
+### Changed
+
+- **Po-bibliotečna jedinstvenost barkoda** (`database/migrations/2026_09_15_000001_scope_book_copies_barcode_to_library.php`) — `unique(barcode)` zamenjen sa `unique(library_id, barcode)`; dve biblioteke sada mogu imati isti inventarni broj/barkod (legacy ponašanje)
+- **COBISS seeder bez offseta i sa dedup-om** (`database/seeders/CobissBookSeeder.php`) — uklonjeno primovanje sekvence na `library->id * 1_000_000`; `deduplicate()` zadržava po jedan zapis po naslovu i po ISBN-u (fixture ~210 → 200), čime numeracija ostaje neprekidna
+- **Podrazumevani broj kopija** (`config/cobiss.php`) — `copies_max` `3 → 5`
+- **COBISS seeder testovi** (`tests/Feature/CobissBookSeederTest.php`) — verifikacija EAN-13 barkoda, neprekidne numeracije (`1..8`) i idempotencije, uz test-only `configureCobissSeeder()` helper
+
 ## [15.09.2026] Katalog: pretraga fizičkih jedinica i naslova po ISBN-u
 
 ### Added

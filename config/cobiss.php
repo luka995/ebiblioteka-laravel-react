@@ -78,6 +78,6 @@ return [
 
     // Broj kopija po naslovu (ukljucivo).
     'copies_min' => (int) env('COBISS_COPIES_MIN', 1),
-    'copies_max' => (int) env('COBISS_COPIES_MAX', 3),
+    'copies_max' => (int) env('COBISS_COPIES_MAX', 5),
 
 ];

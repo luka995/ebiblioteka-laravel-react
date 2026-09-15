@@ -85,11 +85,6 @@ class CobissBookSeeder extends Seeder
      */
     private function seedLibrary(Library $library, array $records): void
     {
-        // Barkod je globalno jedinstven (izveden iz inventarnog broja), a
-        // inventarni broj je per-library. Da se test-podaci razlicitih
-        // biblioteka ne sudare, sekvenca se primuje na opseg vezan za ID.
-        $this->numbers->recordManual($library, (string) ($library->id * 1_000_000));
-
         $existingNames = array_flip(
             Book::query()->where('library_id', $library->id)->pluck('name')->all()
         );
@@ -228,7 +223,47 @@ class CobissBookSeeder extends Seeder
 
         $records = $data['records'] ?? $data;
 
-        return is_array($records) ? array_values($records) : [];
+        return $this->deduplicate(is_array($records) ? array_values($records) : []);
+    }
+
+    /**
+     * Zadrzava po jedan zapis po naslovu i po ISBN-u.
+     *
+     * Fixture moze sadrzati vise izdanja istog naslova; izdvajanjem
+     * jedinstvenih naslova seeder obezbedjuje tacan broj novih knjiga po
+     * biblioteci bez preskakanja uzrokovanog duplikatima.
+     *
+     * @param  array<int, array<string, mixed>>  $records
+     * @return array<int, array<string, mixed>>
+     */
+    private function deduplicate(array $records): array
+    {
+        $seenTitles = [];
+        $seenIsbn = [];
+        $unique = [];
+
+        foreach ($records as $record) {
+            $title = mb_strtolower(trim((string) ($record['title'] ?? '')));
+            $isbn = trim((string) ($record['isbn'] ?? ''));
+
+            if ($title === '' || isset($seenTitles[$title])) {
+                continue;
+            }
+
+            if ($isbn !== '' && isset($seenIsbn[$isbn])) {
+                continue;
+            }
+
+            $seenTitles[$title] = true;
+
+            if ($isbn !== '') {
+                $seenIsbn[$isbn] = true;
+            }
+
+            $unique[] = $record;
+        }
+
+        return $unique;
     }
 
     /**

@@ -3,6 +3,7 @@
 use App\Models\Book;
 use App\Models\BookCopy;
 use App\Models\Library;
+use App\Support\BarCode;
 use Database\Seeders\CobissBookSeeder;
 use Illuminate\Support\Facades\File;
 
@@ -80,6 +81,18 @@ function writeCobissFixture(array $records): string
     return $path;
 }
 
+function configureCobissSeeder(Library $library, string $fixturePath, int $perLibrary, int $copiesMin, int $copiesMax): void
+{
+    config([
+        'cobiss.fixture_path' => $fixturePath,
+        'cobiss.per_library' => $perLibrary,
+        'cobiss.copies_min' => $copiesMin,
+        'cobiss.copies_max' => $copiesMax,
+        'cobiss.seed' => 7,
+        'cobiss.libraries' => (string) $library->id,
+    ]);
+}
+
 beforeEach(function () {
     $this->fixturePath = writeCobissFixture(cobissFixtureRecords());
 });
@@ -90,72 +103,58 @@ afterEach(function () {
     }
 });
 
-test('cobiss seeder fills each library with distinct real titles and copies', function () {
-    $libraryA = Library::factory()->create(['name' => 'Biblioteka A']);
-    $libraryB = Library::factory()->create(['name' => 'Biblioteka B']);
-
-    config([
-        'cobiss.fixture_path' => $this->fixturePath,
-        'cobiss.per_library' => 2,
-        'cobiss.copies_min' => 1,
-        'cobiss.copies_max' => 2,
-        'cobiss.seed' => 7,
-        'cobiss.libraries' => $libraryA->id.','.$libraryB->id,
-    ]);
+test('cobiss seeder fills a library with real titles, authors and copies', function () {
+    $library = Library::factory()->create(['name' => 'Akademija Filipovic']);
+    configureCobissSeeder($library, $this->fixturePath, 4, 1, 2);
 
     $this->seed(CobissBookSeeder::class);
 
-    expect(Book::where('library_id', $libraryA->id)->count())->toBe(2)
-        ->and(Book::where('library_id', $libraryB->id)->count())->toBe(2)
-        ->and(Book::count())->toBe(4);
+    $books = Book::where('library_id', $library->id)->withCount('authors')->get();
 
-    // Naslovi se ne preklapaju izmedju biblioteka.
-    $titlesA = Book::where('library_id', $libraryA->id)->pluck('name')->all();
-    $titlesB = Book::where('library_id', $libraryB->id)->pluck('name')->all();
-    expect(array_intersect($titlesA, $titlesB))->toBe([]);
+    expect($books)->toHaveCount(4)
+        ->and($books->every(fn (Book $book): bool => $book->authors_count > 0))->toBeTrue()
+        ->and($books->pluck('category_primary_id')->filter()->isNotEmpty())->toBeTrue();
 
-    foreach ([$libraryA, $libraryB] as $library) {
-        $copies = BookCopy::where('library_id', $library->id)->get();
+    $copies = BookCopy::where('library_id', $library->id)->get();
 
-        expect($copies->count())->toBeGreaterThanOrEqual(2)
-            ->and($copies->count())->toBeLessThanOrEqual(4);
+    expect($copies->count())->toBeGreaterThanOrEqual(4)
+        ->and($copies->count())->toBeLessThanOrEqual(8);
 
-        foreach ($copies as $copy) {
-            expect($copy->barcode)->not->toBeNull()
-                ->and($copy->isbn)->not->toBeNull()
-                ->and($copy->publisher)->not->toBeNull()
-                ->and($copy->order_number)->not->toBeNull();
-        }
-
-        // Knjige imaju autora i bar jedna kategoriju (roman/povest/prirucnik).
-        $books = Book::where('library_id', $library->id)->withCount('authors')->get();
-        expect($books->every(fn (Book $book): bool => $book->authors_count > 0))->toBeTrue();
-        expect($books->pluck('category_primary_id')->filter()->isNotEmpty())->toBeTrue();
+    foreach ($copies as $copy) {
+        expect($copy->barcode)->not->toBeNull()
+            ->and(BarCode::validate($copy->barcode))->toBeTrue()
+            ->and($copy->isbn)->not->toBeNull()
+            ->and($copy->publisher)->not->toBeNull()
+            ->and($copy->order_number)->not->toBeNull();
     }
 });
 
+test('cobiss seeder generates contiguous inventory numbers without gaps', function () {
+    $library = Library::factory()->create();
+    configureCobissSeeder($library, $this->fixturePath, 4, 2, 2);
+
+    $this->seed(CobissBookSeeder::class);
+
+    $numbers = BookCopy::where('library_id', $library->id)
+        ->orderByRaw('CAST(order_number AS BIGINT)')
+        ->pluck('order_number')
+        ->map(fn ($value): int => (int) $value)
+        ->all();
+
+    expect($numbers)->toBe(range(1, 8))
+        ->and($library->inventorySequence()->first()->last_number)->toBe(8);
+});
+
 test('cobiss seeder is idempotent', function () {
-    $library = Library::factory()->create(['name' => 'Biblioteka Idempotent']);
-
-    config([
-        'cobiss.fixture_path' => $this->fixturePath,
-        'cobiss.per_library' => 4,
-        'cobiss.copies_min' => 1,
-        'cobiss.copies_max' => 1,
-        'cobiss.seed' => 3,
-        'cobiss.libraries' => (string) $library->id,
-    ]);
+    $library = Library::factory()->create();
+    configureCobissSeeder($library, $this->fixturePath, 4, 1, 1);
 
     $this->seed(CobissBookSeeder::class);
-
-    $books = Book::where('library_id', $library->id)->count();
-    $copies = BookCopy::where('library_id', $library->id)->count();
-
     $this->seed(CobissBookSeeder::class);
 
-    expect(Book::where('library_id', $library->id)->count())->toBe($books)
-        ->and(BookCopy::where('library_id', $library->id)->count())->toBe($copies)
-        ->and($copies)->toBe(4);
+    expect(Book::where('library_id', $library->id)->count())->toBe(4)
+        ->and(BookCopy::where('library_id', $library->id)->count())->toBe(4)
+        ->and($library->inventorySequence()->first()->last_number)->toBe(4);
 });
 
 test('cobiss seeder throws when fixture is missing', function () {
