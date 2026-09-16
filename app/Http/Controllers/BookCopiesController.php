@@ -13,7 +13,7 @@ use App\Http\Resources\BookCopyResource;
 use App\Models\Book;
 use App\Models\BookCopy;
 use App\Models\Library;
-use App\Queries\Concerns\AppliesTransliteratedSearch;
+use App\Queries\BookCopyFilters;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
 use App\Services\BarcodePdfService;
@@ -30,52 +30,49 @@ use Illuminate\Validation\ValidationException;
 
 class BookCopiesController extends Controller
 {
-    use AppliesTransliteratedSearch;
-
     /**
      * @return AnonymousResourceCollection<int, BookCopyResource>
      */
     public function index(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection
     {
         $user = $request->user();
-        $active = $activeLibrary->resolve($user);
+        $library = $activeLibrary->requireActiveLibrary($user);
 
         $query = BookCopy::query()->with(['book', 'activeWriteOff']);
 
-        if (! $user->isSuperAdmin()) {
-            if (! $active) {
-                $query->whereRaw('1 = 0');
-            } else {
-                $query->where('library_id', $active->id);
-            }
-        } elseif ($request->filled('library_id')) {
-            $query->where('library_id', $request->integer('library_id'));
-        }
+        $query->where('library_id', $library->id);
 
-        if ($request->filled('book_id')) {
-            $query->where('book_id', $request->integer('book_id'));
-        }
-
-        if ($request->filled('barcode')) {
-            $query->where('barcode', 'like', '%'.trim((string) $request->string('barcode')).'%');
-        }
-
-        if ($request->filled('order_number')) {
-            $query->where('order_number', 'like', '%'.trim((string) $request->string('order_number')).'%');
-        }
-
-        if ($request->filled('isbn')) {
-            $query->where('isbn', 'like', '%'.trim((string) $request->string('isbn')).'%');
-        }
-
-        if ($request->filled('search')) {
-            $term = trim((string) $request->string('search'));
-            $query->whereHas('book', fn ($book) => $this->whereTransliterated($book, 'name', $term));
-        }
-
-        if ($request->has('rec_error') && $request->input('rec_error') !== '') {
-            $query->where('rec_error', $request->boolean('rec_error'));
-        }
+        $query = (new BookCopyFilters)->apply($query, $request->only([
+            'book_id',
+            'barcode',
+            'order_number',
+            'isbn',
+            'search',
+            'seq_number',
+            'publisher',
+            'publish_place',
+            'publish_year',
+            'issue_number',
+            'dimension',
+            'part',
+            'udk',
+            'binding',
+            'origin',
+            'book_number',
+            'place_on_shelf',
+            'price_from',
+            'price_to',
+            'num_of_pages_from',
+            'num_of_pages_to',
+            'date_add_from',
+            'date_add_to',
+            'notice',
+            'rec_error_notice',
+            'borrowed',
+            'reserved',
+            'rec_error',
+            'status',
+        ]));
 
         $query->orderByRaw('CAST(order_number AS BIGINT)')->orderBy('id');
 
@@ -124,19 +121,11 @@ class BookCopiesController extends Controller
     public function archive(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection
     {
         $user = $request->user();
-        $active = $activeLibrary->resolve($user);
+        $library = $activeLibrary->requireActiveLibrary($user);
 
         $query = BookCopy::onlyTrashed()->with(['book', 'activeWriteOff']);
 
-        if (! $user->isSuperAdmin()) {
-            if (! $active) {
-                $query->whereRaw('1 = 0');
-            } else {
-                $query->where('library_id', $active->id);
-            }
-        } elseif ($request->filled('library_id')) {
-            $query->where('library_id', $request->integer('library_id'));
-        }
+        $query->where('library_id', $library->id);
 
         if ($request->filled('book_id')) {
             $query->where('book_id', $request->integer('book_id'));

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { api, apiPaths } from '@/lib/api'
+import { normalizeBarcode } from '@/lib/barcode'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -45,12 +46,6 @@ const TEXT_FIELDS: Array<{ key: keyof UserFilters; label: string }> = [
 ]
 
 const ALL_VALUE = 'all'
-
-function normalizeBarcode(value: string): string {
-  const trimmed = value.trim()
-
-  return /^\d{12}$/.test(trimmed) ? `0${trimmed}` : trimmed
-}
 
 export function countActiveFilters(filters: UserFilters): number {
   return Object.values(filters).filter((value) => value !== '').length

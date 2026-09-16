@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateTagRequest;
 use App\Http\Resources\TagResource;
 use App\Models\Tag;
 use App\Queries\TagFilters;
+use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,20 +18,29 @@ class TagsController extends Controller
     /**
      * @return AnonymousResourceCollection<int, TagResource>|TagResource[]
      */
-    public function index(Request $request, AuthorizationService $auth): AnonymousResourceCollection|array
+    public function index(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection|array
     {
+        $user = $request->user();
+        $library = $activeLibrary->requireActiveLibrary($user);
+
         $query = Tag::query()
             ->with('library')
-            ->withCount('users')
-            ->when(! $request->user()->isSuperAdmin(), function ($q) use ($request) {
-                $q->whereIn('library_id', $request->user()->libraries()->pluck('libraries.id'));
-            });
+            ->withCount('users');
 
-        (new TagFilters)->apply($query, $request->only(['search', 'library_id']));
+        $requestedLibrary = $request->filled('library_id') ? $request->integer('library_id') : null;
+
+        if ($user->isSuperAdmin()) {
+            // Eksplicitni filter ima prednost, inace aktivna biblioteka.
+            $query->where('library_id', $requestedLibrary ?? $library->id);
+        } else {
+            $query->where('library_id', $library->id);
+        }
+
+        (new TagFilters)->apply($query, $request->only(['search']));
 
         $query->orderBy('name')->orderBy('id');
 
-        $permissions = $auth->collectionPermissions($request->user(), Tag::class);
+        $permissions = $auth->collectionPermissions($user, Tag::class);
 
         if ($request->boolean('all')) {
             return TagResource::collection($query->get())->additional(['permissions' => $permissions]);

@@ -70,6 +70,28 @@ class ActiveLibraryService
     }
 
     /**
+     * Vraca aktivnu biblioteku ili prekida zahtev (422).
+     *
+     * Liste kataloga (naslovi, kopije, arhiva, inventarne knjige) zahtevaju
+     * izabranu aktivnu biblioteku i za superadmina, da se prikaz ne bi
+     * mesao izmedju biblioteka.
+     *
+     * @throws ValidationException
+     */
+    public function requireActiveLibrary(User $user): Library
+    {
+        $active = $this->resolve($user);
+
+        if (! $active instanceof Library) {
+            throw ValidationException::withMessages([
+                'library_id' => __('validation.custom.active_library_required'),
+            ]);
+        }
+
+        return $active;
+    }
+
+    /**
      * Scope-uje upit korisnika na biblioteke kojima akter sme da pristupi.
      *
      * Superadmin vidi sve (ili aktivnu biblioteku ako je izabrao); ostali

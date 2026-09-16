@@ -47,6 +47,17 @@ return [
             'report' => false,
         ],
 
+        // Privatni disk za generisane PDF inventarne knjige. `serve => false`
+        // znaci da Laravel ne registruje /storage rutu; fajlovi su dostupni
+        // iskljucivo kroz autorizovani InventoryBooksController::download.
+        'inventory' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/inventory-books'),
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

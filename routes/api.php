@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthorsController;
 use App\Http\Controllers\BookCopiesController;
 use App\Http\Controllers\BooksController;
 use App\Http\Controllers\CategoriesController;
+use App\Http\Controllers\InventoryBooksController;
 use App\Http\Controllers\LibrariesController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\PlacesController;
@@ -108,6 +109,11 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::get('/book-copies/{bookCopy}', [BookCopiesController::class, 'show'])->middleware('can:view,bookCopy');
     Route::put('/book-copies/{bookCopy}', [BookCopiesController::class, 'update'])->middleware('can:update,bookCopy');
     Route::delete('/book-copies/{bookCopy}', [BookCopiesController::class, 'destroy'])->middleware('can:delete,bookCopy');
+
+    Route::get('/inventory-books', [InventoryBooksController::class, 'index'])->middleware('can:viewAny,App\Models\InventoryBook');
+    Route::post('/inventory-books', [InventoryBooksController::class, 'store'])->middleware('can:create,App\Models\InventoryBook');
+    Route::get('/inventory-books/{inventoryBook}/download', [InventoryBooksController::class, 'download'])->middleware('can:download,inventoryBook');
+    Route::get('/inventory-books/{inventoryBook}', [InventoryBooksController::class, 'show'])->middleware('can:view,inventoryBook');
 
     Route::get('/news', [NewsController::class, 'index'])->middleware('can:viewAny,App\Models\News');
     Route::post('/news', [NewsController::class, 'store'])->middleware('can:create,App\Models\News');

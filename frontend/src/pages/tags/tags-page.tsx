@@ -28,21 +28,22 @@ import type { PaginatedResponse, Tag } from '@/types'
 
 const PAGE_SIZE = 10
 
-function useTagsQuery(page: number, search: string, libraryId: string) {
+function useTagsQuery(page: number, search: string, libraryId: string, activeLibraryId: number | null) {
   return useQuery({
-    queryKey: ['tags', { page, search, libraryId }],
+    queryKey: ['tags', { page, search, libraryId, activeLibraryId }],
     queryFn: async () => {
       const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
       if (search) query.set('search', search)
       if (libraryId) query.set('library_id', libraryId)
       return api.get<PaginatedResponse<Tag>>(`${apiPaths.tags}?${query.toString()}`)
     },
+    enabled: activeLibraryId !== null,
   })
 }
 
 export function TagsPage() {
   const { t } = useTranslation()
-  const { can, user } = useAuth()
+  const { can, user, activeLibrary } = useAuth()
   const isSuperAdmin = user?.role === 'superadmin'
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -66,10 +67,14 @@ export function TagsPage() {
     })
   }, [libraryId])
 
-  const tagsQuery = useTagsQuery(page, search, libraryId)
+  const tagsQuery = useTagsQuery(page, search, libraryId, activeLibrary?.id ?? null)
 
   if (!can('tags.viewAny')) {
     return <p className="text-sm text-muted-foreground">{t('errors.forbidden')}</p>
+  }
+
+  if (activeLibrary === null) {
+    return <p className="text-sm text-muted-foreground">{t('books.activeLibraryRequired')}</p>
   }
 
   const setParams = (patch: Record<string, string | number | null>) => {

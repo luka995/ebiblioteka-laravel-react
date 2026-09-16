@@ -216,6 +216,27 @@ export interface BookCopy {
   can?: ResourceCan
 }
 
+export type InventoryBookStatus = 'pending' | 'processing' | 'completed' | 'failed'
+
+export interface InventoryBook {
+  id: number
+  library_id: number
+  library_name?: string | null
+  requested_by?: string | null
+  status: InventoryBookStatus
+  file_size: number | null
+  rows_count: number | null
+  locale: string
+  started_at: string | null
+  finished_at: string | null
+  failure_reason: string | null
+  created_at: string
+  can?: {
+    view: boolean
+    download: boolean
+  }
+}
+
 export interface IsbnMetadata {
   source: string
   isbn: string | null

@@ -106,6 +106,49 @@ test('library admin cannot manage memberships', function () {
         ->assertForbidden();
 });
 
+test('library admin sees only tags of the active library', function () {
+    $libraryA = makeAdminLibrary();
+    $libraryB = makeAdminLibrary();
+    $admin = makeLibraryAdmin($libraryA);
+    $admin->libraries()->attach($libraryB->id);
+    $this->withSession(['active_library_id' => $libraryA->id]);
+
+    $tagA = Tag::factory()->for($libraryA)->create();
+    Tag::factory()->for($libraryB)->create();
+
+    $this->actingAs($admin)->getJson('/api/v1/tags', libraryAdminHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $tagA->id);
+});
+
+test('library admin cannot override the active library with an explicit library_id', function () {
+    $libraryA = makeAdminLibrary();
+    $libraryB = makeAdminLibrary();
+    $admin = makeLibraryAdmin($libraryA);
+    $admin->libraries()->attach($libraryB->id);
+    $this->withSession(['active_library_id' => $libraryA->id]);
+
+    $tagA = Tag::factory()->for($libraryA)->create();
+    Tag::factory()->for($libraryB)->create();
+
+    $this->actingAs($admin)->getJson('/api/v1/tags?library_id='.$libraryB->id, libraryAdminHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $tagA->id);
+});
+
+test('library admin cannot list tags of a library they do not manage', function () {
+    $library = makeAdminLibrary();
+    $other = makeAdminLibrary();
+    $admin = makeLibraryAdmin($library);
+    Tag::factory()->for($other)->create();
+
+    $this->actingAs($admin)->getJson('/api/v1/tags?library_id='.$other->id, libraryAdminHeaders())
+        ->assertOk()
+        ->assertJsonCount(0, 'data');
+});
+
 test('library admin can create update and delete their own tag', function () {
     $library = makeAdminLibrary();
     $admin = makeLibraryAdmin($library);

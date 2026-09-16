@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Eye, Plus, Printer, Search } from 'lucide-react'
+import { Eye, Filter, Plus, Printer, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { api, apiPaths } from '@/lib/api'
+import { normalizeBarcode } from '@/lib/barcode'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -15,10 +16,27 @@ import { PaginationBar } from '@/components/pagination-bar'
 import { BookCopyBarcodePrintModal } from '@/components/books/book-copy-barcode-print-modal'
 import { BookCopiesMobileList } from '@/components/books/book-copies-mobile-list'
 import { BookCopyQuickAddModal } from '@/components/books/book-copy-quick-add-modal'
+import {
+  BookCopyFiltersPanel,
+  countActiveFilters,
+  EMPTY_BOOK_COPY_FILTERS,
+  type BookCopyFilters,
+} from '@/components/books/book-copies-filters-panel'
 import { useAuth } from '@/hooks/useAuth'
 import type { BookCopy, BookCopyStatus, PaginatedResponse } from '@/types'
 
 const PAGE_SIZE = 25
+
+const FILTER_KEYS = Object.keys(EMPTY_BOOK_COPY_FILTERS) as Array<keyof BookCopyFilters>
+
+function readFilters(params: URLSearchParams): BookCopyFilters {
+  const filters = { ...EMPTY_BOOK_COPY_FILTERS }
+  FILTER_KEYS.forEach((key) => {
+    const value = params.get(key)
+    if (value) filters[key] = value
+  })
+  return filters
+}
 
 const STATUS_VARIANTS: Record<BookCopyStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   available: 'default',
@@ -38,26 +56,37 @@ export function BookCopiesPage() {
   const orderNumber = searchParams.get('order_number') ?? ''
   const isbn = searchParams.get('isbn') ?? ''
   const search = searchParams.get('search') ?? ''
-  const recError = searchParams.get('rec_error') ?? ''
+  const filters = readFilters(searchParams)
+  const activeFilters = countActiveFilters(filters)
   const libraryId = activeLibrary?.id ?? null
 
   const [barcodeInput, setBarcodeInput] = useState(barcode)
   const [orderNumberInput, setOrderNumberInput] = useState(orderNumber)
   const [isbnInput, setIsbnInput] = useState(isbn)
   const [searchInput, setSearchInput] = useState(search)
+  const [filtersOpen, setFiltersOpen] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [printOpen, setPrintOpen] = useState(false)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
 
+  useEffect(() => {
+    setBarcodeInput(barcode)
+    setOrderNumberInput(orderNumber)
+    setIsbnInput(isbn)
+    setSearchInput(search)
+  }, [barcode, orderNumber, isbn, search])
+
   const copiesQuery = useQuery({
-    queryKey: ['book-copies', { page, barcode, orderNumber, isbn, search, recError, libraryId }],
+    queryKey: ['book-copies', { page, barcode, orderNumber, isbn, search, filters, libraryId }],
     queryFn: async () => {
       const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
       if (barcode) query.set('barcode', barcode)
       if (orderNumber) query.set('order_number', orderNumber)
       if (isbn) query.set('isbn', isbn)
       if (search) query.set('search', search)
-      if (recError !== '') query.set('rec_error', recError)
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) query.set(key, value)
+      })
       if (libraryId !== null) query.set('library_id', String(libraryId))
       return api.get<PaginatedResponse<BookCopy>>(`${apiPaths.bookCopiesList}?${query.toString()}`)
     },
@@ -118,20 +147,28 @@ export function BookCopiesPage() {
     )
   }
 
+  const applyFilters = (next: BookCopyFilters) => {
+    setParams({ ...next, page: null })
+  }
+
+  const clearFilters = () => {
+    setParams({ ...EMPTY_BOOK_COPY_FILTERS, page: null })
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-brand-heading text-2xl font-bold tracking-tight">{t('books.copies.listTitle')}</h2>
         <div className="flex items-center gap-2">
-          <select
-            className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-            value={recError}
-            onChange={(event) => setParams({ rec_error: event.target.value, page: null })}
+          <Button
+            variant="outline"
+            onClick={() => setFiltersOpen((value) => !value)}
+            aria-expanded={filtersOpen}
           >
-            <option value="">{t('books.copies.recErrorAll')}</option>
-            <option value="1">{t('books.copies.recErrorOnly')}</option>
-            <option value="0">{t('books.copies.recErrorNone')}</option>
-          </select>
+            <Filter />
+            {t('books.copies.filters.toggle')}
+            {activeFilters > 0 ? <Badge variant="secondary">{activeFilters}</Badge> : null}
+          </Button>
           {can('book_copies.create') ? (
             <Button variant="brand" onClick={() => setQuickAddOpen(true)}>
               <Plus />
@@ -146,8 +183,10 @@ export function BookCopiesPage() {
           className="flex flex-col gap-2 sm:flex-row"
           onSubmit={(event) => {
             event.preventDefault()
+            const normalizedBarcode = normalizeBarcode(barcodeInput)
+            setBarcodeInput(normalizedBarcode)
             setParams({
-              barcode: barcodeInput.trim() || null,
+              barcode: normalizedBarcode || null,
               order_number: orderNumberInput.trim() || null,
               isbn: isbnInput.trim() || null,
               search: searchInput.trim() || null,
@@ -170,6 +209,7 @@ export function BookCopiesPage() {
           <Input
             value={barcodeInput}
             onChange={(event) => setBarcodeInput(event.target.value)}
+            onBlur={(event) => setBarcodeInput(normalizeBarcode(event.currentTarget.value))}
             placeholder={t('books.copies.searchBarcode')}
             className="sm:max-w-xs"
           />
@@ -184,6 +224,10 @@ export function BookCopiesPage() {
           </Button>
         </form>
       </div>
+
+      {filtersOpen ? (
+        <BookCopyFiltersPanel filters={filters} onApply={applyFilters} onClear={clearFilters} />
+      ) : null}
 
       {selectedIds.size > 0 ? (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2">

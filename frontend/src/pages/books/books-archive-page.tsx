@@ -17,22 +17,28 @@ import type { Book, BookCopy, PaginatedResponse } from '@/types'
 
 export function BooksArchivePage() {
   const { t } = useTranslation()
-  const { can } = useAuth()
+  const { can, activeLibrary } = useAuth()
   const queryClient = useQueryClient()
   const [isSyncing, setIsSyncing] = useState(false)
 
   const booksQuery = useQuery({
-    queryKey: ['books', 'archive'],
+    queryKey: ['books', 'archive', activeLibrary?.id ?? null],
     queryFn: () => api.get<PaginatedResponse<Book>>(`${apiPaths.bookArchive}?per_page=50`),
+    enabled: activeLibrary !== null,
   })
 
   const copiesQuery = useQuery({
-    queryKey: ['book-copies', 'archive'],
+    queryKey: ['book-copies', 'archive', activeLibrary?.id ?? null],
     queryFn: () => api.get<PaginatedResponse<BookCopy>>(`${apiPaths.bookCopiesArchive}?per_page=50`),
+    enabled: activeLibrary !== null,
   })
 
   if (!can('books.viewAny')) {
     return <p className="text-sm text-muted-foreground">{t('errors.forbidden')}</p>
+  }
+
+  if (activeLibrary === null) {
+    return <p className="text-sm text-muted-foreground">{t('books.activeLibraryRequired')}</p>
   }
 
   const refresh = () => {

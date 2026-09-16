@@ -16,6 +16,7 @@ function orderingHeaders(): array
 test('book copies list is ordered numerically by inventory number', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = Library::factory()->create();
+    $this->withSession(['active_library_id' => $library->id]);
     $book = Book::factory()->for($library)->create();
 
     foreach ([1, 2, 3, 9, 10, 11, 12] as $number) {
@@ -33,6 +34,7 @@ test('book copies list is ordered numerically by inventory number', function () 
 test('isbn lookup returns existing copies ordered numerically', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = Library::factory()->create();
+    $this->withSession(['active_library_id' => $library->id]);
     $book = Book::factory()->for($library)->create();
 
     foreach ([1, 2, 3, 10, 11, 12] as $number) {

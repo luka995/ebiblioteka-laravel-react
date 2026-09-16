@@ -454,7 +454,6 @@
     "title": "Knjige",
     "subtitle": "Upravljanje naslovima i fizičkim jedinicama.",
     "listTitle": "Naslovi",
-    "archiveLink": "Arhiva i inventarni brojevi",
     "add": "Novi naslov",
     "search": "Pretraga naslova ili autora...",
     "searchIsbn": "Pretraga po ISBN-u...",
@@ -478,7 +477,11 @@
       "titlesTitle": "Naslovi",
       "titlesDescription": "Bibliografski zapisi, autori i kategorije.",
       "copiesTitle": "Fizičke jedinice",
-      "copiesDescription": "Inventarni brojevi, barkodovi i status kopije."
+      "copiesDescription": "Inventarni brojevi, barkodovi i status kopije.",
+      "archiveTitle": "Arhiva",
+      "archiveDescription": "Arhivirani naslovi i kopije i sinhronizacija inventarnih brojeva.",
+      "inventoryTitle": "PDF knjiga inventara",
+      "inventoryDescription": "Generisanje i preuzimanje inventarne knjige biblioteke."
     },
     "columns": {
       "name": "Naslov",
@@ -632,7 +635,17 @@
       "recErrorAction": "Pogrešno zavedena",
       "recErrorFlag": "Označeno kao pogrešno zavedeno",
       "recErrorNotice": "Napomena",
-      "recErrorSaved": "Zapis je sačuvan."
+      "recErrorSaved": "Zapis je sačuvan.",
+      "filters": {
+        "toggle": "Filteri",
+        "apply": "Primeni",
+        "clear": "Poništi",
+        "bindingAll": "Svi povez",
+        "originAll": "Svi tipovi nabavke",
+        "statusAll": "Svi statusi",
+        "from": "Od",
+        "to": "Do"
+      }
     },
     "status": {
       "available": "Dostupna",
@@ -665,6 +678,29 @@
       "restored": "Vraćeno.",
       "forceDeleted": "Trajno obrisano.",
       "empty": "Arhiva je prazna."
+    },
+    "inventory": {
+      "title": "PDF knjiga inventara",
+      "subtitle": "Generišite PDF inventarnu knjigu za aktivnu biblioteku i preuzmite prethodne verzije.",
+      "generate": "Generiši inventarnu knjigu",
+      "download": "Preuzmi",
+      "started": "Generisanje je započeto. Knjiga će se pojaviti u listi kada bude gotova.",
+      "ready": "Inventarna knjiga je generisana i spremna za preuzimanje.",
+      "failed": "Generisanje inventarne knjige nije uspelo.",
+      "hint": "Generisanje radi u pozadini. Status se osvežava automatski svakih 10 sekundi dok je posao u toku.",
+      "empty": "Još nema generisanih inventarnih knjiga.",
+      "columns": {
+        "date": "Datum",
+        "status": "Status",
+        "rows": "Broj stavki",
+        "requestedBy": "Zatražio"
+      },
+      "status": {
+        "pending": "Čeka generisanje",
+        "processing": "U procesu generisanja",
+        "completed": "Generisano",
+        "failed": "Greška"
+      }
     }
   }
 }

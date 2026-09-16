@@ -24,6 +24,8 @@ test('superadmin can list categories paginated with meta', function () {
     $library = makeCategoryLibrary();
     Category::factory()->count(30)->for($library)->create();
 
+    app(ActiveLibraryService::class)->set($admin, $library->id);
+
     $this->actingAs($admin)->getJson('/api/v1/categories?per_page=10', categoryCrudHeaders())
         ->assertOk()
         ->assertJsonCount(10, 'data')
@@ -128,6 +130,8 @@ test('category search matches both cyrillic and latin scripts', function () {
     Category::factory()->for($library)->create(['name' => 'Андрић']);
     Category::factory()->for($library)->create(['name' => 'Petar']);
 
+    app(ActiveLibraryService::class)->set($admin, $library->id);
+
     $this->actingAs($admin)
         ->getJson('/api/v1/categories?all=1&library_id='.$library->id.'&search='.urlencode('Andrić'), categoryCrudHeaders())
         ->assertOk()
@@ -154,14 +158,13 @@ test('superadmin categories list is scoped to the active library', function () {
         ->assertJsonMissing(['id' => $inB->id]);
 });
 
-test('superadmin categories list is unscoped without an active library', function () {
+test('superadmin must have an active library to list categories', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = makeCategoryLibrary();
-    $category = Category::factory()->for($library)->create(['name' => 'Sve kategorije']);
+    Category::factory()->for($library)->create(['name' => 'Sve kategorije']);
 
     $this->actingAs($admin)->getJson('/api/v1/categories?all=1', categoryCrudHeaders())
-        ->assertOk()
-        ->assertJsonFragment(['id' => $category->id]);
+        ->assertStatus(422);
 });
 
 test('explicit library_id overrides the active library for superadmin', function () {

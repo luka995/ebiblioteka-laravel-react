@@ -23,27 +23,21 @@ class CategoriesController extends Controller
     public function index(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection|array
     {
         $user = $request->user();
-        $active = $activeLibrary->resolve($user);
+        $library = $activeLibrary->requireActiveLibrary($user);
 
         $query = Category::query()
             ->with('parent', 'library')
             ->withCount('children');
 
         if (! $user->isSuperAdmin()) {
-            if (! $active) {
-                $query->whereRaw('1 = 0');
-            } else {
-                $query->where('library_id', $active->id);
-            }
+            $query->where('library_id', $library->id);
         } else {
-            // Superadmin: eksplicitni filter ima prednost, inace se suzava na aktivnu biblioteku.
+            // Superadmin: eksplicitni filter ima prednost, inace aktivna biblioteka.
             $libraryId = $request->filled('library_id')
                 ? $request->integer('library_id')
-                : $active?->id;
+                : $library->id;
 
-            if ($libraryId) {
-                $query->where('library_id', $libraryId);
-            }
+            $query->where('library_id', $libraryId);
         }
 
         $query

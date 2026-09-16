@@ -6,6 +6,7 @@ use App\Models\Author;
 use App\Models\Book;
 use App\Models\BookCopy;
 use App\Models\Category;
+use App\Models\InventoryBook;
 use App\Models\Library;
 use App\Models\News;
 use App\Models\Place;
@@ -70,6 +71,7 @@ class AuthorizationService
             'authors' => $this->collectionPermissions($actor, Author::class),
             'books' => $this->collectionPermissions($actor, Book::class),
             'book_copies' => $this->collectionPermissions($actor, BookCopy::class),
+            'inventory_books' => $this->collectionPermissions($actor, InventoryBook::class),
             'news' => $this->collectionPermissions($actor, News::class),
         ];
     }

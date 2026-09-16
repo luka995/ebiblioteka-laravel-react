@@ -34,6 +34,7 @@ function makeBookStaff(Library $library, UserRole $role = UserRole::Librarian): 
 test('superadmin can list books paginated with meta', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = makeBookLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
     Book::factory()->count(30)->for($library)->create();
 
     $this->actingAs($admin)->getJson('/api/v1/books?per_page=10', bookHeaders())
@@ -46,6 +47,7 @@ test('superadmin can list books paginated with meta', function () {
 test('superadmin can create a book with authors and categories resolved', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = makeBookLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
     $primary = Category::factory()->for($library)->create(['name' => 'Lektira']);
     $secondary = Category::factory()->for($library)->create(['name' => 'Romani']);
 
@@ -71,6 +73,7 @@ test('superadmin can create a book with authors and categories resolved', functi
 test('book category must belong to the same library', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = makeBookLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
     $other = makeBookLibrary();
     $foreignCategory = Category::factory()->for($other)->create();
 
@@ -84,6 +87,7 @@ test('book category must belong to the same library', function () {
 test('superadmin can update and delete a book', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = makeBookLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
     $book = Book::factory()->for($library)->create(['name' => 'Staro ime']);
 
     $this->actingAs($admin)->putJson("/api/v1/books/{$book->id}", [
@@ -103,6 +107,7 @@ test('superadmin can update and delete a book', function () {
 
 test('librarian can manage books within their library', function () {
     $library = makeBookLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
     $librarian = makeBookStaff($library);
 
     $this->actingAs($librarian)->postJson('/api/v1/books', ['name' => 'Bibliotekarska knjiga'], bookHeaders())
@@ -112,6 +117,7 @@ test('librarian can manage books within their library', function () {
 
 test('librarian sees only books of the active library', function () {
     $library = makeBookLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
     $other = makeBookLibrary();
     $librarian = makeBookStaff($library);
 
@@ -127,6 +133,7 @@ test('librarian sees only books of the active library', function () {
 test('superadmin can filter books by copy isbn', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = makeBookLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
 
     $match = Book::factory()->for($library)->create(['name' => 'Sa ISBN-om']);
     $other = Book::factory()->for($library)->create(['name' => 'Bez ISBN-a']);
@@ -150,6 +157,7 @@ test('regular user cannot access books', function () {
 test('superadmin can view the archive, restore and permanently delete a book', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = makeBookLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
     $book = Book::factory()->for($library)->create(['name' => 'Arhivirana knjiga']);
     $book->delete();
 
@@ -172,6 +180,7 @@ test('superadmin can view the archive, restore and permanently delete a book', f
 test('superadmin can create a book with copies atomically', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = makeBookLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
 
     $this->actingAs($admin)->postJson('/api/v1/books', [
         'name' => 'Knjiga sa kopijama',
@@ -205,6 +214,7 @@ test('superadmin can create a book with copies atomically', function () {
 test('superadmin can create a book without copies', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = makeBookLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
 
     $this->actingAs($admin)->postJson('/api/v1/books', [
         'name' => 'Samo naslov',
@@ -255,6 +265,7 @@ test('copies validation follows the library inventory mode', function () {
 test('atomic book creation rolls back when inventory has a discrepancy', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = makeBookLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
     $book = Book::factory()->for($library)->create();
     BookCopy::factory()->for($library)->for($book)->create(['order_number' => '2']);
     BookCopy::factory()->for($library)->for($book)->create(['order_number' => '9'])->delete();
@@ -276,6 +287,7 @@ test('staff can upload a book cover and the book exposes a local image url', fun
 
     $admin = User::factory()->superAdmin()->create();
     $library = makeBookLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
     $book = Book::factory()->for($library)->create();
 
     $upload = $this->actingAs($admin)->post('/api/v1/books/upload-cover', [
@@ -304,4 +316,28 @@ test('book cover upload rejects non-image files', function () {
     $this->actingAs($admin)->post('/api/v1/books/upload-cover', [
         'image' => UploadedFile::fake()->create('dokument.pdf', 100, 'application/pdf'),
     ], bookHeaders())->assertUnprocessable()->assertJsonValidationErrors('image');
+});
+
+test('superadmin sees only books of the active library', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeBookLibrary();
+    $other = makeBookLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
+
+    $own = Book::factory()->for($library)->create();
+    Book::factory()->for($other)->create();
+
+    $this->actingAs($admin)->getJson('/api/v1/books', bookHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $own->id);
+});
+
+test('superadmin without an active library cannot list books or the archive', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeBookLibrary();
+    Book::factory()->for($library)->create();
+
+    $this->actingAs($admin)->getJson('/api/v1/books', bookHeaders())->assertStatus(422);
+    $this->actingAs($admin)->getJson('/api/v1/books/archive', bookHeaders())->assertStatus(422);
 });

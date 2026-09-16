@@ -5,6 +5,7 @@ use App\Models\Place;
 use App\Models\Region;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\ActiveLibraryService;
 
 function translitHeaders(array $extra = []): array
 {
@@ -78,16 +79,21 @@ test('tag search matches both scripts and respects the library filter', function
     $other = makeTranslitLibrary();
     $latin = Tag::factory()->for($library)->create(['name' => 'Član']);
     Tag::factory()->for($library)->create(['name' => 'Vip']);
-    Tag::factory()->for($other)->create(['name' => 'Члан']);
+    $cyrillic = Tag::factory()->for($other)->create(['name' => 'Члан']);
 
+    app(ActiveLibraryService::class)->set($admin, $library->id);
+
+    // Ćirilična pretraga pogađa latinični zapis u aktivnoj biblioteci.
     $this->actingAs($admin)
         ->getJson('/api/v1/tags?search='.urlencode('Члан'), translitHeaders())
         ->assertOk()
-        ->assertJsonCount(2, 'data');
-
-    $this->actingAs($admin)
-        ->getJson('/api/v1/tags?search='.urlencode('Члан')."&library_id={$library->id}", translitHeaders())
-        ->assertOk()
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.id', $latin->id);
+
+    // Eksplicitni filter prebacuje na drugu biblioteku; latinična pretraga pogađa ćirilični zapis.
+    $this->actingAs($admin)
+        ->getJson('/api/v1/tags?search='.urlencode('Član')."&library_id={$other->id}", translitHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $cyrillic->id);
 });

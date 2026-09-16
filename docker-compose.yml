@@ -86,6 +86,28 @@ services:
     networks:
       - ebiblioteka-network
 
+  # Zaseban worker za tesko generisanje PDF inventarnih knjiga. Izolovan od
+  # email queue-a, sa dugim timeout-om (generisanje velikog fonda).
+  queue-inventory:
+    build:
+      context: ./php
+      args:
+        APP_TIMEZONE: Europe/Belgrade
+    container_name: ebiblioteka-queue-inventory
+    user: "33:33"
+    working_dir: /var/www/html
+    environment:
+      TZ: Europe/Belgrade
+    volumes:
+      - ./:/var/www/html:rw
+    command: php artisan queue:work database --queue=inventory --sleep=3 --tries=1 --timeout=600
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ebiblioteka-network
+
 networks:
   ebiblioteka-network:
     driver: bridge

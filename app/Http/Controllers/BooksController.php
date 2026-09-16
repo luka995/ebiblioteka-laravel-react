@@ -33,21 +33,13 @@ class BooksController extends Controller
     public function index(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection
     {
         $user = $request->user();
-        $active = $activeLibrary->resolve($user);
+        $library = $activeLibrary->requireActiveLibrary($user);
 
         $query = Book::query()
             ->with(['library', 'categoryPrimary', 'categorySecondary', 'authors']);
         $this->withAvailabilityCounts($query);
 
-        if (! $user->isSuperAdmin()) {
-            if (! $active) {
-                $query->whereRaw('1 = 0');
-            } else {
-                $query->where('library_id', $active->id);
-            }
-        } elseif ($request->filled('library_id')) {
-            $query->where('library_id', $request->integer('library_id'));
-        }
+        $query->where('library_id', $library->id);
 
         if ($request->filled('search')) {
             $term = trim((string) $request->string('search'));
@@ -225,21 +217,13 @@ class BooksController extends Controller
     public function archive(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection
     {
         $user = $request->user();
-        $active = $activeLibrary->resolve($user);
+        $library = $activeLibrary->requireActiveLibrary($user);
 
         $query = Book::onlyTrashed()
             ->with(['library', 'categoryPrimary', 'categorySecondary', 'authors']);
         $this->withAvailabilityCounts($query);
 
-        if (! $user->isSuperAdmin()) {
-            if (! $active) {
-                $query->whereRaw('1 = 0');
-            } else {
-                $query->where('library_id', $active->id);
-            }
-        } elseif ($request->filled('library_id')) {
-            $query->where('library_id', $request->integer('library_id'));
-        }
+        $query->where('library_id', $library->id);
 
         $query->orderByDesc('deleted_at')->orderByDesc('id');
 

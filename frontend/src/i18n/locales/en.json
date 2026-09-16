@@ -454,7 +454,6 @@
     "title": "Books",
     "subtitle": "Manage titles and physical copies.",
     "listTitle": "Titles",
-    "archiveLink": "Archive and inventory numbers",
     "add": "New title",
     "search": "Search titles or authors...",
     "searchIsbn": "Search by ISBN...",
@@ -478,7 +477,11 @@
       "titlesTitle": "Titles",
       "titlesDescription": "Bibliographic records, authors and categories.",
       "copiesTitle": "Physical copies",
-      "copiesDescription": "Inventory numbers, barcodes and copy status."
+      "copiesDescription": "Inventory numbers, barcodes and copy status.",
+      "archiveTitle": "Archive",
+      "archiveDescription": "Archived titles and copies and inventory number synchronisation.",
+      "inventoryTitle": "Inventory book PDF",
+      "inventoryDescription": "Generate and download the library inventory book."
     },
     "columns": {
       "name": "Title",
@@ -632,7 +635,17 @@
       "recErrorAction": "Record error",
       "recErrorFlag": "Marked as wrongly recorded",
       "recErrorNotice": "Note",
-      "recErrorSaved": "Record saved."
+      "recErrorSaved": "Record saved.",
+      "filters": {
+        "toggle": "Filters",
+        "apply": "Apply",
+        "clear": "Clear",
+        "bindingAll": "All bindings",
+        "originAll": "All acquisition types",
+        "statusAll": "All statuses",
+        "from": "From",
+        "to": "To"
+      }
     },
     "status": {
       "available": "Available",
@@ -665,6 +678,29 @@
       "restored": "Restored.",
       "forceDeleted": "Permanently deleted.",
       "empty": "Archive is empty."
+    },
+    "inventory": {
+      "title": "Inventory book PDF",
+      "subtitle": "Generate a PDF inventory book for the active library and download previous versions.",
+      "generate": "Generate inventory book",
+      "download": "Download",
+      "started": "Generation started. The book will appear in the list when ready.",
+      "ready": "The inventory book has been generated and is ready to download.",
+      "failed": "Inventory book generation failed.",
+      "hint": "Generation runs in the background. The status refreshes automatically every 10 seconds while the job is running.",
+      "empty": "No inventory books generated yet.",
+      "columns": {
+        "date": "Date",
+        "status": "Status",
+        "rows": "Items",
+        "requestedBy": "Requested by"
+      },
+      "status": {
+        "pending": "Pending generation",
+        "processing": "Generating",
+        "completed": "Generated",
+        "failed": "Failed"
+      }
     }
   }
 }

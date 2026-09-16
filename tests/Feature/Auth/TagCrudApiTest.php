@@ -5,6 +5,7 @@ use App\Models\Place;
 use App\Models\Region;
 use App\Models\Tag;
 use App\Models\User;
+use App\Services\ActiveLibraryService;
 
 function tagCrudHeaders(array $extra = []): array
 {
@@ -27,11 +28,52 @@ test('superadmin can list tags paginated with meta', function () {
     $library = makeTagLibrary();
     Tag::factory()->count(30)->for($library)->create();
 
+    app(ActiveLibraryService::class)->set($admin, $library->id);
+
     $this->actingAs($admin)->getJson('/api/v1/tags?per_page=10', tagCrudHeaders())
         ->assertOk()
         ->assertJsonCount(10, 'data')
         ->assertJsonPath('meta.per_page', 10)
         ->assertJsonStructure(['data', 'meta' => ['current_page', 'last_page', 'per_page', 'total']]);
+});
+
+test('superadmin must have an active library to list tags', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeTagLibrary();
+    Tag::factory()->for($library)->create();
+
+    $this->actingAs($admin)->getJson('/api/v1/tags', tagCrudHeaders())
+        ->assertStatus(422);
+});
+
+test('superadmin sees only tags of the active library', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeTagLibrary();
+    $other = makeTagLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
+
+    $own = Tag::factory()->for($library)->create();
+    Tag::factory()->for($other)->create();
+
+    $this->actingAs($admin)->getJson('/api/v1/tags', tagCrudHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $own->id);
+});
+
+test('explicit library filter overrides the active library for tags', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeTagLibrary();
+    $other = makeTagLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
+
+    Tag::factory()->for($library)->create();
+    $foreign = Tag::factory()->for($other)->create();
+
+    $this->actingAs($admin)->getJson('/api/v1/tags?library_id='.$other->id, tagCrudHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $foreign->id);
 });
 
 test('superadmin can create update and delete a tag', function () {

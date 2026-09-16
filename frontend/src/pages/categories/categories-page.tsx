@@ -28,21 +28,22 @@ import type { Category, PaginatedResponse } from '@/types'
 
 const PAGE_SIZE = 10
 
-function useCategoriesQuery(page: number, search: string, libraryId: string) {
+function useCategoriesQuery(page: number, search: string, libraryId: string, activeLibraryId: number | null) {
   return useQuery({
-    queryKey: ['categories', { page, search, libraryId }],
+    queryKey: ['categories', { page, search, libraryId, activeLibraryId }],
     queryFn: async () => {
       const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
       if (search) query.set('search', search)
       if (libraryId) query.set('library_id', libraryId)
       return api.get<PaginatedResponse<Category>>(`${apiPaths.categories}?${query.toString()}`)
     },
+    enabled: activeLibraryId !== null,
   })
 }
 
 export function CategoriesPage() {
   const { t } = useTranslation()
-  const { can, user } = useAuth()
+  const { can, user, activeLibrary } = useAuth()
   const isSuperAdmin = user?.role === 'superadmin'
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -66,10 +67,14 @@ export function CategoriesPage() {
     })
   }, [libraryId])
 
-  const categoriesQuery = useCategoriesQuery(page, search, libraryId)
+  const categoriesQuery = useCategoriesQuery(page, search, libraryId, activeLibrary?.id ?? null)
 
   if (!can('categories.viewAny')) {
     return <p className="text-sm text-muted-foreground">{t('errors.forbidden')}</p>
+  }
+
+  if (activeLibrary === null) {
+    return <p className="text-sm text-muted-foreground">{t('books.activeLibraryRequired')}</p>
   }
 
   const setParams = (patch: Record<string, string | number | null>) => {

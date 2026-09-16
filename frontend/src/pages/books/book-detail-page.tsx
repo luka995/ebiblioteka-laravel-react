@@ -25,6 +25,7 @@ import { BookCopyAddModal } from '@/components/books/book-copy-add-modal'
 import { BookCopyEditModal } from '@/components/books/book-copy-edit-modal'
 import { BookCopyRecErrorDialog, BookCopyWriteOffDialog } from '@/components/books/book-copy-action-dialogs'
 import { BookCopyBarcodePrintModal } from '@/components/books/book-copy-barcode-print-modal'
+import { useAuth } from '@/hooks/useAuth'
 import type { Book, BookCopy, BookCopyStatus, PaginatedResponse } from '@/types'
 
 const STATUS_VARIANTS: Record<BookCopyStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -41,6 +42,7 @@ export function BookDetailPage() {
   const navigate = useNavigate()
   const bookId = Number(params.id)
   const queryClient = useQueryClient()
+  const { activeLibrary } = useAuth()
 
   const [bookModalOpen, setBookModalOpen] = useState(false)
   const [addModalOpen, setAddModalOpen] = useState(false)
@@ -57,10 +59,10 @@ export function BookDetailPage() {
   })
 
   const copiesQuery = useQuery({
-    queryKey: ['book-copies', { bookId }],
+    queryKey: ['book-copies', { bookId, libraryId: activeLibrary?.id ?? null }],
     queryFn: () =>
       api.get<PaginatedResponse<BookCopy>>(`${apiPaths.bookCopiesList}?book_id=${bookId}&per_page=100`),
-    enabled: Number.isFinite(bookId),
+    enabled: Number.isFinite(bookId) && activeLibrary !== null,
   })
 
   const book = bookQuery.data?.data
@@ -159,6 +161,7 @@ export function BookDetailPage() {
   )
 
   if (bookQuery.isLoading) return <PageLoader />
+  if (activeLibrary === null) return <p className="text-sm text-muted-foreground">{t('books.activeLibraryRequired')}</p>
   if (!book) return <p className="text-sm text-muted-foreground">{t('books.notFound')}</p>
 
   return (

@@ -1,5 +1,65 @@
 # Changelog
 
+## [16.09.2026] Katalog: tagovi i kategorije po aktivnoj biblioteci i reaktivna promena biblioteke
+
+### Added
+
+- **Tagovi i kategorije striktno zahtevaju aktivnu biblioteku** (`app/Http/Controllers/TagsController.php`, `app/Http/Controllers/CategoriesController.php`) — oba kontrolera koriste `ActiveLibraryService::requireActiveLibrary`, pa bez izabrane aktivne biblioteke vraćaju `422 active_library_required`. Superadmin sa aktivnom bibliotekom može eksplicitnim `library_id` (TagSelect/CategorySelect, page filter) da preusmeri na drugu biblioteku; ne-superadmin je uvek vezan za aktivnu.
+- **Testovi** (`tests/Feature/Auth/{TagCrudApiTest,LibraryAdminTagsTest,CategoryCrudApiTest,SearchTransliterationTest}.php`) — superadmin vidi samo stavke aktivne biblioteke, 422 bez aktivne, eksplicitni filter nadjačava aktivnu, a ne-superadmin ne može da je nadjača
+
+### Changed
+
+- **Reaktivna promena aktivne biblioteke** (`frontend/src/pages/categories/categories-page.tsx`, `frontend/src/pages/tags/tags-page.tsx`, `frontend/src/hooks/useInventoryBookStatus.ts`) — `activeLibrary.id` je dodat u `queryKey`, pa se liste kategorija, tagova i inventarnih knjiga same osveže pri promeni aktivne biblioteke (bez ručnog refresh-a)
+- **Frontend guard** (`frontend/src/pages/categories/categories-page.tsx`, `frontend/src/pages/tags/tags-page.tsx`) — bez aktivne biblioteke prikazuje se `books.activeLibraryRequired`, a upit se ne šalje (`enabled`)
+- **`useInventoryBookStatus`** (`frontend/src/hooks/useInventoryBookStatus.ts`) — prima `libraryId` umesto `enabled`; upit je vezan za aktivnu biblioteku
+
+## [16.09.2026] Katalog: aktivna biblioteka obavezna za sve book/copy liste
+
+### Added
+
+- **`ActiveLibraryService::requireActiveLibrary`** (`app/Services/ActiveLibraryService.php`) — vraća aktivnu biblioteku ili baca `ValidationException` (`validation.custom.active_library_required`, HTTP 422); koristi se na svim listama kataloga
+- **Testovi izolacije i 422** (`tests/Feature/Auth/{BookCopyApiTest,BookCrudApiTest,InventoryBookApiTest}.php`) — superadmin vidi samo stavke aktivne biblioteke; bez izabrane aktivne biblioteke liste vraćaju 422
+
+### Changed
+
+- **Server enforce aktivne biblioteke i za superadmina** (`app/Http/Controllers/BooksController.php`, `BookCopiesController.php`, `InventoryBooksController.php`) — `GET /books`, `/books/archive`, `/book-copies`, `/book-copies/archive`, `/inventory-books` uvek scope-uju na aktivnu biblioteku iz sesije; superadmin više ne vidi sve biblioteke na ovim listama, a `library_id` query param više nije zaobilaznica
+- **Frontend guard** (`frontend/src/pages/books/book-detail-page.tsx`, `books-archive-page.tsx`, `books-inventory-books-page.tsx`, `frontend/src/hooks/useInventoryBookStatus.ts`) — bez izabrane aktivne biblioteke prikazuje se `books.activeLibraryRequired`, a zahtevi se ne šalju (`enabled`)
+- **Postojeći testovi** (`tests/Feature/Auth/{BookCopyApiTest,BookCrudApiTest,BookCopyOrderingTest}.php`) — superadmin pozivi listama postavljaju aktivnu biblioteku preko `withSession`
+
+## [16.09.2026] Katalog: filteri fizičkih jedinica po svim poljima
+
+### Added
+
+- **Kolone filteri na `GET /book-copies`** (`app/Queries/BookCopyFilters.php`) — nova `BookCopyFilters` klasa po uzoru na `UserFilters`; podržava tekstualne filtere (`publisher`, `publish_place`, `publish_year`, `issue_number`, `dimension`, `part`, `udk`, `book_number`, `place_on_shelf`, `notice`, `rec_error_notice`) sa transliterovanom pretragom, enum filtere (`binding`, `origin`), boolean stanja (`borrowed`, `reserved`, `rec_error`), opsege (`price_from`/`price_to`, `num_of_pages_from`/`num_of_pages_to`, `date_add_from`/`date_add_to`) i izvedeni `status` (`available`/`borrowed`/`record_error`/`written_off`)
+- **Kolapsibilna „Filteri" ploča** (`frontend/src/components/books/book-copies-filters-panel.tsx`) — nova komponenta sa svim poljima fizičke jedinice, „Primeni"/„Poništi" i brojačem aktivnih filtera
+- **Testovi** (`tests/Feature/Auth/BookCopyApiTest.php`) — pokriveni publisher/binding, origin/price opseg, broj strana/datum opseg, `notice` kroz pisma, boolean stanja, izvedeni status i nepoznata enum vrednost
+
+### Changed
+
+- **`BookCopiesController@index`** (`app/Http/Controllers/BookCopiesController.php`) — kolonski filteri delegirani na `BookCopyFilters`, zadržana `library_id`/`book_id` scoping i numeričko sortiranje po inventarnom broju
+- **Stranica fizičkih jedinica** (`frontend/src/pages/books/book-copies-page.tsx`) — četiri polja brze pretrage (inv. broj, naslov, barkod, ISBN) ostaju u header traci sa istom logikom; `rec_error` select zamenjen izvedenim `status` filterom u novoj ploči; filteri se čuvaju u URL-u i badge prikazuje broj aktivnih
+- **i18n** (`frontend/src/i18n/locales/sr-Cyrl.json`, `sr-Latn.json`, `en.json`) — dodat `books.copies.filters.*` na sva tri jezika
+
+## [16.09.2026] Inventar: PDF knjiga inventara sa generisanjem u pozadini
+
+### Added
+
+- **Model i migracija** (`app/Models/InventoryBook.php`, `app/Enums/InventoryBookStatus.php`, `database/migrations/2026_09_16_000001_create_inventory_books_table.php`) — evidencija zahteva sa statusima `pending`/`processing`/`completed`/`failed`, vezom na biblioteku i korisnika, brojem stavki i putanjom fajla
+- **Generisanje PDF-a** (`app/Services/InventoryBookPdfService.php`, `app/Jobs/GenerateInventoryBookPdf.php`) — legacy TCPDF port (landscape, 10 redova/stranica) pokrenut kroz `inventory` queue
+- **API i autorizacija** (`app/Http/Controllers/InventoryBooksController.php`, `app/Http/Resources/InventoryBookResource.php`, `app/Policies/InventoryBookPolicy.php`, `routes/api.php`, `app/Services/AuthorizationService.php`) — `GET/POST /inventory-books`, `show` i `download` uz `managesLibrary`/superadmin; fajlovi na privatnom `inventory` disku (`serve => false`)
+- **Frontend** (`frontend/src/pages/books/books-inventory-books-page.tsx`, `frontend/src/hooks/useInventoryBookStatus.ts`, `frontend/src/App.tsx`, `frontend/src/lib/api.ts`, `frontend/src/types.ts`, `frontend/src/pages/books/books-landing-page.tsx`) — stranica `/books/inventory-books` sa polling-om na 10s, statusima i preuzimanjem PDF-a
+- **i18n i testovi** (`lang/{sr-Latn,sr-Cyrl,en}/inventory.php`, `tests/Feature/Auth/InventoryBookApiTest.php`) — prevodi i testovi za store/index/download/queue
+
+### Changed
+
+- **Konfiguracija** (`config/filesystems.php`, `config/logging.php`, `docker-compose.yml`) — privatni `inventory` disk, `inventory` log kanal i `queue-inventory` worker
+
+## [16.09.2026] Zajednička normalizacija barkoda
+
+### Changed
+
+- **Izdvojen `normalizeBarcode`** (`frontend/src/lib/barcode.ts`, `frontend/src/components/users/user-filters-panel.tsx`) — funkcija za dopunu vodeće nule premeštena u zajednički modul
+
 ## [15.09.2026] UI: mobilne liste, paginacija i skraćivanje naslova
 
 ### Added

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Archive, BookOpen, Library } from 'lucide-react'
+import { Archive, BookOpen, FileText, Library } from 'lucide-react'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -24,6 +24,18 @@ export function BooksLandingPage() {
       icon: Library,
       title: t('books.cards.copiesTitle'),
       description: t('books.cards.copiesDescription'),
+    },
+    {
+      to: '/books/archive',
+      icon: Archive,
+      title: t('books.cards.archiveTitle'),
+      description: t('books.cards.archiveDescription'),
+    },
+    {
+      to: '/books/inventory-books',
+      icon: FileText,
+      title: t('books.cards.inventoryTitle'),
+      description: t('books.cards.inventoryDescription'),
     },
   ]
 
@@ -49,14 +61,6 @@ export function BooksLandingPage() {
           </Link>
         ))}
       </div>
-
-      <Link
-        to="/books/archive"
-        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-      >
-        <Archive className="size-4" />
-        {t('books.archiveLink')}
-      </Link>
     </div>
   )
 }
