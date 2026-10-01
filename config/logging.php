@@ -82,6 +82,15 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Strukturisani log generisanja bar-kod PDF-ova (worker).
+        'barcode' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/barcode.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_DAILY_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

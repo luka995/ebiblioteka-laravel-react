@@ -237,6 +237,32 @@ export interface InventoryBook {
   }
 }
 
+export type BarcodePrintJobStatus = 'pending' | 'processing' | 'completed' | 'failed'
+
+export type BarcodePrintJobScope = 'library' | 'list'
+
+export interface BarcodePrintJob {
+  id: number
+  library_id: number
+  library_name?: string | null
+  requested_by?: string | null
+  scope: BarcodePrintJobScope
+  format: 'label' | 'a4'
+  status: BarcodePrintJobStatus
+  file_size: number | null
+  items_count: number | null
+  invalid_count: number
+  started_at: string | null
+  finished_at: string | null
+  failure_reason: string | null
+  created_at: string
+  can?: {
+    view: boolean
+    download: boolean
+    delete: boolean
+  }
+}
+
 export interface IsbnMetadata {
   source: string
   isbn: string | null

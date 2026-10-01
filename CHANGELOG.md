@@ -1,5 +1,20 @@
 # Changelog
 
+## [01.10.2026] Knjige: štampa bar-kodova celog fonda kroz `print` queue
+
+Realizovan deo PRD §14 — brza štampa cele biblioteke jednim klikom (legacy paritet sa `barcode_prints`; serverske liste za štampu ostaju za sledeću fazu).
+
+### Added
+
+- **Model i migracija** (`database/migrations/2026_10_01_000001_create_barcode_print_jobs_table.php`, `app/Models/BarcodePrintJob.php`, `app/Enums/BarcodePrintJobStatus.php`) — `barcode_print_jobs` sa `scope` (`library`), `format`, statusima `pending/processing/completed/failed`, privatnom putanjom fajla, brojačima `items_count`/`invalid_count` i `failure_reason`
+- **Queue posao i servis** (`app/Jobs/GenerateBarcodePrintPdf.php`, `app/Services/BarcodePrintService.php`) — `print` queue (`tries=1`, `timeout=600`), idempotencija; PDF obuhvata sve nearhivirane jedinice aktivne biblioteke (uklj. otpisane), bez jedinica arhiviranih naslova/kopija, u redosledu inventarnog broja; neispravni EAN-13 se preskaču i broje
+- **API i autorizacija** (`app/Http/Controllers/BarcodePrintJobsController.php`, `app/Http/Requests/StoreBarcodePrintJobRequest.php`, `app/Http/Resources/BarcodePrintJobResource.php`, `app/Policies/BarcodePrintJobPolicy.php`, `routes/api.php`) — `GET/POST /api/v1/barcode-print-jobs`, `GET /{id}`, `GET /{id}/download` (409 dok posao nije gotov), `DELETE /{id}` (briše i fajl); scope po aktivnoj biblioteci, pristup za `superadmin`/`library_admin`/`librarian`
+- **Privatni disk i log kanal** (`config/filesystems.php`, `config/logging.php`) — `barcode` disk (`storage/app/private/barcode-print`) i `barcode` log kanal
+- **Worker** (`docker-compose.yml`) — `queue-print` servis (`queue:work database --queue=print --tries=1 --timeout=600`) izolovan od email/inventory queue-a
+- **Frontend** (`frontend/src/pages/books/books-barcode-print-page.tsx`, `frontend/src/hooks/useBarcodePrintJobStatus.ts`, `frontend/src/types.ts`, `frontend/src/lib/api.ts`, `frontend/src/App.tsx`, `frontend/src/pages/books/books-landing-page.tsx`) — stranica `/books/barcode-print` sa karticom na books landing-u, izborom formata (`label`/`a4`), listom poslova sa automatskim polling-om na 10s, preuzimanjem i brisanjem uz potvrdu, i napomenom o „Actual size"
+- **Lokalizacija** (`lang/{sr-Cyrl,sr-Latn,en}/barcode.php`, `frontend/src/i18n/locales/*.json`) — statusi, greške, kolone i tekstovi stranice na tri jezika
+- **Testovi** (`tests/Feature/Auth/BarcodePrintJobApiTest.php`) — dispatch na `print` queue, scope aktivne biblioteke, 409 pre generisanja, preskakanje nevalidnih barkoda i arhiviranih jedinica, generisanje PDF-a i failure tok, brisanje fajla i zapisa
+
 ## [16.09.2026] Katalog: tagovi i kategorije po aktivnoj biblioteci i reaktivna promena biblioteke
 
 ### Added

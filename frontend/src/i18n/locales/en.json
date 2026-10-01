@@ -481,7 +481,9 @@
       "archiveTitle": "Archive",
       "archiveDescription": "Archived titles and copies and inventory number synchronisation.",
       "inventoryTitle": "Inventory book PDF",
-      "inventoryDescription": "Generate and download the library inventory book."
+      "inventoryDescription": "Generate and download the library inventory book.",
+      "barcodePrintTitle": "Fund barcode printing",
+      "barcodePrintDescription": "Generate a PDF with barcodes for all library copies."
     },
     "columns": {
       "name": "Title",
@@ -693,6 +695,33 @@
         "date": "Date",
         "status": "Status",
         "rows": "Items",
+        "requestedBy": "Requested by"
+      },
+      "status": {
+        "pending": "Pending generation",
+        "processing": "Generating",
+        "completed": "Generated",
+        "failed": "Failed"
+      }
+    },
+    "barcodePrint": {
+      "title": "Whole fund barcode printing",
+      "subtitle": "Generate a PDF with barcodes for all copies of the active library and download previous versions.",
+      "generate": "Generate barcodes",
+      "download": "Download",
+      "started": "Generation started. The PDF will appear in the list when ready.",
+      "ready": "The barcode PDF has been generated and is ready to download.",
+      "failed": "Barcode PDF generation failed.",
+      "notice": "NOTE: Generating barcodes may take a while for a large number of copies. The PDF is prepared in the background; wait for the automatic refresh. When printing, choose \"Actual size\" or the printout will not be valid.",
+      "empty": "No barcode PDFs generated yet.",
+      "deleteConfirmTitle": "Delete PDF?",
+      "deleteConfirmText": "The generated PDF and job record will be permanently deleted.",
+      "columns": {
+        "date": "Date",
+        "format": "Label format",
+        "items": "Copies",
+        "invalid": "Invalid barcodes",
+        "status": "Status",
         "requestedBy": "Requested by"
       },
       "status": {

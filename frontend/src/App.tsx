@@ -23,6 +23,7 @@ import { BookCopiesPage } from '@/pages/books/book-copies-page'
 import { BookCopyDetailPage } from '@/pages/books/book-copy-detail-page'
 import { BooksArchivePage } from '@/pages/books/books-archive-page'
 import { BooksInventoryBooksPage } from '@/pages/books/books-inventory-books-page'
+import { BooksBarcodePrintPage } from '@/pages/books/books-barcode-print-page'
 import { NewsPage } from '@/pages/news/news-page'
 import { ProfilePage } from '@/pages/profile/profile-page'
 import { SettingsPage } from '@/pages/settings/settings-page'
@@ -67,6 +68,7 @@ function App() {
           <Route path="/books/copies/:id" element={<BookCopyDetailPage />} />
           <Route path="/books/archive" element={<BooksArchivePage />} />
           <Route path="/books/inventory-books" element={<BooksInventoryBooksPage />} />
+          <Route path="/books/barcode-print" element={<BooksBarcodePrintPage />} />
           <Route path="/news" element={<NewsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />

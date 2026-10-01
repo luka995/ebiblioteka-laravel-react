@@ -58,6 +58,17 @@ return [
             'report' => false,
         ],
 
+        // Privatni disk za generisane PDF-ove sa bar-kodovima jedinica.
+        // `serve => false` znaci da Laravel ne registruje /storage rutu;
+        // fajlovi su dostupni iskljucivo kroz autorizovani download endpoint.
+        'barcode' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/barcode-print'),
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

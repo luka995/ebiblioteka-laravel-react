@@ -262,7 +262,7 @@ Analizirani su kljucni view-ovi kako bi React sloj zadrzao iste korisnicke tokov
   - read-only prikaz metapodataka knjige
   - tabelu fizickih jedinica sa statusima
   - grupnu selekciju za stampu nalepnica
-  - lokalnu JS listu selektovanih jedinica (localStorage helper)
+  - lokalnu JS listu selektovanih jedinica (`sessionStorage` helper, kljuc `lista-biblioteka_<libraryId>`); vidi dokumentovane bugove u sekciji 14
 - Detalj fizicke jedinice (`Book/copy_info.html.twig`) je akcioni centar:
   - edit
   - otpis/ponistavanje otpisa
@@ -993,3 +993,198 @@ Odluke primenjene u prvoj fazi (login/forgot/reset, role model, dashboard shell)
 - **Login API ostaje session-based (Sanctum)**; `/me` vraća korisnika kroz
   `UserResource` (sa `role`). Auth ekrani su rađeni u shadcn/ui stilu sa blagim
   žutim akcentom (sidebar/nav), bez menjanja fontova.
+
+---
+
+## 14. Implementacioni dodatak — štampa bar-kodova naslova i lista za štampu (usvojeno 21.09.2026.)
+
+### Legacy referenca
+- `BookCopiesController::printAction` (`appb_admin_book_print`) — sinhrona PDF štampa
+  selektovanih fizičkih jedinica jednog naslova (`PrintBookType`, `PrintSetup`).
+- `Book/copies.html.twig` + `Resources/public/js/lista-kopija-za-stampu.js` —
+  „Ažuriranje liste za štampu" skuplja čekirane jedinice u `sessionStorage` listu po
+  biblioteci (`lista-biblioteka_<id>`); „Prikaz liste za štampu" (`listaKopijaAction`,
+  `appb_admin_book_lista_kopija`) prikazuje akumulirane jedinice različitih naslova;
+  `appb_admin_book_print` ih štampa zajedno.
+- Legacy inv. knjiga se generiše preko posebnog procesa/cron-a; za štampu nalepnica se
+  to ne preuzima.
+- Ograničenja: lista je vezana za browser/sesiju (ne deli se između korisnika/uređaja),
+  a masovna štampa je sinhrona u HTTP zahtevu i nepouzdana za veliki broj naslova/jedinica.
+- `sessionStorage` je vezan za konkretan tab pregledača: otvaranje novog taba, dupliranje
+  taba ili nastavak rada sa drugog uređaja gubi listu. Zato se u novom projektu lista
+  cuva server-side (tabela `barcode_print_lists`), a ne u browseru.
+
+### Legacy bugovi koje nova implementacija mora da izbegne (nalaz 21.09.2026.)
+
+Sledeci bugovi su potvrdjeni u legacy implementaciji i direktan su razlog zasto
+stara verzija puca ili prikazuje pogresan broj jedinica u odredjenim situacijama:
+
+1. **Tvrd limit od 1000 jedinica i nefunkcionalna paginacija** —
+   `BookCopiesController.php:100` (`listaKopijaAction`) i `:138` (`copiesAction`)
+   pozivaju `$paginator->paginate($query, 1, 1000)`. Strana je fiksirana na `1`, pa
+   Knp paginator (`knp-components/src/Knp/Component/Pager/Paginator.php:83-90`)
+   ignorise `?page=N`; prikazuje se najvise prvih 1000 jedinica, a ostatak se nikada
+   ne učita. Novi plan: server-side paginacija/keyset bez tvrdog limita.
+2. **GET URL sa svim ID-jevima puca na velikim listama** —
+   `Book/copies.html.twig:162-167` gradi `/admin/book/listakopija/1,2,3,...`. nginx
+   `large_client_header_buffers` (default 8k) odbija request line sa ~1000+ ID-jeva
+   (`414 Request-URI Too Large`); prazna lista daje `/listakopija/` i `404`. Novi plan:
+   lista se cuva server-side, nema nizanja ID-jeva u URL-u.
+3. **POST `ids[]` se odseca na `max_input_vars`** — `BookCopiesController.php:784,818`
+   (`printAction`) stampa samo ono sto stigne u POST. Na PHP 5.6 (`php/Dockerfile:2`)
+   `max_input_vars = 1000`, pa se pri „selektuj sve" preko 1000 polja ostatak tiho
+   odbacuje. Novi plan: posao se dispečuje iz server-side liste, ne iz POST niza.
+4. **Kumulativna lista se ne osvezava ispravno** —
+   `Resources/public/js/lista-kopija-za-stampu.js:66-85` (`azurirajListu`) uklanja iz
+   liste samo ID-jeve koji se nalaze u trenutno renderovanoj strani. Zbog limita iz
+   tacke 1 to znaci da stare (ili jedinice drugog naslova) ostaju u listi; korisnik
+   to dozivljava kao „dodaju se kopije drugih naslova". Novi plan: kumulativna lista
+   **po biblioteci** sa eksplicitnim add/remove/clear po stavci i `unique(list_id, book_copy_id)`.
+5. **Zaglavljene (stale) i obrisane jedinice** — `sessionStorage` se nikad ne
+   revalidira prema bazi; `BookCopiesController.php:823-826` poziva
+   `$repoCP->find($ids[$i])` bez provere i na obrisanu jedinicu dobija `null`, sto
+   izaziva fatal `getBarcode() on null` nasred generisanja PDF-a. Novi plan: lista se
+   cisti/validira pri ucitavanju i cuva samo postojece jedinice.
+6. **Nema deduplikacije i nema striktnog scope-a** — JS i `printAction` ne
+   dedupiraju ID-jeve (duplirani barkodovi na nalepnicama), a `printAction` ne
+   filtrira po `library` (za razliku od `listaKopijaAction:97`), pa se POST-om mogu
+   traziti barkodovi druge biblioteke. Novi plan: `array_unique` + DB unique constraint
+   + policy scope (aktivna biblioteka/korisnik).
+
+### Zahtev
+1. **Serverska lista za štampu po biblioteci i korisniku** — perzistentna lista
+   čekiranih fizičkih jedinica koja se akumulira kroz različite naslove i strane.
+   Akcije: dodaj/ažuriraj (upis samo čekiranih jedinica te strane, uklanjanje
+   odčekiranih), prikaz, uklanjanje stavke, pražnjenje liste i štampa cele liste.
+2. **Brza štampa cele biblioteke** — zasebna opcija jednim klikom generiše nalepnice
+   za sve fizičke jedinice aktivne biblioteke, bez potrebe da korisnik obilazi naslove
+   jedan po jedan. Opcioni filteri: „samo dostupne" i „samo aktivne (neotpisane)".
+3. **Pokretanje kroz queue, ne cron** — posao se dispečuje iz API akcije i obrađuje ga
+   **zaseban `print` worker**, po istom obrascu kao email queue, a ne cron/scheduler:
+   `ShouldQueue` posao + zaseban servis (`queue-print`) i komanda
+   `php artisan queue:work database --queue=print --sleep=3 --tries=1 --timeout=600`.
+   Statusi: `pending`, `processing`, `completed`, `failed`; PDF na privatnom disku +
+   download link; greške u zaseban log kanal i `failure_reason`.
+4. **Format nalepnica** — postojeći `BarcodePrintFormat`: `label` (62×29 mm) i `a4`
+   (4×12 = 48 nalepnica po strani).
+5. **Obrada velikih skupova** — chunkovano učitavanje jedinica, `tries = 1`, povišen
+   `timeout`, idempotencija (ponovno pokretanje ne duplira PDF), periodično čišćenje
+   starih generisanih PDF-ova.
+6. **Scope i autorizacija** — lista i poslovi vezani za aktivnu biblioteku i korisnika;
+   `library_admin`/`librarian` vide i menjaju samo svoju listu i poslove; brza štampa
+   cele biblioteke je ograničena policy pravilom.
+
+### Predlog baze (Laravel)
+- `barcode_print_lists` — `id`, `library_id`, `user_id`, `name`, `timestamps`;
+  `unique(library_id, user_id)`.
+- `barcode_print_list_items` — `id`, `list_id`, `book_copy_id`, `created_at`;
+  `unique(list_id, book_copy_id)`.
+- `barcode_print_jobs` — `id`, `library_id`, `user_id`, `scope`, `format`, `status`,
+  `file_path`, `file_size`, `items_count`, `failure_reason`, `started_at`,
+  `finished_at`, `timestamps` (po uzoru na `inventory_books`).
+
+### API endpointi
+- `GET /api/v1/barcode-print-lists` — prikaz liste aktivne biblioteke/korisnika
+- `POST /api/v1/barcode-print-lists/items` — ažuriranje čekiranih jedinica
+- `DELETE /api/v1/barcode-print-lists/items/{bookCopy}` — uklanjanje stavke
+- `DELETE /api/v1/barcode-print-lists` — pražnjenje liste
+- `POST /api/v1/barcode-print-lists/print` — queue posao za celu listu
+- `POST /api/v1/barcode-print-jobs` — queue posao za sve fizičke jedinice aktivne
+  biblioteke (brza štampa)
+- `GET /api/v1/barcode-print-jobs/{id}` — status posla
+- `GET /api/v1/barcode-print-jobs/{id}/download` — preuzimanje gotovog PDF-a
+
+### Prihvatni kriterijumi
+- Lista za štampu se čuva server-side i vidljiva je sa bilo kog uređaja istog
+  korisnika u istoj biblioteci.
+- Čekirane jedinice iz različitih naslova mogu se akumulirati i štampati zajedno.
+- Postoji brza opcija za štampu cele biblioteke jednim klikom, bez obilaska naslova.
+- Masovna štampa ide kroz zaseban queue worker (ne cron) i ne blokira HTTP zahtev.
+- Gotov PDF je dostupan za download; neuspeh je vidljiv kroz status i log.
+- Štampa samo učitava već sačuvan EAN-13 bar-kod i ne regeneriše ga.
+- Server-side lista je jedini izvor istine; ID-jevi se ne prenose kroz URL niti zavise
+  od broja POST polja (nema `max_input_vars`/`414 Request-URI Too Large` ograničenja).
+- Prikaz liste radi sa server-side paginacijom bez tvrdog limita; ukupan broj se
+  poklapa sa brojem stvarno učitanih/postojećih jedinica.
+- Lista je deduplikovana (unique constraint) i ne sadrži obrisane/otpisane jedinice;
+  štampa nikad ne puca zbog nepostojeće jedinice.
+- Liste i poslovi su strogo vezani za aktivnu biblioteku i korisnika; nije moguće
+  štampati barkodove druge biblioteke.
+
+---
+
+## 15. Implementacioni dodatak — automatsko popunjavanje preskočenih inv. brojeva (usvojeno 29.09.2026.)
+
+### Kontekst i motiv
+- U legacy aplikaciji inventarni broj se dodeljuje kao `MAX(orderNumber)+1`
+  (`BookCopiesController::generisiInvBr`), pa greškom obrisane knjige ostavljaju trajne
+  rupe u nizu. Bibliotekar TŠ Obrenovac prijavio je rupe 130–139, 153, 167–174,
+  192–195 i zatražio popunjavanje sekvence.
+- Sekvence inventarnih brojeva i barkodova se **ne razdvajaju**: barkod ostaje izveden
+  iz inventarnog broja (EAN-13, §13). Rupe se popunjavaju kontrolisano, pri unosu novih
+  kopija, uz evidenciju u napomeni i pregled preskočenih brojeva na listi jedinica.
+
+### Definicija preskočenog broja
+- Preskočen (skipped) broj je broj u opsegu 1..max iskorišćenih brojeva biblioteke za
+  koji ne postoji nijedan red u `book_copies` (ni aktivan ni arhiviran).
+- Arhivirana kopija i dalje drži svoj inventarni broj; broj postaje preskočen tek
+  trajnim brisanjem (`forceDelete`).
+- Za kopiju koja popunjava preskočen broj barkod se generiše postojećim pravilom
+  EAN13(inventarni broj); ako barcode već postoji (npr. legacy ručni barkod), dodela se
+  odbija jasnom greškom (globalni `unique(barcode)` ostaje na snazi).
+
+### Automatsko popunjavanje — UX
+1. Unos nove kopije: modal pri otvaranju zna broj preskočenih brojeva aktivne
+   biblioteke; **checkbox „Popuni preskočene inv. brojeve" prikazuje se samo ako
+   preskočenih brojeva ima** — kada ih nema, polje se ne renderuje. Kada je uključen,
+   sistem automatski dodeljuje najmanje preskočene brojeve, redom (za više kopija u
+   zahtevu); kada preskočeni ponestanu, ostatak ide normalnom sekvencom (`max+1`).
+   Sekvenca se ne pomera unazad; naredni auto broj ostaje `max+1`.
+2. Napomena: kopija koja popunjava preskočen broj dobija automatski upisan `notice`:
+   „Popunjen stari inv. broj {broj} zbog greške u korišćenju softvera." (prefill;
+   bibliotekar može da dopuni).
+3. Postojeća reconciliation blokada (arhivirane kopije ispred sekvence) ostaje
+   nepromenjena; popunjavanje preskočenih je ne zaobilazi.
+
+### Pregled preskočenih brojeva — UX
+1. Lista fizičkih jedinica (`/book-copies`): dugme sa alert ikonom i ukupnim brojem u
+   zagradi, npr. „Preskočeni inv. brojevi (23)"; prikazuje se samo kada preskočenih
+   brojeva ima.
+2. Klik šalje AJAX i otvara modal sa tabelom preskočenih brojeva grupisanih u opsege
+   (npr. 130–139, 153, 167–174, 192–195) uz ukupan broj; modal je read-only.
+
+### API
+- `GET /api/v1/book-copies/inventory-gaps` — preskočeni brojevi aktivne biblioteke
+  (staff): `count`, `numbers`, `ranges`.
+- `POST /book-copies` — novo polje `fill_gaps` (boolean, podrazumevano `false`) u
+  `StoreBookCopiesRequest`.
+
+### Uticaj na kod (naredni korak)
+- `InventoryNumberService` — nova metoda `gaps(Library)` i dodela preskočenog broja;
+  postojeći `next()`/`recordManual()` nepromenjeni.
+- `BookCopyService::createForBook()` — grana za `fill_gaps` (dodela gap brojeva, upis
+  napomene); barkod i dalje `barcodeFor(order_number)`.
+- `InventoryReconciliationService` — nepromenjen.
+- Frontend — dugme + modal na `book-copies-page.tsx`, uslovni checkbox u modalu za
+  dodavanje; i18n (sr-Cyrl/sr-Latn/en).
+- Testovi — `InventoryNumberTest` (gaps, dodela, validan EAN-13, sekvenca se ne pomera
+  unazad, arhivirani brojevi nisu u listi), `BookCopyApiTest` (`fill_gaps` + napomena +
+  422 na barcode koliziju).
+
+### Migracija legacy podataka
+- `orderNumber → order_number`, `barcode → barcode` bez regeneracije; sekvenca se
+  inicijalizuje na max iskorišćen broj po biblioteci.
+- Preskočeni brojevi iz legacy baze (hard-obrisane kopije) automatski ulaze u listu i
+  mogu se popuniti novim kopijama.
+
+### Prihvatni kriterijumi
+- Pri unosu kopije sa uključenom opcijom sistem dodeljuje najmanje preskočene brojeve i
+  upisuje napomenu o starom broju i grešci u softveru.
+- Checkbox „Popuni preskočene inv. brojeve" se ne prikazuje kada ne postoje preskočeni
+  brojevi.
+- Lista fizičkih jedinica prikazuje dugme sa alertom i tačnim brojem preskočenih; modal
+  se učitava AJAX-om i prikazuje tačne opsege/brojeve.
+- Popunjavanje ne menja nijedan postojeći barkod; novi barkod je validan EAN-13 i
+  globalno jedinstven.
+- Arhivirane kopije se ne prikazuju kao preskočene; postaju preskočene tek trajnim
+  brisanjem.

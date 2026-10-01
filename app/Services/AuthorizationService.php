@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Author;
+use App\Models\BarcodePrintJob;
 use App\Models\Book;
 use App\Models\BookCopy;
 use App\Models\Category;
@@ -72,6 +73,7 @@ class AuthorizationService
             'books' => $this->collectionPermissions($actor, Book::class),
             'book_copies' => $this->collectionPermissions($actor, BookCopy::class),
             'inventory_books' => $this->collectionPermissions($actor, InventoryBook::class),
+            'barcode_print_jobs' => $this->collectionPermissions($actor, BarcodePrintJob::class),
             'news' => $this->collectionPermissions($actor, News::class),
         ];
     }

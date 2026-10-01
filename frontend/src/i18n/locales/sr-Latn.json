@@ -481,7 +481,9 @@
       "archiveTitle": "Arhiva",
       "archiveDescription": "Arhivirani naslovi i kopije i sinhronizacija inventarnih brojeva.",
       "inventoryTitle": "PDF knjiga inventara",
-      "inventoryDescription": "Generisanje i preuzimanje inventarne knjige biblioteke."
+      "inventoryDescription": "Generisanje i preuzimanje inventarne knjige biblioteke.",
+      "barcodePrintTitle": "Štampa bar-kodova fonda",
+      "barcodePrintDescription": "Generisanje PDF-a sa bar-kodovima svih jedinica biblioteke."
     },
     "columns": {
       "name": "Naslov",
@@ -693,6 +695,33 @@
         "date": "Datum",
         "status": "Status",
         "rows": "Broj stavki",
+        "requestedBy": "Zatražio"
+      },
+      "status": {
+        "pending": "Čeka generisanje",
+        "processing": "U procesu generisanja",
+        "completed": "Generisano",
+        "failed": "Greška"
+      }
+    },
+    "barcodePrint": {
+      "title": "Štampa bar-kodova celog fonda",
+      "subtitle": "Generišite PDF sa bar-kodovima svih jedinica aktivne biblioteke i preuzmite prethodne verzije.",
+      "generate": "Generiši bar-kodove",
+      "download": "Preuzmi",
+      "started": "Generisanje je započeto. PDF će se pojaviti u listi kada bude gotov.",
+      "ready": "PDF sa bar-kodovima je generisan i spreman za preuzimanje.",
+      "failed": "Generisanje PDF-a sa bar-kodovima nije uspelo.",
+      "notice": "NAPOMENA: Generisanje bar-kodova može potrajati kod velikog broja jedinica. PDF se priprema u pozadini; sačekajte automatsko osvežavanje. Prilikom štampe odaberite opciju „Actual size“ (stvarna veličina) ili štampa neće biti validna.",
+      "empty": "Još nema generisanih PDF-ova sa bar-kodovima.",
+      "deleteConfirmTitle": "Obriši PDF?",
+      "deleteConfirmText": "Generisani PDF i zapis o poslu biće trajno obrisani.",
+      "columns": {
+        "date": "Datum",
+        "format": "Format nalepnica",
+        "items": "Broj jedinica",
+        "invalid": "Neispravni bar-kodovi",
+        "status": "Status",
         "requestedBy": "Zatražio"
       },
       "status": {

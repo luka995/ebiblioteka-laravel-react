@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthorsController;
+use App\Http\Controllers\BarcodePrintJobsController;
 use App\Http\Controllers\BookCopiesController;
 use App\Http\Controllers\BooksController;
 use App\Http\Controllers\CategoriesController;
@@ -109,6 +110,12 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::get('/book-copies/{bookCopy}', [BookCopiesController::class, 'show'])->middleware('can:view,bookCopy');
     Route::put('/book-copies/{bookCopy}', [BookCopiesController::class, 'update'])->middleware('can:update,bookCopy');
     Route::delete('/book-copies/{bookCopy}', [BookCopiesController::class, 'destroy'])->middleware('can:delete,bookCopy');
+
+    Route::get('/barcode-print-jobs', [BarcodePrintJobsController::class, 'index'])->middleware('can:viewAny,App\Models\BarcodePrintJob');
+    Route::post('/barcode-print-jobs', [BarcodePrintJobsController::class, 'store'])->middleware('can:create,App\Models\BarcodePrintJob');
+    Route::get('/barcode-print-jobs/{barcodePrintJob}/download', [BarcodePrintJobsController::class, 'download'])->middleware('can:download,barcodePrintJob');
+    Route::delete('/barcode-print-jobs/{barcodePrintJob}', [BarcodePrintJobsController::class, 'destroy'])->middleware('can:delete,barcodePrintJob');
+    Route::get('/barcode-print-jobs/{barcodePrintJob}', [BarcodePrintJobsController::class, 'show'])->middleware('can:view,barcodePrintJob');
 
     Route::get('/inventory-books', [InventoryBooksController::class, 'index'])->middleware('can:viewAny,App\Models\InventoryBook');
     Route::post('/inventory-books', [InventoryBooksController::class, 'store'])->middleware('can:create,App\Models\InventoryBook');

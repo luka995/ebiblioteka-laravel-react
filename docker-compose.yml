@@ -108,6 +108,28 @@ services:
     networks:
       - ebiblioteka-network
 
+  # Zaseban worker za generisanje PDF-ova sa bar-kodovima jedinica
+  # (brza stampa celog fonda). Ne blokira email ni inventory queue.
+  queue-print:
+    build:
+      context: ./php
+      args:
+        APP_TIMEZONE: Europe/Belgrade
+    container_name: ebiblioteka-queue-print
+    user: "33:33"
+    working_dir: /var/www/html
+    environment:
+      TZ: Europe/Belgrade
+    volumes:
+      - ./:/var/www/html:rw
+    command: php artisan queue:work database --queue=print --sleep=3 --tries=1 --timeout=600
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ebiblioteka-network
+
 networks:
   ebiblioteka-network:
     driver: bridge
