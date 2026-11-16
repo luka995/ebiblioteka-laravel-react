@@ -1,5 +1,40 @@
 # Changelog
 
+## [14.11.2026] Javni sajt: proizvodna početna, registracija škole, demo i FAQ
+
+### Added
+
+- **Nova početna** (`resources/views/public/home.blade.php`, `resources/views/public/home/*`) — hero sa registracijom i demom, činjenice, argument „papir/Excel → softver“, moduli, srpski školski sistem sa razredima i školskim godinama, demo uloge, vodič, FAQ, kontakt i prošireni footer; preporuke knjiga uklonjene su sa početne, a stranice biblioteka ostaju nepromenjene
+- **Registracija škole** (`app/Http/Controllers/PublicLibraryRequestController.php`, `app/Http/Requests/StoreLibraryRequestRequest.php`, `app/Models/LibraryRequest.php`, `app/Enums/LibraryRequestStatus.php`, `database/migrations/2026_11_14_000001_create_library_requests_table.php`, `resources/views/public/library-requests/create.blade.php`, ruta `/registracija`) — zahtev se čuva u `library_requests`, a mejl ide svim superadminima uz `Reply-To` na kontakt škole; Turnstile i throttle zaštita
+- **Mejl o zahtevu** (`app/Mail/LibraryRequestReceived.php`, `resources/views/emails/library-request*.blade.php`, `lang/*/emails.php`) — HTML i tekstualna verzija sa podacima o školi, tipu, gradu, adresi, kontaktu i poruci
+- **Demo i sadržaj** (`config/public_site.php`) — demo uloge administrator/bibliotekar/korisnik, FAQ, vodič, moduli, poređenje i kontakt podaci; demo nalozi se kasnije kreiraju seederom
+- **Dizajn i interakcija** (`resources/css/app.css`, `resources/js/app.ts`) — novi blokovi u postojećem jeziku sajta, ARIA tabovi za demo, native FAQ akordeon i generički flash modal
+- **SEO** (`resources/views/layouts/public.blade.php`) — meta opis, canonical, Open Graph i FAQPage JSON-LD
+- **Testovi** (`tests/Feature/PublicHomeTest.php`, `tests/Feature/PublicLibraryRequestTest.php`) — nove sekcije, uklanjanje preporuka, validacija, upis, mejl superadminima, fallback primalac, Turnstile i success modal
+
+## [14.11.2026] Nalozi: email sa novom lozinkom pri admin resetu
+
+### Added
+
+- **Mejl o promeni lozinke** (`app/Mail/PasswordChanged.php`, `app/Services/Mail/UserMailService.php`, `resources/views/emails/password-changed.blade.php`, `resources/views/emails/password-changed-text.blade.php`, `lang/*/emails.php`) — kada administrator promeni lozinku korisniku, na `emails` queue se šalje transakcioni mejl sa novom lozinkom i linkom za prijavu
+- **Testovi** (`tests/Feature/Auth/PasswordChangedMailTest.php`) — provera slanja pri admin resetu i da promena sopstvene lozinke preko profila ne pokreće ovaj mejl
+
+## [13.11.2026] Cirkulacija: izdavanje i razduživanje pozajmica
+
+
+Realizovan legacy tok pozajmica: izdavanje po barkodu fizičke jedinice, izdavanje bez rezervacije, realizacija rezervacije, razduživanje sa obračunom prekoračenja i indeks pozajmica biblioteke.
+
+### Added
+
+- **Modeli i migracije** (`database/migrations/2026_11_13_000008_add_lending_settings_to_library_settings_table.php`, `2026_11_13_000009_create_borrows_table.php`, `app/Models/Borrow.php`) — `borrows` sa vezom na rezervaciju, rokovima, povratkom i obračunom prekoračenja; `library_settings` dobija `lend_days` i `overdue_price_per_day`
+- **Domenska logika** (`app/Services/BorrowService.php`, `app/Services/ReservationService.php`) — izdavanje bez rezervacije, izdavanje rezervisanog primerka, potvrda zamene primerka, razduživanje i audit kroz `book_history`
+- **API i autorizacija** (`app/Http/Controllers/BorrowsController.php`, `app/Http/Requests/StoreBorrowRequest.php`, `app/Http/Resources/BorrowResource.php`, `app/Policies/BorrowPolicy.php`, `app/Queries/BorrowFilters.php`, `routes/api.php`) — `GET/POST /api/v1/borrows`, `GET /borrows/library`, `GET /borrows/lookup`, `POST /borrows/{id}/return`, `GET /users/{id}/borrows` i `POST /reservations/{id}/issue`
+- **Rezervacija → pozajmica** — ako korisnik ima rezervaciju za drugi primerak, API vraća `409` sa detaljima konflikta; izdavanje se nastavlja tek uz `confirm_reservation_exchange`
+- **Frontend** (`frontend/src/pages/borrows/*`, `frontend/src/components/borrows/*`) — stranice „Moje pozajmice“ i „Pozajmice biblioteke“, modal za izdavanje, dijalog razduženja, akcije na fizičkim jedinicama, profilu korisnika i rezervacijama
+- **Šifarnici** (`frontend/src/components/layout/app-shell.tsx`, `frontend/src/pages/settings/system-settings-page.tsx`) — regije, mesta, novosti i sistemska podešavanja grupisani u „Šifarnici“; sistemska podešavanja su dostupna samo superadminu
+- **Lokalizacija i audit** (`frontend/src/i18n/locales/*.json`, `lang/*/validation.php`) — novi tekstovi za pozajmice, podešavanja i akcije `borrow`/`return`; ispravljeno ugnježđivanje `bookHistory` prevoda
+- **Testovi** (`tests/Feature/Auth/BorrowApiTest.php`) — izdavanje, konflikti rezervacija, razduživanje, prekoračenje, scope i podešavanja
+
 ## [01.10.2026] Knjige: štampa bar-kodova celog fonda kroz `print` queue
 
 Realizovan deo PRD §14 — brza štampa cele biblioteke jednim klikom (legacy paritet sa `barcode_prints`; serverske liste za štampu ostaju za sledeću fazu).

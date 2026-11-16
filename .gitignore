@@ -13,9 +13,11 @@
 /.zed
 /auth.json
 /node_modules
+node_modules/
 /public/build
 /public/hot
 /public/storage
+/frontend/dist/
 /storage/*.key
 /storage/pail
 /vendor

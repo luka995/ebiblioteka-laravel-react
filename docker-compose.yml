@@ -41,7 +41,7 @@ services:
       - "3001:5173"
     volumes:
       - ./frontend:/app
-      - /app/node_modules
+      - ebiblioteka_nm:/app/node_modules
       - ./:/workspace
     depends_on:
       - nginx
@@ -159,3 +159,5 @@ networks:
 
 volumes:
   postgres_data:
+  ebiblioteka_nm:
+    external: true
