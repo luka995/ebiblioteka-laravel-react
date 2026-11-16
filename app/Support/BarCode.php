@@ -76,6 +76,21 @@ final class BarCode
         return preg_match('/^\d{12}$/', $value) === 1 ? '0'.$value : $value;
     }
 
+    /**
+     * Normalizuje unos skenera na EAN-13: cifre krace od 13 dopunjavaju se
+     * vodecim nulama (legacy ponasanje pri izdavanju pozajmice).
+     */
+    public static function normalizeScanInput(string $value): string
+    {
+        $value = trim($value);
+
+        if ($value === '' || ! preg_match('/^\d+$/', $value)) {
+            return $value;
+        }
+
+        return str_pad($value, 13, '0', STR_PAD_LEFT);
+    }
+
     private static function appendChecksum(string $base12): string
     {
         return $base12.(string) self::calculateChecksum($base12);

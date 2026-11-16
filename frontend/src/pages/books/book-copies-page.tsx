@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Eye, Filter, Plus, Printer, Search } from 'lucide-react'
-import { toast } from 'sonner'
+import { BookCheck, Eye, Filter, Plus, Printer, Search } from 'lucide-react'
 import { api, apiPaths } from '@/lib/api'
 import { normalizeBarcode } from '@/lib/barcode'
 import { Badge } from '@/components/ui/badge'
@@ -16,6 +15,7 @@ import { PaginationBar } from '@/components/pagination-bar'
 import { BookCopyBarcodePrintModal } from '@/components/books/book-copy-barcode-print-modal'
 import { BookCopiesMobileList } from '@/components/books/book-copies-mobile-list'
 import { BookCopyQuickAddModal } from '@/components/books/book-copy-quick-add-modal'
+import { IssueLoanModal } from '@/components/borrows/issue-loan-modal'
 import {
   BookCopyFiltersPanel,
   countActiveFilters,
@@ -41,6 +41,7 @@ function readFilters(params: URLSearchParams): BookCopyFilters {
 const STATUS_VARIANTS: Record<BookCopyStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   available: 'default',
   borrowed: 'secondary',
+  reserved: 'outline',
   record_error: 'outline',
   written_off: 'destructive',
   archived: 'secondary',
@@ -68,6 +69,7 @@ export function BookCopiesPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [printOpen, setPrintOpen] = useState(false)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
+  const [issueCopy, setIssueCopy] = useState<BookCopy | null>(null)
 
   useEffect(() => {
     setBarcodeInput(barcode)
@@ -295,7 +297,17 @@ export function BookCopiesPage() {
                     <Badge variant={STATUS_VARIANTS[copy.status]}>{t(`books.status.${copy.status}`)}</Badge>
                   </TableCell>
                   <TableCell className="px-4">
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-1">
+                      {can('borrows.create') && (copy.status === 'available' || copy.status === 'reserved') ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIssueCopy(copy)}
+                        >
+                          <BookCheck />
+                          {t('borrows.issueAction')}
+                        </Button>
+                      ) : null}
                       <Button asChild variant="ghost" size="icon-sm" aria-label={t('books.copies.viewDetail')}>
                         <Link to={`/books/copies/${copy.id}`}>
                           <Eye />
@@ -324,6 +336,20 @@ export function BookCopiesPage() {
               onToggleAll={toggleSelectAll}
               allSelected={allPageSelected}
               someSelected={somePageSelected}
+              renderActions={(copy) => (
+                <div className="flex items-center gap-1">
+                  {can('borrows.create') && (copy.status === 'available' || copy.status === 'reserved') ? (
+                    <Button variant="ghost" size="icon-sm" onClick={() => setIssueCopy(copy)} aria-label={t('borrows.issueAction')}>
+                      <BookCheck />
+                    </Button>
+                  ) : null}
+                  <Button asChild variant="ghost" size="icon-sm" aria-label={t('books.copies.viewDetail')}>
+                    <Link to={`/books/copies/${copy.id}`}>
+                      <Eye />
+                    </Link>
+                  </Button>
+                </div>
+              )}
             />
           </div>
 
@@ -350,6 +376,17 @@ export function BookCopiesPage() {
 
       {quickAddOpen ? (
         <BookCopyQuickAddModal open onClose={() => setQuickAddOpen(false)} />
+      ) : null}
+
+      {issueCopy ? (
+        <IssueLoanModal
+          open
+          copy={issueCopy}
+          onClose={() => setIssueCopy(null)}
+          onSuccess={() => {
+            void copiesQuery.refetch()
+          }}
+        />
       ) : null}
     </div>
   )

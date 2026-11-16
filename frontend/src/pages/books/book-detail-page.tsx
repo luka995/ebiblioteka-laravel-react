@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArchiveX, ArrowLeft, Eye, FileDown, ImagePlus, MoreHorizontal, Pencil, Plus, Printer, RotateCcw, Trash2 } from 'lucide-react'
+import { ArchiveX, ArrowLeft, BookCheck, Eye, FileDown, ImagePlus, MoreHorizontal, Pencil, Plus, Printer, RotateCcw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { storageUrl } from '@/lib/environment'
@@ -25,12 +25,14 @@ import { BookCopyAddModal } from '@/components/books/book-copy-add-modal'
 import { BookCopyEditModal } from '@/components/books/book-copy-edit-modal'
 import { BookCopyRecErrorDialog, BookCopyWriteOffDialog } from '@/components/books/book-copy-action-dialogs'
 import { BookCopyBarcodePrintModal } from '@/components/books/book-copy-barcode-print-modal'
+import { IssueLoanModal } from '@/components/borrows/issue-loan-modal'
 import { useAuth } from '@/hooks/useAuth'
 import type { Book, BookCopy, BookCopyStatus, PaginatedResponse } from '@/types'
 
 const STATUS_VARIANTS: Record<BookCopyStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   available: 'default',
   borrowed: 'secondary',
+  reserved: 'outline',
   record_error: 'outline',
   written_off: 'destructive',
   archived: 'secondary',
@@ -42,7 +44,7 @@ export function BookDetailPage() {
   const navigate = useNavigate()
   const bookId = Number(params.id)
   const queryClient = useQueryClient()
-  const { activeLibrary } = useAuth()
+  const { activeLibrary, can } = useAuth()
 
   const [bookModalOpen, setBookModalOpen] = useState(false)
   const [addModalOpen, setAddModalOpen] = useState(false)
@@ -51,6 +53,7 @@ export function BookDetailPage() {
   const [recErrorCopy, setRecErrorCopy] = useState<BookCopy | null>(null)
   const [selected, setSelected] = useState<number[]>([])
   const [printOpen, setPrintOpen] = useState(false)
+  const [issueCopy, setIssueCopy] = useState<BookCopy | null>(null)
 
   const bookQuery = useQuery({
     queryKey: ['book', bookId],
@@ -123,6 +126,12 @@ export function BookDetailPage() {
             {t('common.view')}
           </Link>
         </DropdownMenuItem>
+        {can('borrows.create') && (copy.status === 'available' || copy.status === 'reserved') ? (
+          <DropdownMenuItem onSelect={() => setIssueCopy(copy)}>
+            <BookCheck />
+            {t('borrows.issueAction')}
+          </DropdownMenuItem>
+        ) : null}
         {copy.can?.update ? (
           <DropdownMenuItem onSelect={() => setEditingCopy(copy)}>
             <Pencil />
@@ -378,6 +387,15 @@ export function BookDetailPage() {
           copyIds={selected}
           onClose={() => setPrintOpen(false)}
           onSuccess={() => setSelected([])}
+        />
+      ) : null}
+
+      {issueCopy ? (
+        <IssueLoanModal
+          open
+          copy={issueCopy}
+          onClose={() => setIssueCopy(null)}
+          onSuccess={() => refresh()}
         />
       ) : null}
     </div>

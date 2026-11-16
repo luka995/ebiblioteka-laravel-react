@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArchiveX, ArrowLeft, FileDown, Pencil, Plus, Printer, RotateCcw, Trash2 } from 'lucide-react'
+import { ArchiveX, ArrowLeft, BookCheck, FileDown, History, Pencil, Plus, Printer, RotateCcw, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
@@ -23,12 +23,14 @@ import { BookCopyEditModal } from '@/components/books/book-copy-edit-modal'
 import { BookCopyQuickAddModal } from '@/components/books/book-copy-quick-add-modal'
 import { BookCopyRecErrorDialog, BookCopyWriteOffDialog } from '@/components/books/book-copy-action-dialogs'
 import { BookCopyBarcodePrintModal } from '@/components/books/book-copy-barcode-print-modal'
+import { IssueLoanModal } from '@/components/borrows/issue-loan-modal'
 import { useAuth } from '@/hooks/useAuth'
-import type { BookCopy, BookCopyStatus } from '@/types'
+import type { BookCopy, BookCopyStatus, BookHistoryEntry } from '@/types'
 
 const STATUS_VARIANTS: Record<BookCopyStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   available: 'default',
   borrowed: 'secondary',
+  reserved: 'outline',
   record_error: 'outline',
   written_off: 'destructive',
   archived: 'secondary',
@@ -74,10 +76,17 @@ export function BookCopyDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [printOpen, setPrintOpen] = useState(false)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
+  const [issueOpen, setIssueOpen] = useState(false)
 
   const copyQuery = useQuery({
     queryKey: ['book-copy', copyId],
     queryFn: () => api.get<{ data: BookCopy }>(apiPaths.bookCopy(copyId)),
+    enabled: Number.isFinite(copyId),
+  })
+
+  const historyQuery = useQuery({
+    queryKey: ['book-copy-history', copyId],
+    queryFn: () => api.get<{ data: BookHistoryEntry[] }>(apiPaths.bookCopyHistory(copyId)),
     enabled: Number.isFinite(copyId),
   })
 
@@ -145,6 +154,12 @@ export function BookCopyDetailPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {can('borrows.create') && (copy.status === 'available' || copy.status === 'reserved') ? (
+            <Button variant="brand" onClick={() => setIssueOpen(true)}>
+              <BookCheck />
+              {t('borrows.issueAction')}
+            </Button>
+          ) : null}
           {copy.barcode ? (
             <Button variant="outline" onClick={() => setPrintOpen(true)}>
               <Printer />
@@ -286,6 +301,40 @@ export function BookCopyDetailPage() {
 
       <Card>
         <CardHeader>
+          <CardTitle className="font-brand-heading flex items-center gap-2 text-lg">
+            <History className="size-4 text-brand" />
+            {t('bookHistory.title')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {historyQuery.isLoading ? (
+            <PageLoader />
+          ) : (historyQuery.data?.data.length ?? 0) === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('bookHistory.emptyText')}</p>
+          ) : (
+            <ul className="divide-y">
+              {historyQuery.data?.data.map((entry) => (
+                <li key={entry.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5 text-sm">
+                  <div className="min-w-0">
+                    <p className="font-medium">
+                      {t(`bookHistory.actions.${entry.action}`, { defaultValue: entry.action })}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {entry.user_name ?? '—'} · {entry.actor_name ?? t('bookHistory.system')}
+                    </p>
+                  </div>
+                  <span className="whitespace-nowrap text-xs text-muted-foreground">
+                    {entry.action_date_formatted ?? '—'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="font-brand-heading text-lg">{t('books.copies.sections.timestamps')}</CardTitle>
         </CardHeader>
         <CardContent>
@@ -346,6 +395,19 @@ export function BookCopyDetailPage() {
 
       {printOpen ? (
         <BookCopyBarcodePrintModal open copyIds={[copy.id]} onClose={() => setPrintOpen(false)} />
+      ) : null}
+
+      {issueOpen ? (
+        <IssueLoanModal
+          open
+          copy={copy}
+          onClose={() => setIssueOpen(false)}
+          onSuccess={() => {
+            void queryClient.invalidateQueries({ queryKey: ['book-copy', copyId] })
+            void queryClient.invalidateQueries({ queryKey: ['book-copies'] })
+            void queryClient.invalidateQueries({ queryKey: ['book-copy-history', copyId] })
+          }}
+        />
       ) : null}
 
       {quickAddOpen ? (
