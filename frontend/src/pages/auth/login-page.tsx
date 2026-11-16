@@ -1,12 +1,14 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useRef, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
 import { ApiError } from '@/lib/api'
+import { safeInternalRedirect } from '@/lib/login-redirect'
 import { Eye, EyeOff } from 'lucide-react'
+import { TurnstileWidget, type TurnstileWidgetHandle } from '@/components/auth/turnstile-widget'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -19,10 +21,15 @@ export function LoginPage() {
   const { t } = useTranslation()
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [pending, setPending] = useState(false)
   const [remember, setRemember] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const [turnstileError, setTurnstileError] = useState<string | null>(null)
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null)
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined
 
   const schema = z.object({
     email: z.string().trim().min(1, t('errors.required')).email(t('errors.emailInvalid')),
@@ -37,19 +44,48 @@ export function LoginPage() {
     defaultValues: { email: '', password: '' },
   })
 
+  const resetTurnstile = () => {
+    turnstileRef.current?.reset()
+    setTurnstileToken('')
+  }
+
   const onSubmit = form.handleSubmit(async (values) => {
-    setPending(true)
     setFormError(null)
+    setTurnstileError(null)
+
+    if (!turnstileSiteKey) {
+      setTurnstileError(t('auth.turnstileUnavailable'))
+      return
+    }
+
+    if (!turnstileToken) {
+      setTurnstileError(t('auth.turnstileRequired'))
+      return
+    }
+
+    setPending(true)
+
     try {
-      await login({ email: values.email, password: values.password, remember })
-      navigate('/', { replace: true })
+      await login({
+        email: values.email,
+        password: values.password,
+        remember,
+        turnstile_token: turnstileToken,
+      })
+      navigate(safeInternalRedirect(searchParams.get('redirect')) ?? '/', { replace: true })
     } catch (error) {
+      resetTurnstile()
+
       if (error instanceof ApiError) {
         const email = error.validationErrors?.email?.[0]
         const password = error.validationErrors?.password?.[0]
+        const turnstile = error.validationErrors?.turnstile_token?.[0]
+
         if (email) form.setError('email', { message: email })
         if (password) form.setError('password', { message: password })
-        if (!email && !password) {
+        if (turnstile) {
+          setTurnstileError(t('auth.turnstileFailed'))
+        } else if (!email && !password) {
           setFormError(error.messageText ?? t('auth.loginError'))
         }
       } else {
@@ -139,7 +175,37 @@ export function LoginPage() {
               </Label>
             </div>
 
-            <Button type="submit" variant="brand" className="w-full" disabled={pending}>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">{t('auth.turnstileLabel')}</p>
+              <TurnstileWidget
+                ref={turnstileRef}
+                className="min-h-[65px]"
+                onVerify={(token) => {
+                  setTurnstileToken(token)
+                  setTurnstileError(null)
+                }}
+                onExpire={() => {
+                  setTurnstileToken('')
+                  setTurnstileError(t('auth.turnstileRequired'))
+                }}
+                onError={() => {
+                  setTurnstileToken('')
+                  setTurnstileError(t('auth.turnstileUnavailable'))
+                }}
+              />
+              {turnstileError ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {turnstileError}
+                </p>
+              ) : null}
+            </div>
+
+            <Button
+              type="submit"
+              variant="brand"
+              className="w-full"
+              disabled={pending || !turnstileSiteKey || !turnstileToken}
+            >
               {pending ? <Spinner className="border-white/40 border-t-transparent" /> : null}
               {t('auth.submit')}
             </Button>

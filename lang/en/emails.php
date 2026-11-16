@@ -33,6 +33,23 @@ return [
         'message_label' => 'Message',
     ],
 
+    'library_request' => [
+        'subject' => 'New library request — :school',
+        'greeting' => 'New library request',
+        'intro' => 'A new library request arrived through the website. The school details are below.',
+        'school_label' => 'School',
+        'type_label' => 'School type',
+        'city_label' => 'City',
+        'address_label' => 'Address',
+        'contact_label' => 'Contact person',
+        'email_label' => 'E-mail',
+        'phone_label' => 'Phone',
+        'students_label' => 'Number of students',
+        'employees_label' => 'Number of employees',
+        'message_label' => 'Message',
+        'none' => 'Not provided',
+    ],
+
     'brand' => [
         'name' => 'eBiblioteka',
         'tagline' => 'every book is a new adventure',

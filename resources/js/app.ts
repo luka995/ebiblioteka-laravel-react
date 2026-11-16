@@ -15,21 +15,70 @@ document.querySelectorAll<HTMLAnchorElement>('[data-mobile-menu] a').forEach((li
   })
 })
 
-const contactModal = document.querySelector<HTMLDialogElement>('[data-contact-modal]')
+document.querySelectorAll<HTMLDialogElement>('[data-flash-modal]').forEach((modal) => {
+  modal.showModal()
 
-if (contactModal) {
-  contactModal.showModal()
-
-  contactModal.querySelector('[data-contact-modal-close]')?.addEventListener('click', () => {
-    contactModal.close()
+  modal.querySelector('[data-flash-modal-close]')?.addEventListener('click', () => {
+    modal.close()
   })
 
-  contactModal.addEventListener('click', (event) => {
-    if (event.target === contactModal) {
-      contactModal.close()
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) {
+      modal.close()
     }
   })
-}
+})
+
+document.querySelectorAll<HTMLElement>('[data-demo-widget]').forEach((widget) => {
+  const tabs = Array.from(widget.querySelectorAll<HTMLButtonElement>('[data-demo-tab]'))
+  const panels = Array.from(widget.querySelectorAll<HTMLElement>('[data-demo-panel]'))
+
+  if (tabs.length === 0) {
+    return
+  }
+
+  const activate = (key: string) => {
+    tabs.forEach((tab) => {
+      const selected = tab.dataset.demoTab === key
+      tab.setAttribute('aria-selected', String(selected))
+      tab.tabIndex = selected ? 0 : -1
+    })
+
+    panels.forEach((panel) => {
+      panel.hidden = panel.dataset.demoPanel !== key
+    })
+  }
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => activate(tab.dataset.demoTab ?? ''))
+
+    tab.addEventListener('keydown', (event) => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+        return
+      }
+
+      event.preventDefault()
+
+      let nextIndex = index
+
+      if (event.key === 'ArrowRight') {
+        nextIndex = (index + 1) % tabs.length
+      } else if (event.key === 'ArrowLeft') {
+        nextIndex = (index - 1 + tabs.length) % tabs.length
+      } else if (event.key === 'Home') {
+        nextIndex = 0
+      } else if (event.key === 'End') {
+        nextIndex = tabs.length - 1
+      }
+
+      const nextTab = tabs[nextIndex]
+      activate(nextTab.dataset.demoTab ?? '')
+      nextTab.focus()
+    })
+  })
+
+  activate(tabs[0].dataset.demoTab ?? '')
+})
 
 const newsLightbox = document.querySelector<HTMLDialogElement>('[data-news-lightbox]')
 

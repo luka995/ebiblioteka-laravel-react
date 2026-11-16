@@ -27,8 +27,10 @@
                 <h2 class="display">Академија<br><span class="serif">Филиповић.</span></h2>
                 <p>Академија Филиповић више од две деценије развија решења за савремено образовање. еБиблиотека је њихов простор за једноставнији, доступнији и савременији рад школских библиотека.</p>
                 <div class="contact-facts">
+                    <a href="tel:{{ config('public_site.contact.phone_href') }}"><span>ТЕЛЕФОН</span><strong>{{ config('public_site.contact.phone') }}</strong></a>
                     <a href="https://akademijafilipovic.com" target="_blank" rel="noreferrer"><span>ВЕБ</span><strong>akademijafilipovic.com ↗</strong></a>
                     <a href="mailto:akademijafilipovic@gmail.com"><span>Е-ПОШТА</span><strong>akademijafilipovic@gmail.com</strong></a>
+                    <a href="{{ route('library-requests.create', [], false) }}"><span>РЕГИСТРАЦИЈА</span><strong>Отворите библиотеку ↗</strong></a>
                 </div>
                 <div class="contact-info-footer"><span class="contact-info-dot"></span><span>Одговарамо на сваку поруку.</span></div>
             </aside>
@@ -46,11 +48,11 @@
                 @endphp
 
                 @if ($contactFlash)
-                    <dialog class="contact-modal contact-modal--{{ $contactFlash['tone'] }}" data-contact-modal role="dialog" aria-labelledby="contact-modal-title">
+                    <dialog class="contact-modal contact-modal--{{ $contactFlash['tone'] }}" data-flash-modal role="dialog" aria-labelledby="contact-modal-title">
                         <div class="contact-modal-body">
                             <h3 id="contact-modal-title">{{ $contactFlash['title'] }}</h3>
                             <p>{{ $contactFlash['message'] }}</p>
-                            <button class="contact-modal-close" data-contact-modal-close type="button">У реду</button>
+                            <button class="contact-modal-close" data-flash-modal-close type="button">У реду</button>
                         </div>
                     </dialog>
                 @endif
@@ -81,7 +83,7 @@
                     </div>
                     <input type="hidden" name="turnstile_token" id="contact-turnstile-token">
                     <div id="contact-turnstile" class="contact-turnstile" data-sitekey="{{ config('services.turnstile.site_key') }}" data-action="{{ config('services.turnstile.action') }}"></div>
-                    <button class="button button-blue" type="submit" data-contact-submit disabled>Пошаљите поруку <span>↗</span></button>
+                    <button class="button button-blue" type="submit" data-contact-submit @if (config('services.turnstile.site_key')) disabled @endif>Пошаљите поруку <span>↗</span></button>
                 </form>
             </div>
         </section>

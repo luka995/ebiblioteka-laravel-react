@@ -39,6 +39,8 @@ return [
         'site_key' => env('TURNSTILE_SITE_KEY'),
         'secret' => env('TURNSTILE_SECRET'),
         'action' => 'contact',
+        'library_request_action' => env('TURNSTILE_LIBRARY_REQUEST_ACTION', 'library_request'),
+        'login_action' => env('TURNSTILE_LOGIN_ACTION', 'login'),
         'hostnames' => array_values(array_filter(array_map('trim', explode(',', (string) env('TURNSTILE_HOSTNAMES', ''))))),
     ],
 

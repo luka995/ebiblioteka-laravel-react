@@ -100,11 +100,13 @@ class LibraryCatalog
     private static function book(Book $book, Category $category): array
     {
         return [
+            'id' => $book->id,
             'slug' => $book->slug,
             'title' => $book->name,
             'author' => $book->authors->map(fn ($author): string => $author->displayName())->join('; ') ?: '—',
             'year' => (string) ($book->active_copies_min_publish_year ?? ''),
             'availability' => ($book->available_count ?? 0) > 0 ? 'Dostupno' : 'Nije dostupno',
+            'available_count' => (int) ($book->available_count ?? 0),
             'description' => $book->description ?? 'Opis nije dostupan.',
         ];
     }

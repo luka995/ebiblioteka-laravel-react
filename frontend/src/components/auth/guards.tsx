@@ -1,10 +1,12 @@
 import { type ReactNode } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { PageLoader } from '@/components/ui/loader'
+import { loginRedirectQuery, safeInternalRedirect } from '@/lib/login-redirect'
 
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { isLoading, isAuthenticated } = useAuth()
+  const location = useLocation()
 
   if (isLoading) {
     return (
@@ -15,7 +17,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    return <Navigate to={loginRedirectQuery(location.pathname, location.search)} replace />
   }
 
   return <>{children}</>
@@ -23,6 +25,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
 export function GuestOnly({ children }: { children: ReactNode }) {
   const { isLoading, isAuthenticated } = useAuth()
+  const location = useLocation()
 
   if (isLoading) {
     return (
@@ -33,7 +36,9 @@ export function GuestOnly({ children }: { children: ReactNode }) {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />
+    const redirect = safeInternalRedirect(new URLSearchParams(location.search).get('redirect'))
+
+    return <Navigate to={redirect ?? '/'} replace />
   }
 
   return <>{children}</>

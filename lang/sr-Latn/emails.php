@@ -33,6 +33,23 @@ return [
         'message_label' => 'Poruka',
     ],
 
+    'library_request' => [
+        'subject' => 'Novi zahtev za otvaranje biblioteke — :school',
+        'greeting' => 'Novi zahtev za otvaranje biblioteke',
+        'intro' => 'Preko sajta je stigao novi zahtev za otvaranje biblioteke. Podaci o školi su u nastavku.',
+        'school_label' => 'Škola',
+        'type_label' => 'Tip škole',
+        'city_label' => 'Mesto',
+        'address_label' => 'Adresa',
+        'contact_label' => 'Kontakt osoba',
+        'email_label' => 'E-adresa',
+        'phone_label' => 'Telefon',
+        'students_label' => 'Broj učenika',
+        'employees_label' => 'Broj zaposlenih',
+        'message_label' => 'Poruka',
+        'none' => 'Nije navedeno',
+    ],
+
     'brand' => [
         'name' => 'eBiblioteka',
         'tagline' => 'svaka knjiga je nova pustolovina',
