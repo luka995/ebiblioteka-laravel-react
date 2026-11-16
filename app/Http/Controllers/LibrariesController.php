@@ -56,14 +56,14 @@ class LibrariesController extends Controller
     {
         $library = Library::create($request->validated());
 
-        return new LibraryResource($library->load(['place.region']));
+        return new LibraryResource($library->load(['place.region', 'settings']));
     }
 
     public function show(Library $library): LibraryResource
     {
         abort_if($library->deleted, 404);
 
-        return new LibraryResource($library->load(['place.region']));
+        return new LibraryResource($library->load(['place.region', 'settings']));
     }
 
     public function update(UpdateLibraryRequest $request, Library $library): LibraryResource
@@ -91,5 +91,55 @@ class LibrariesController extends Controller
         $memberships->restoreLibrary($library);
 
         return response()->json(status: 204);
+    }
+
+    public function settings(Library $library): JsonResponse
+    {
+        abort_if($library->deleted, 404);
+
+        $settings = $library->settings()->firstOrCreate([], [
+            'reservation_hours' => LibrarySettings::DEFAULT_RESERVATION_HOURS,
+            'lend_days' => LibrarySettings::DEFAULT_LEND_DAYS,
+            'overdue_price_per_day' => LibrarySettings::DEFAULT_OVERDUE_PRICE_PER_DAY,
+        ]);
+
+        return response()->json([
+            'data' => [
+                'reservation_hours' => $settings->reservationHours(),
+                'lend_days' => $settings->lendDays(),
+                'overdue_price_per_day' => $settings->overduePricePerDay(),
+            ],
+        ]);
+    }
+
+    public function updateSettings(UpdateLibrarySettingsRequest $request, Library $library): JsonResponse
+    {
+        abort_if($library->deleted, 404);
+
+        $settings = $library->settings()->firstOrCreate([], [
+            'reservation_hours' => LibrarySettings::DEFAULT_RESERVATION_HOURS,
+            'lend_days' => LibrarySettings::DEFAULT_LEND_DAYS,
+            'overdue_price_per_day' => LibrarySettings::DEFAULT_OVERDUE_PRICE_PER_DAY,
+        ]);
+
+        $data = $request->validated();
+
+        if (! array_key_exists('lend_days', $data)) {
+            unset($data['lend_days']);
+        }
+
+        if (! array_key_exists('overdue_price_per_day', $data)) {
+            unset($data['overdue_price_per_day']);
+        }
+
+        $settings->update($data);
+
+        return response()->json([
+            'data' => [
+                'reservation_hours' => $settings->reservationHours(),
+                'lend_days' => $settings->lendDays(),
+                'overdue_price_per_day' => $settings->overduePricePerDay(),
+            ],
+        ]);
     }
 }

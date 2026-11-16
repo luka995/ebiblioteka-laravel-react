@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Building2, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Building2, Pencil, Settings, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -20,6 +20,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 import { PageLoader } from '@/components/ui/loader'
 import { LibraryFormModal } from '@/components/libraries/library-form-modal'
+import { LibrarySettingsModal } from '@/components/libraries/library-settings-modal'
 import { useAuth } from '@/hooks/useAuth'
 import type { Library } from '@/types'
 
@@ -40,6 +41,7 @@ export function LibraryDetailPage() {
   const { id } = useParams<{ id: string }>()
   const libraryId = Number(id)
   const [editOpen, setEditOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -113,10 +115,25 @@ export function LibraryDetailPage() {
               <InfoRow label={t('fields.invNumberAuto')}>
                 {target.inv_number_auto ? t('common.auto') : t('common.manual')}
               </InfoRow>
+              <InfoRow label={t('libs.settings.reservationHours')}>
+                {t('libs.settings.hoursValue', { count: target.settings?.reservation_hours ?? 48 })}
+              </InfoRow>
+              <InfoRow label={t('libs.settings.lendDays')}>
+                {t('libs.settings.daysValue', { count: target.settings?.lend_days ?? 30 })}
+              </InfoRow>
+              <InfoRow label={t('libs.settings.overduePrice')}>
+                {t('libs.settings.priceValue', { amount: target.settings?.overdue_price_per_day ?? 0 })}
+              </InfoRow>
             </dl>
           </div>
 
           <div className="flex shrink-0 gap-2">
+            {target.can?.updateSettings ? (
+              <Button variant="outline" onClick={() => setSettingsOpen(true)}>
+                <Settings />
+                {t('libs.settings.title')}
+              </Button>
+            ) : null}
             {target.can?.update ? (
               <Button variant="outline" onClick={() => setEditOpen(true)}>
                 <Pencil />
@@ -157,6 +174,18 @@ export function LibraryDetailPage() {
           onClose={() => setEditOpen(false)}
           onSuccess={(name) => {
             toast.success(t('libs.updated'), { description: name })
+            void queryClient.invalidateQueries({ queryKey: ['libraries'] })
+          }}
+        />
+      ) : null}
+
+      {settingsOpen ? (
+        <LibrarySettingsModal
+          open={settingsOpen}
+          library={target}
+          onClose={() => setSettingsOpen(false)}
+          onSuccess={() => {
+            void queryClient.invalidateQueries({ queryKey: ['libraries', libraryId] })
             void queryClient.invalidateQueries({ queryKey: ['libraries'] })
           }}
         />
