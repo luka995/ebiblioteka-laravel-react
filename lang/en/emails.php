@@ -22,6 +22,16 @@ return [
         'outro' => 'After signing in, we recommend changing your password in the account settings.',
     ],
 
+    'password_changed' => [
+        'subject' => 'Your password has been changed',
+        'greeting' => 'Hello!',
+        'intro' => 'An administrator has changed the password for your eBiblioteka account. Your new login details are below.',
+        'email_label' => 'E-mail',
+        'password_label' => 'New password',
+        'action' => 'Sign in',
+        'outro' => 'If you did not expect this change, please contact your library administrator immediately.',
+    ],
+
     'contact' => [
         'subject' => 'New message from the contact form',
         'greeting' => 'New message from the contact form',

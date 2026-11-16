@@ -3,6 +3,7 @@
 namespace App\Services\Mail;
 
 use App\Mail\AccountCreated;
+use App\Mail\PasswordChanged;
 use App\Mail\ResetPassword;
 use App\Models\User;
 use App\Support\FrontendUrl;
@@ -27,6 +28,13 @@ class UserMailService
     {
         $this->mailer->send(
             new AccountCreated($user, $plainPassword, FrontendUrl::url().'/login')
+        );
+    }
+
+    public function sendPasswordChanged(User $user, string $plainPassword): void
+    {
+        $this->mailer->send(
+            new PasswordChanged($user, $plainPassword, FrontendUrl::url().'/login')
         );
     }
 }

@@ -22,6 +22,16 @@ return [
         'outro' => 'Nakon prijave preporučujemo da promenite lozinku u podešavanjima naloga.',
     ],
 
+    'password_changed' => [
+        'subject' => 'Lozinka je promenjena',
+        'greeting' => 'Zdravo!',
+        'intro' => 'Administrator je promenio lozinku za vaš nalog na eBiblioteka platformi. U nastavku se nalaze novi podaci za prijavu.',
+        'email_label' => 'E-adresa',
+        'password_label' => 'Nova lozinka',
+        'action' => 'Prijavite se',
+        'outro' => 'Ako ovu promenu niste očekivali, odmah se obratite administratoru biblioteke.',
+    ],
+
     'contact' => [
         'subject' => 'Nova poruka sa kontakt forme',
         'greeting' => 'Nova poruka sa kontakt forme',
