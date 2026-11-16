@@ -23,7 +23,7 @@
 
         <div class="footer-col">
             <h2>ПОДРШКА</h2>
-            <a href="{{ $home }}#vodich">Водич за кориснике</a>
+            <a href="{{ $home }}#vodich">Како почети</a>
             <a href="{{ $home }}#faq">Често постављана питања</a>
             <a href="{{ route('contact.create', [], false) }}">Контакт</a>
             <a href="{{ route('library-requests.create', [], false) }}">Регистрација школе</a>

@@ -47,6 +47,7 @@ class UserResource extends JsonResource
             'last_name' => $this->last_name,
             'username' => $this->username,
             'email' => $this->email,
+            'locale' => $this->locale,
             'is_super_admin' => $isSuperAdmin,
             'role' => $primaryRole?->value,
             'role_label' => $isSuperAdmin ? __('roles.superadmin') : $primaryRole?->getLabel(),

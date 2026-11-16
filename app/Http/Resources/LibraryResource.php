@@ -2,9 +2,9 @@
 
 namespace App\Http\Resources;
 
+use App\DTOs\LibrarySettingsData;
 use App\Http\Resources\Concerns\InteractsWithResourceAbilities;
 use App\Models\Library;
-use App\Models\LibrarySettings;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,14 +26,10 @@ class LibraryResource extends JsonResource
             'address' => $this->address,
             'work_time' => $this->work_time,
             'inv_number_auto' => (bool) $this->inv_number_auto,
-            'settings' => $this->whenLoaded('settings', fn () => [
-                'reservation_hours' => $this->settings?->reservationHours()
-                    ?? LibrarySettings::DEFAULT_RESERVATION_HOURS,
-                'lend_days' => $this->settings?->lendDays()
-                    ?? LibrarySettings::DEFAULT_LEND_DAYS,
-                'overdue_price_per_day' => $this->settings?->overduePricePerDay()
-                    ?? LibrarySettings::DEFAULT_OVERDUE_PRICE_PER_DAY,
-            ]),
+            'settings' => $this->whenLoaded(
+                'settings',
+                fn () => LibrarySettingsData::fromSettings($this->settings)->toArray()
+            ),
             'deleted' => (bool) $this->deleted,
             'place_id' => $this->place_id,
             'place' => $this->whenLoaded('place', fn () => [

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\LibrarySettingsData;
 use App\Enums\LibraryRole;
 use App\Http\Requests\StoreLibraryRequest;
 use App\Http\Requests\UpdateLibraryRequest;
@@ -97,18 +98,10 @@ class LibrariesController extends Controller
     {
         abort_if($library->deleted, 404);
 
-        $settings = $library->settings()->firstOrCreate([], [
-            'reservation_hours' => LibrarySettings::DEFAULT_RESERVATION_HOURS,
-            'lend_days' => LibrarySettings::DEFAULT_LEND_DAYS,
-            'overdue_price_per_day' => LibrarySettings::DEFAULT_OVERDUE_PRICE_PER_DAY,
-        ]);
+        $settings = $library->settings()->firstOrCreate([], LibrarySettings::defaults());
 
         return response()->json([
-            'data' => [
-                'reservation_hours' => $settings->reservationHours(),
-                'lend_days' => $settings->lendDays(),
-                'overdue_price_per_day' => $settings->overduePricePerDay(),
-            ],
+            'data' => LibrarySettingsData::fromSettings($settings)->toArray(),
         ]);
     }
 
@@ -116,11 +109,7 @@ class LibrariesController extends Controller
     {
         abort_if($library->deleted, 404);
 
-        $settings = $library->settings()->firstOrCreate([], [
-            'reservation_hours' => LibrarySettings::DEFAULT_RESERVATION_HOURS,
-            'lend_days' => LibrarySettings::DEFAULT_LEND_DAYS,
-            'overdue_price_per_day' => LibrarySettings::DEFAULT_OVERDUE_PRICE_PER_DAY,
-        ]);
+        $settings = $library->settings()->firstOrCreate([], LibrarySettings::defaults());
 
         $data = $request->validated();
 
@@ -135,11 +124,7 @@ class LibrariesController extends Controller
         $settings->update($data);
 
         return response()->json([
-            'data' => [
-                'reservation_hours' => $settings->reservationHours(),
-                'lend_days' => $settings->lendDays(),
-                'overdue_price_per_day' => $settings->overduePricePerDay(),
-            ],
+            'data' => LibrarySettingsData::fromSettings($settings)->toArray(),
         ]);
     }
 }

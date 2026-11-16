@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageLoader } from '@/components/ui/loader'
 import type { User } from '@/types'
 
@@ -56,6 +57,7 @@ export function ProfilePage() {
           .optional()
           .or(z.literal('')),
         email: z.string().trim().min(1, t('errors.required')).email(t('errors.emailInvalid')).max(255),
+        locale: z.string().optional().or(z.literal('')),
         jmbg: z.string().trim().regex(/^\d{13}$/, t('errors.jmbgInvalid')).optional().or(z.literal('')),
         address: z.string().trim().max(255).optional().or(z.literal('')),
         city: z.string().trim().max(255).optional().or(z.literal('')),
@@ -74,6 +76,7 @@ export function ProfilePage() {
       last_name: '',
       username: '',
       email: '',
+      locale: '',
       jmbg: '',
       address: '',
       city: '',
@@ -90,6 +93,7 @@ export function ProfilePage() {
       last_name: profile.last_name ?? '',
       username: profile.username ?? '',
       email: profile.email ?? '',
+      locale: profile.locale ?? '',
       jmbg: profile.jmbg ?? '',
       address: profile.address ?? '',
       city: profile.city ?? '',
@@ -111,6 +115,7 @@ export function ProfilePage() {
       last_name: values.last_name,
       username: values.username || null,
       email: values.email,
+      locale: values.locale || null,
       jmbg: values.jmbg || null,
       address: values.address || null,
       city: values.city || null,
@@ -224,6 +229,33 @@ export function ProfilePage() {
                   )}
                 />
               </div>
+
+              <FormField
+                control={form.control}
+                name="locale"
+                render={({ field }) => (
+                  <FormItem className="sm:max-w-xs">
+                    <FormLabel>{t('profile.emailLanguage')}</FormLabel>
+                    <Select
+                      value={field.value === '' ? 'default' : field.value}
+                      onValueChange={(value) => field.onChange(value === 'default' ? '' : value)}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="default">{t('profile.defaultLanguage')}</SelectItem>
+                        <SelectItem value="sr-Cyrl">{t('lang.sr-Cyrl')}</SelectItem>
+                        <SelectItem value="sr-Latn">{t('lang.sr-Latn')}</SelectItem>
+                        <SelectItem value="en">{t('lang.en')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField

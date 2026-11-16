@@ -13,7 +13,7 @@ test('public home page renders library links and the product sections', function
     $response->assertSee('школску библиотеку');
     $response->assertSee('СА еБИБЛИОТЕКОМ');
     $response->assertSee('ДЕМО УЖИВО');
-    $response->assertSee('ВОДИЧ ЗА КОРИСНИКЕ');
+    $response->assertSee('КАКО ПОЧЕТИ');
     $response->assertSee('ЧЕСТО ПОСТАВЉАНА ПИТАЊА');
     $response->assertSee('FAQPage', false);
     $response->assertSee(route('library-requests.create', [], false));

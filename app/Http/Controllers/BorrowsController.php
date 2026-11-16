@@ -431,11 +431,7 @@ class BorrowsController extends Controller
 
     private function settings(Library $library): LibrarySettings
     {
-        return $library->settings()->firstOrCreate([], [
-            'reservation_hours' => LibrarySettings::DEFAULT_RESERVATION_HOURS,
-            'lend_days' => LibrarySettings::DEFAULT_LEND_DAYS,
-            'overdue_price_per_day' => LibrarySettings::DEFAULT_OVERDUE_PRICE_PER_DAY,
-        ]);
+        return $library->settings()->firstOrCreate([], LibrarySettings::defaults());
     }
 
     private function ensureLibraryStaff(User $actor, Library $library): void

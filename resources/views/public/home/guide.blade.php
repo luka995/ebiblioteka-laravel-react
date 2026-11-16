@@ -2,7 +2,7 @@
     <div class="public-wrap guide-inner">
         <div class="guide-heading">
             <div>
-                <span class="section-label">ВОДИЧ ЗА КОРИСНИКЕ</span>
+                <span class="section-label">КАКО ПОЧЕТИ</span>
                 <h2 class="display">Од регистрације <span class="serif">до прве позајмице.</span></h2>
             </div>
             <p>Шест корака којима школа уводи библиотеку у свакодневни рад — без дугих припрема и папирологије.</p>

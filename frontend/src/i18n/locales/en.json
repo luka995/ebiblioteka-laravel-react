@@ -149,7 +149,9 @@
     "confirmPassword": "Confirm password",
     "passwordUpdated": "Password updated.",
     "passwordHint": "Your current password is required to set a new one.",
-    "passwordAdminHint": "Set a new password for {{name}} (current password not required)."
+    "passwordAdminHint": "Set a new password for {{name}} (current password not required).",
+    "emailLanguage": "Notification email language",
+    "defaultLanguage": "Default language"
   },
   "settings": {
     "title": "Settings",
@@ -228,7 +230,21 @@
       "daysValue": "{{count}} days",
       "priceValue": "{{amount}} RSD",
       "invalidLendDays": "Enter a number of days between 1 and 365.",
-      "invalidOverduePrice": "Enter an amount between 0 and 100000."
+      "invalidOverduePrice": "Enter an amount between 0 and 100000.",
+      "reservationReminderHours": "Reservation expiry reminder (hours)",
+      "reservationReminderHoursHint": "How many hours before expiry the user receives a reminder.",
+      "loanReminderDays": "Due date reminder (days)",
+      "loanReminderDaysHint": "How many days before the due date the user receives a reminder.",
+      "overdueReminderDays": "Overdue reminder interval (days)",
+      "overdueReminderDaysHint": "How often overdue reminder emails are repeated.",
+      "notificationsTitle": "Email notifications",
+      "notifyStaffOnReservation": "Notify librarians about new reservations",
+      "notifyStaffOnIssue": "Notify librarians about issued books",
+      "notifyStaffOnReturn": "Notify librarians about returned books",
+      "notifyStaffOnCancellation": "Notify librarians about cancelled reservations",
+      "notifyStaffDailyDigest": "Send librarians a daily digest",
+      "notifyUserReservationExpiry": "Notify users about reservation expiry",
+      "notifyUserLoanDue": "Notify users about due dates and overdue loans"
     }
   },
   "membership": {

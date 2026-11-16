@@ -11,6 +11,7 @@ use App\Models\Library;
 use App\Models\LibrarySettings;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Services\Notification\CirculationNotificationService;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +29,7 @@ class BorrowService
     public function __construct(
         private readonly BookHistoryService $history,
         private readonly ReservationService $reservations,
+        private readonly CirculationNotificationService $notifications,
     ) {}
 
     /**
@@ -58,7 +60,7 @@ class BorrowService
 
         $this->reservations->expireOverdue();
 
-        return DB::transaction(function () use (
+        $borrow = DB::transaction(function () use (
             $actor,
             $library,
             $member,
@@ -133,6 +135,10 @@ class BorrowService
 
             return $borrow->load($this->relations());
         });
+
+        $this->notifications->loanIssued($borrow);
+
+        return $borrow;
     }
 
     /**
@@ -180,7 +186,7 @@ class BorrowService
     {
         $this->ensureStaff($actor, $borrow->library);
 
-        return DB::transaction(function () use ($actor, $borrow): Borrow {
+        $returned = DB::transaction(function () use ($actor, $borrow): Borrow {
             /** @var Borrow|null $locked */
             $locked = Borrow::query()->lockForUpdate()->find($borrow->id);
 
@@ -225,6 +231,10 @@ class BorrowService
 
             return $locked->load($this->relations());
         });
+
+        $this->notifications->loanReturned($returned);
+
+        return $returned;
     }
 
     /**
@@ -323,10 +333,6 @@ class BorrowService
             ]);
         }
 
-        return $library->settings()->firstOrCreate([], [
-            'reservation_hours' => LibrarySettings::DEFAULT_RESERVATION_HOURS,
-            'lend_days' => LibrarySettings::DEFAULT_LEND_DAYS,
-            'overdue_price_per_day' => LibrarySettings::DEFAULT_OVERDUE_PRICE_PER_DAY,
-        ]);
+        return $library->settings()->firstOrCreate([], LibrarySettings::defaults());
     }
 }

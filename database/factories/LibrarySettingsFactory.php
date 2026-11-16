@@ -18,9 +18,7 @@ class LibrarySettingsFactory extends Factory
     {
         return [
             'library_id' => Library::factory(),
-            'reservation_hours' => LibrarySettings::DEFAULT_RESERVATION_HOURS,
-            'lend_days' => LibrarySettings::DEFAULT_LEND_DAYS,
-            'overdue_price_per_day' => LibrarySettings::DEFAULT_OVERDUE_PRICE_PER_DAY,
+            ...LibrarySettings::defaults(),
         ];
     }
 }

@@ -39,11 +39,7 @@ class Library extends Model
         // podrazumevana podesavanja (rok rezervacije).
         static::created(function (Library $library): void {
             $library->inventorySequence()->firstOrCreate([], ['last_number' => 0]);
-            $library->settings()->firstOrCreate([], [
-                'reservation_hours' => LibrarySettings::DEFAULT_RESERVATION_HOURS,
-                'lend_days' => LibrarySettings::DEFAULT_LEND_DAYS,
-                'overdue_price_per_day' => LibrarySettings::DEFAULT_OVERDUE_PRICE_PER_DAY,
-            ]);
+            $library->settings()->firstOrCreate([], LibrarySettings::defaults());
         });
     }
 

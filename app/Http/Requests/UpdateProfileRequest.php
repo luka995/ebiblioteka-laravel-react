@@ -39,6 +39,7 @@ class UpdateProfileRequest extends FormRequest
                 'max:255',
                 Rule::unique('users', 'email')->ignore($user),
             ],
+            'locale' => ['nullable', 'string', Rule::in(['sr-Cyrl', 'sr-Latn', 'en'])],
             'jmbg' => ['nullable', 'string', 'digits:13'],
             'address' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],

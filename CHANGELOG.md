@@ -1,5 +1,21 @@
 # Changelog
 
+## [16.11.2026] Notifikacije: rezervacije, pozajmice, rokovi i dnevni digest
+
+Dodat email notification sloj za cirkulaciju sa deduplikacijom, queue-om i schedulerom.
+
+### Added
+
+- **Modeli i migracije** (`database/migrations/2026_11_16_*`, `app/Models/NotificationDelivery.php`) — `notification_deliveries` sa unique `dedupe_key`, `users.locale` i notifikaciona podešavanja u `library_settings`
+- **Servisi** (`app/Services/Notification/CirculationNotificationService.php`, `NotificationDeliveryService.php`) — potvrde za rezervacije i pozajmice, podsetnici, deduplikacija i evidentiranje statusa isporuke
+- **Queue slanje** (`app/Jobs/SendCirculationNotification.php`) — worker šalje email, a `notification_deliveries` se označava kao poslato tek nakon uspešnog slanja ili kao neuspešno nakon iscrpljenih pokušaja; `composer dev` sluša `emails` i `default` redove
+- **Mail sloj** (`app/Mail/CirculationNotificationMail.php`, `app/Enums/CirculationNotificationType.php`, `resources/views/emails/circulation/*`, `lang/*/emails.php`) — jedan generički Mailable sa tipovima i HTML/text šablonima na tri jezika
+- **Cron komande** (`notifications:reservation-expiring`, `notifications:user-loans-due`, `notifications:staff-daily-digest`) — podsetnici za istek rezervacije, rok vraćanja, prekoračenja i dnevni digest za bibliotekare
+- **Scheduler** (`routes/console.php`) — satni podsetnik za rezervacije i dnevni podsetnici/digest u 08:00
+- **Jezik primaoca** — `users.locale` i izbor jezika email obaveštenja u profilu
+- **Podešavanja biblioteke** (`app/DTOs/LibrarySettingsData.php`, `app/Enums/LoanReminderWindow.php`) — rokovi podsetnika, zajednički DTO za API odgovore i tipizovan prozor podsetnika; uključivanje/isključivanje staff i user notifikacija
+- **Testovi** (`tests/Feature/Auth/CirculationNotificationTest.php`) — potvrde, otkazivanja, istek, due/overdue podsetnici, dnevni digest, deduplikacija i statusi queue slanja
+
 ## [14.11.2026] Javni sajt: proizvodna početna, registracija škole, demo i FAQ
 
 ### Added

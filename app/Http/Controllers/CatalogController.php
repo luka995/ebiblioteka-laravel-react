@@ -33,9 +33,7 @@ class CatalogController extends Controller
 
         $user = $request->user();
         $library = $book->library;
-        $settings = $library->settings()->firstOrCreate([], [
-            'reservation_hours' => LibrarySettings::DEFAULT_RESERVATION_HOURS,
-        ]);
+        $settings = $library->settings()->firstOrCreate([], LibrarySettings::defaults());
 
         $isMember = $user->libraries()->whereKey($library->id)->exists();
 

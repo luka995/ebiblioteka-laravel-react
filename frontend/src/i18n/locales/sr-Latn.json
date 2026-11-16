@@ -149,7 +149,9 @@
     "confirmPassword": "Potvrda lozinke",
     "passwordUpdated": "Lozinka je izmenjena.",
     "passwordHint": "Potrebna je trenutna lozinka da biste postavili novu.",
-    "passwordAdminHint": "Postavite novu lozinku za „{{name}}“ (bez unosa stare lozinke)."
+    "passwordAdminHint": "Postavite novu lozinku za „{{name}}“ (bez unosa stare lozinke).",
+    "emailLanguage": "Jezik email obaveštenja",
+    "defaultLanguage": "Podrazumevani jezik"
   },
   "settings": {
     "title": "Podešavanja",
@@ -228,7 +230,21 @@
       "daysValue": "{{count}} dana",
       "priceValue": "{{amount}} RSD",
       "invalidLendDays": "Unesite broj dana između 1 i 365.",
-      "invalidOverduePrice": "Unesite iznos između 0 i 100000."
+      "invalidOverduePrice": "Unesite iznos između 0 i 100000.",
+      "reservationReminderHours": "Podsetnik pre isteka rezervacije (sati)",
+      "reservationReminderHoursHint": "Koliko sati pre isteka se korisniku šalje podsetnik.",
+      "loanReminderDays": "Podsetnik pre roka vraćanja (dani)",
+      "loanReminderDaysHint": "Koliko dana pre roka korisnik dobija podsetnik.",
+      "overdueReminderDays": "Podsetnik za prekoračenje (dani)",
+      "overdueReminderDaysHint": "Interval ponavljanja podsetnika za prekoračene pozajmice.",
+      "notificationsTitle": "Email notifikacije",
+      "notifyStaffOnReservation": "Obaveštavaj bibliotekare o novim rezervacijama",
+      "notifyStaffOnIssue": "Obaveštavaj bibliotekare o izdavanju knjige",
+      "notifyStaffOnReturn": "Obaveštavaj bibliotekare o vraćanju knjige",
+      "notifyStaffOnCancellation": "Obaveštavaj bibliotekare o otkazanim rezervacijama",
+      "notifyStaffDailyDigest": "Šalji bibliotekarima dnevni pregled",
+      "notifyUserReservationExpiry": "Obaveštavaj korisnike o isteku rezervacije",
+      "notifyUserLoanDue": "Obaveštavaj korisnike o roku vraćanja i prekoračenju"
     }
   },
   "membership": {

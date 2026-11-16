@@ -11,6 +11,7 @@ use App\Models\Library;
 use App\Models\LibrarySettings;
 use App\Models\Reservation;
 use App\Models\User;
+use App\Services\Notification\CirculationNotificationService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -24,7 +25,10 @@ use Illuminate\Validation\ValidationException;
  */
 class ReservationService
 {
-    public function __construct(private readonly BookHistoryService $history) {}
+    public function __construct(
+        private readonly BookHistoryService $history,
+        private readonly CirculationNotificationService $notifications,
+    ) {}
 
     /**
      * Rezervise prvu slobodnu kopiju naslova za korisnika.
@@ -62,7 +66,7 @@ class ReservationService
             ]);
         }
 
-        return DB::transaction(function () use ($user, $book, $library): Reservation {
+        $reservation = DB::transaction(function () use ($user, $book, $library): Reservation {
             $copy = $this->findAvailableCopy($book, $library);
 
             if ($copy === null) {
@@ -71,9 +75,7 @@ class ReservationService
                 ]);
             }
 
-            $settings = $library->settings()->firstOrCreate([], [
-                'reservation_hours' => LibrarySettings::DEFAULT_RESERVATION_HOURS,
-            ]);
+            $settings = $library->settings()->firstOrCreate([], LibrarySettings::defaults());
 
             $reservation = Reservation::create([
                 'library_id' => $library->id,
@@ -91,6 +93,10 @@ class ReservationService
 
             return $reservation;
         });
+
+        $this->notifications->reservationCreated($reservation);
+
+        return $reservation;
     }
 
     /**
@@ -152,7 +158,7 @@ class ReservationService
             return $reservation;
         }
 
-        return DB::transaction(function () use ($reservation, $actor): Reservation {
+        $cancelled = DB::transaction(function () use ($reservation, $actor): Reservation {
             $reservation->refresh();
 
             if (! $reservation->isActive()) {
@@ -174,6 +180,10 @@ class ReservationService
 
             return $reservation;
         });
+
+        $this->notifications->reservationCancelled($cancelled, $actor);
+
+        return $cancelled;
     }
 
     /**
@@ -190,7 +200,9 @@ class ReservationService
             ->where('valid_till', '<', now())
             ->orderBy('id')
             ->chunkById(100, function (Collection $reservations) use (&$processed): void {
-                DB::transaction(function () use ($reservations, &$processed): void {
+                $expiredReservations = [];
+
+                DB::transaction(function () use ($reservations, &$processed, &$expiredReservations): void {
                     $now = now();
                     $ids = $reservations->pluck('id');
                     $copyIds = $reservations->pluck('book_copy_id');
@@ -220,10 +232,16 @@ class ReservationService
                             null,
                             ['status' => ReservationStatus::Expired->value, 'reason' => 'expired'],
                         );
+
+                        $expiredReservations[] = $reservation;
                     }
 
                     $processed += $ids->count();
                 });
+
+                foreach ($expiredReservations as $reservation) {
+                    $this->notifications->reservationExpired($reservation);
+                }
             });
 
         return $processed;

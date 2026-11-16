@@ -41,6 +41,7 @@ export interface User {
   last_name: string | null
   username: string | null
   email: string
+  locale: string | null
   is_super_admin: boolean
   role: RoleValue | null
   role_label: string | null
@@ -126,8 +127,18 @@ export interface Library {
 
 export interface LibrarySettings {
   reservation_hours: number
+  reservation_reminder_hours: number
   lend_days: number
+  loan_reminder_days: number
+  overdue_reminder_days: number
   overdue_price_per_day: number | string
+  notify_staff_on_reservation: boolean
+  notify_staff_on_issue: boolean
+  notify_staff_on_return: boolean
+  notify_staff_on_cancellation: boolean
+  notify_staff_daily_digest: boolean
+  notify_user_reservation_expiry: boolean
+  notify_user_loan_due: boolean
 }
 
 export type LibraryRequestStatus = 'pending' | 'approved' | 'rejected'
