@@ -52,6 +52,12 @@ class BookCopyResource extends JsonResource
             'rec_error_notice' => $this->rec_error_notice,
             'status' => $this->status(),
             'active_write_off' => $this->whenLoaded('activeWriteOff', fn () => new BookCopyWriteOffResource($this->activeWriteOff)),
+            'active_reservation' => $this->whenLoaded('activeReservation', fn () => $this->activeReservation === null
+                ? null
+                : (new ReservationResource($this->activeReservation))->resolve($request)),
+            'active_borrow' => $this->whenLoaded('activeBorrow', fn () => $this->activeBorrow === null
+                ? null
+                : (new BorrowResource($this->activeBorrow))->resolve($request)),
             'deleted_at' => $this->deleted_at?->format('d.m.Y. H:i'),
             'created_at' => $this->created_at?->format('d.m.Y. H:i'),
             'updated_at' => $this->updated_at?->format('d.m.Y. H:i'),
@@ -71,6 +77,10 @@ class BookCopyResource extends JsonResource
 
         if ($this->borrowed) {
             return 'borrowed';
+        }
+
+        if ($this->reserved) {
+            return 'reserved';
         }
 
         if ($this->rec_error) {

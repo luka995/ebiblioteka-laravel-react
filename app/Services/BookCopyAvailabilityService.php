@@ -24,7 +24,7 @@ class BookCopyAvailabilityService
             ->whereDoesntHave('writeOffs', fn ($query) => $query->whereNull('cancelled_at'));
 
         $total = $inFund()->count();
-        $available = $inFund()->where('borrowed', false)->where('rec_error', false)->count();
+        $available = $inFund()->where('borrowed', false)->where('reserved', false)->where('rec_error', false)->count();
         $archived = BookCopy::onlyTrashed()->where('book_id', $book->id)->count();
         $writtenOff = BookCopy::where('book_id', $book->id)
             ->whereHas('writeOffs', fn ($query) => $query->whereNull('cancelled_at'))

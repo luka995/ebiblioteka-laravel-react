@@ -93,6 +93,26 @@ class Book extends Model
     }
 
     /**
+     * Rezervacije ovog naslova (ukljucujuci istoriju).
+     *
+     * @return HasMany<Reservation, $this>
+     */
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(Reservation::class);
+    }
+
+    /**
+     * Pozajmice ovog naslova (ukljucujuci istoriju).
+     *
+     * @return HasMany<Borrow, $this>
+     */
+    public function borrows(): HasMany
+    {
+        return $this->hasMany(Borrow::class);
+    }
+
+    /**
      * Root-relative URL lokalno otpremljene korice (npr. /storage/books/covers/slika.png),
      * ili null ako slika nije otpremljena. Eksterni `cover_url` je odvojeno polje.
      */

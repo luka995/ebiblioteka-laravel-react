@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ReservationStatus;
 use Database\Factories\BookCopyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -94,5 +95,45 @@ class BookCopy extends Model
     public function isWrittenOff(): bool
     {
         return $this->writeOffs()->whereNull('cancelled_at')->exists();
+    }
+
+    /**
+     * Rezervacije ove fizicke jedinice (ukljucujuci istoriju).
+     *
+     * @return HasMany<Reservation, $this>
+     */
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(Reservation::class);
+    }
+
+    /**
+     * Trenutna (aktivna) rezervacija kopije, ako postoji.
+     *
+     * @return HasOne<Reservation, $this>
+     */
+    public function activeReservation(): HasOne
+    {
+        return $this->hasOne(Reservation::class)->where('status', ReservationStatus::Active);
+    }
+
+    /**
+     * Pozajmice ove fizicke jedinice (ukljucujuci istoriju).
+     *
+     * @return HasMany<Borrow, $this>
+     */
+    public function borrows(): HasMany
+    {
+        return $this->hasMany(Borrow::class);
+    }
+
+    /**
+     * Trenutna (aktivna) pozajmica kopije, ako postoji.
+     *
+     * @return HasOne<Borrow, $this>
+     */
+    public function activeBorrow(): HasOne
+    {
+        return $this->hasOne(Borrow::class)->where('returned', false);
     }
 }

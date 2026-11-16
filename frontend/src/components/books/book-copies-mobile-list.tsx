@@ -18,6 +18,7 @@ import type { BookCopy, BookCopyStatus } from '@/types'
 const STATUS_VARIANTS: Record<BookCopyStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   available: 'default',
   borrowed: 'secondary',
+  reserved: 'outline',
   record_error: 'outline',
   written_off: 'destructive',
   archived: 'secondary',

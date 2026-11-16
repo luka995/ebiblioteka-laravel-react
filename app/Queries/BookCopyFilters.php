@@ -44,7 +44,7 @@ class BookCopyFilters
     private const ORIGINS = ['ob', 'ku', 'ra', 'po'];
 
     /** @var list<string> */
-    private const STATUSES = ['available', 'borrowed', 'record_error', 'written_off'];
+    private const STATUSES = ['available', 'borrowed', 'reserved', 'record_error', 'written_off'];
 
     /**
      * @param  array<string, mixed>  $filters
@@ -205,6 +205,7 @@ class BookCopyFilters
             $query
                 ->whereDoesntHave('activeWriteOff')
                 ->where('borrowed', false)
+                ->where('reserved', false)
                 ->where('rec_error', false);
 
             return;
@@ -212,6 +213,12 @@ class BookCopyFilters
 
         if ($status === 'written_off') {
             $query->whereHas('activeWriteOff');
+
+            return;
+        }
+
+        if ($status === 'reserved') {
+            $query->where('reserved', true);
 
             return;
         }

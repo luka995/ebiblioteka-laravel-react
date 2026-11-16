@@ -130,6 +130,28 @@ services:
     networks:
       - ebiblioteka-network
 
+  # Drzi Laravel scheduler pokrenutim; trenutno obradjuje istekle rezervacije
+  # (i buduce periodicne zadatke).
+  scheduler:
+    build:
+      context: ./php
+      args:
+        APP_TIMEZONE: Europe/Belgrade
+    container_name: ebiblioteka-scheduler
+    user: "33:33"
+    working_dir: /var/www/html
+    environment:
+      TZ: Europe/Belgrade
+    volumes:
+      - ./:/var/www/html:rw
+    command: php artisan schedule:work
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ebiblioteka-network
+
 networks:
   ebiblioteka-network:
     driver: bridge

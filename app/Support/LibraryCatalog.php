@@ -74,6 +74,7 @@ class LibraryCatalog
             ->withCount([
                 'activeCopies as available_count' => fn ($query) => $query
                     ->where('borrowed', false)
+                    ->where('reserved', false)
                     ->where('rec_error', false)
                     ->whereDoesntHave('writeOffs', fn ($writeOff) => $writeOff->whereNull('cancelled_at')),
             ])

@@ -257,6 +257,7 @@ class BooksController extends Controller
                     ->whereDoesntHave('writeOffs', fn ($writeOff) => $writeOff->whereNull('cancelled_at')),
                 'activeCopies as available_count' => fn ($query) => $query
                     ->where('borrowed', false)
+                    ->where('reserved', false)
                     ->where('rec_error', false)
                     ->whereDoesntHave('writeOffs', fn ($writeOff) => $writeOff->whereNull('cancelled_at')),
             ]);
@@ -274,6 +275,7 @@ class BooksController extends Controller
                 ->whereDoesntHave('writeOffs', fn ($writeOff) => $writeOff->whereNull('cancelled_at')),
             'activeCopies as available_count' => fn ($sub) => $sub
                 ->where('borrowed', false)
+                ->where('reserved', false)
                 ->where('rec_error', false)
                 ->whereDoesntHave('writeOffs', fn ($writeOff) => $writeOff->whereNull('cancelled_at')),
         ]);

@@ -155,6 +155,7 @@ export function BookCopyFiltersPanel({ filters, onApply, onClear }: BookCopyFilt
           { value: '', label: t('books.copies.filters.statusAll') },
           { value: 'available', label: t('books.status.available') },
           { value: 'borrowed', label: t('books.status.borrowed') },
+          { value: 'reserved', label: t('books.status.reserved') },
           { value: 'record_error', label: t('books.status.record_error') },
           { value: 'written_off', label: t('books.status.written_off') },
         ])}

@@ -94,7 +94,15 @@ class BookCopiesController extends Controller
 
     public function show(BookCopy $bookCopy): BookCopyResource
     {
-        return new BookCopyResource($bookCopy->load('book', 'activeWriteOff', 'library'));
+        return new BookCopyResource($bookCopy->load([
+            'book.authors',
+            'activeWriteOff',
+            'library.settings',
+            'activeReservation.user',
+            'activeBorrow.user',
+            'activeBorrow.library.settings',
+            'activeBorrow.book.authors',
+        ]));
     }
 
     public function update(UpdateBookCopyRequest $request, BookCopy $bookCopy, BookCopyService $copies): BookCopyResource
@@ -108,6 +116,10 @@ class BookCopiesController extends Controller
     {
         if ($bookCopy->borrowed) {
             return response()->json(['message' => __('validation.custom.book_copy_borrowed')], 422);
+        }
+
+        if ($bookCopy->reserved) {
+            return response()->json(['message' => __('validation.custom.book_copy_reserved')], 422);
         }
 
         $bookCopy->delete();

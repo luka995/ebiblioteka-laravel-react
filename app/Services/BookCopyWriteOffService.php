@@ -28,6 +28,18 @@ class BookCopyWriteOffService
             ]);
         }
 
+        if ($copy->borrowed) {
+            throw ValidationException::withMessages([
+                'reason' => __('validation.custom.book_copy_borrowed'),
+            ]);
+        }
+
+        if ($copy->reserved) {
+            throw ValidationException::withMessages([
+                'reason' => __('validation.custom.book_copy_reserved'),
+            ]);
+        }
+
         if ($copy->writeOffs()->whereNull('cancelled_at')->exists()) {
             throw ValidationException::withMessages([
                 'reason' => __('validation.custom.book_copy_duplicate_order_number'),
