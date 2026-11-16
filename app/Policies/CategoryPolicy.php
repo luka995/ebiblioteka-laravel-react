@@ -14,7 +14,7 @@ class CategoryPolicy
 
     public function view(User $actor, Category $category): bool
     {
-        return $actor->isSuperAdmin() || $actor->isLibraryAdmin();
+        return $actor->isSuperAdmin() || $actor->isLibraryAdminAnywhere();
     }
 
     public function create(User $actor): bool
@@ -24,11 +24,11 @@ class CategoryPolicy
 
     public function update(User $actor, Category $category): bool
     {
-        return $actor->isSuperAdmin() || $actor->isLibraryAdmin();
+        return $actor->isSuperAdmin() || $actor->isLibraryAdminAnywhere();
     }
 
     public function delete(User $actor, Category $category): bool
     {
-        return $actor->isSuperAdmin() || $actor->isLibraryAdmin();
+        return $actor->isSuperAdmin() || $actor->isLibraryAdminAnywhere();
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Models\Library;
 use App\Models\Place;
 use App\Models\Region;
@@ -25,8 +25,8 @@ function makeAdminLibrary(): Library
 
 function makeLibraryAdmin(Library $library): User
 {
-    $admin = User::factory()->role(UserRole::LibraryAdmin)->create();
-    $admin->libraries()->attach($library->id);
+    $admin = User::factory()->create();
+    $admin->libraries()->attach($library->id, ['role' => LibraryRole::LibraryAdmin->value]);
 
     return $admin;
 }
@@ -57,8 +57,7 @@ test('library admin can create a user within their library', function () {
         'username' => 'petar.petrovic',
         'email' => 'petar@example.com',
         'password' => 'secret123',
-        'role' => 'user',
-        'libraries' => [$library->id],
+        'libraries' => [['id' => $library->id, 'role' => 'user']],
     ], libraryAdminHeaders())
         ->assertCreated()
         ->assertJsonPath('data.libraries.0.id', $library->id);
@@ -75,8 +74,7 @@ test('library admin cannot create a user in a library they do not manage', funct
         'username' => 'petar.petrovic2',
         'email' => 'petar2@example.com',
         'password' => 'secret123',
-        'role' => 'user',
-        'libraries' => [$other->id],
+        'libraries' => [['id' => $other->id, 'role' => 'user']],
     ], libraryAdminHeaders())
         ->assertUnprocessable();
 });
@@ -110,7 +108,7 @@ test('library admin sees only tags of the active library', function () {
     $libraryA = makeAdminLibrary();
     $libraryB = makeAdminLibrary();
     $admin = makeLibraryAdmin($libraryA);
-    $admin->libraries()->attach($libraryB->id);
+    $admin->libraries()->attach($libraryB->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $this->withSession(['active_library_id' => $libraryA->id]);
 
     $tagA = Tag::factory()->for($libraryA)->create();
@@ -126,7 +124,7 @@ test('library admin cannot override the active library with an explicit library_
     $libraryA = makeAdminLibrary();
     $libraryB = makeAdminLibrary();
     $admin = makeLibraryAdmin($libraryA);
-    $admin->libraries()->attach($libraryB->id);
+    $admin->libraries()->attach($libraryB->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $this->withSession(['active_library_id' => $libraryA->id]);
 
     $tagA = Tag::factory()->for($libraryA)->create();
@@ -253,7 +251,9 @@ test('bulk tag assign rejects a user who is not a library member', function () {
 });
 
 test('librarian and regular user cannot access users or tags', function () {
-    $librarian = User::factory()->role(UserRole::Librarian)->create();
+    $library = makeAdminLibrary();
+    $librarian = User::factory()->create();
+    $librarian->libraries()->attach($library->id, ['role' => LibraryRole::Librarian->value]);
     $regular = User::factory()->create();
 
     $this->actingAs($librarian)->getJson('/api/v1/users', libraryAdminHeaders())->assertForbidden();

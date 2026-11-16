@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\LibraryRole;
 use App\Models\Library;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -93,31 +94,44 @@ class LibraryMembershipService
     }
 
     /**
-     * Sinhronizuje aktivna članstva iz edit forme:
-     * - aktivna koja više nisu izabrana se trajno uklanjaju,
-     * - izabrana se dodaju, a postojeća deaktivirana se reaktiviraju,
-     * - deaktivirana koja ostaju deaktivirana se ne diraju.
+     * Sinhronizuje aktivna članstva i njihove uloge iz edit forme.
      *
-     * @param  array<int, int>  $libraryIds
+     * @param  array<int, LibraryRole|string>  $memberships  library_id => role
      */
-    public function syncMemberships(User $user, array $libraryIds): void
+    public function syncMemberships(User $user, array $memberships): void
     {
-        $libraryIds = array_values(array_unique(array_map('intval', $libraryIds)));
+        $desired = [];
+
+        foreach ($memberships as $key => $value) {
+            // Podrzan je i stari format [library_id, library_id, ...] radi
+            // kompatibilnosti sa testovima i eventualnim internim pozivima.
+            if (! $value instanceof LibraryRole
+                && is_int($key)
+                && (is_int($value) || ctype_digit((string) $value))) {
+                $desired[(int) $value] = LibraryRole::User;
+
+                continue;
+            }
+
+            $desired[(int) $key] = $value instanceof LibraryRole
+                ? $value
+                : LibraryRole::from((string) $value);
+        }
 
         $current = $user->librariesWithTrashed()->get()->keyBy('id');
 
-        DB::transaction(function () use ($user, $libraryIds, $current) {
+        DB::transaction(function () use ($user, $desired, $current): void {
             foreach ($current as $id => $library) {
                 $pivot = $library->pivot;
 
-                if ($pivot !== null && ! $pivot->trashed() && ! in_array($id, $libraryIds, true)) {
+                if ($pivot !== null && ! $pivot->trashed() && ! array_key_exists($id, $desired)) {
                     $pivot->forceDelete();
                 }
             }
 
-            foreach ($libraryIds as $id) {
+            foreach ($desired as $id => $role) {
                 if (! $current->has($id)) {
-                    $user->libraries()->attach($id);
+                    $user->libraries()->attach($id, ['role' => $role->value]);
 
                     continue;
                 }
@@ -127,6 +141,8 @@ class LibraryMembershipService
                 if ($pivot?->trashed()) {
                     $pivot->restore();
                 }
+
+                $pivot?->update(['role' => $role->value]);
             }
         });
     }

@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Models\Library;
 use App\Models\Place;
 use App\Models\Region;
@@ -32,7 +32,7 @@ test('superadmin can show a user with full profile', function () {
 });
 
 test('non superadmin cannot show or mutate a user', function () {
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->create();
     $target = User::factory()->create();
 
     $this->actingAs($libraryAdmin)
@@ -56,8 +56,7 @@ test('superadmin can update a user without changing password', function () {
         'last_name' => 'Anić',
         'username' => 'ana.anic',
         'email' => 'after@example.com',
-        'role' => 'librarian',
-        'libraries' => [$library->id],
+        'libraries' => [['id' => $library->id, 'role' => 'librarian']],
     ], crudApiHeaders())
         ->assertOk()
         ->assertJsonPath('data.first_name', 'Ana')
@@ -80,7 +79,6 @@ test('superadmin can regenerate a users barcode explicitly', function () {
         'first_name' => $user->first_name,
         'last_name' => $user->last_name,
         'email' => $user->email,
-        'role' => $user->role->value,
         'regenerate_barcode' => true,
     ], crudApiHeaders())
         ->assertOk()
@@ -174,7 +172,7 @@ test('superadmin can change another user password without current password', fun
 });
 
 test('non superadmin cannot change another user password', function () {
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->create();
     $target = User::factory()->create();
 
     $this->actingAs($libraryAdmin)->putJson("/api/v1/users/{$target->id}/password", [
@@ -185,9 +183,9 @@ test('non superadmin cannot change another user password', function () {
 });
 
 test('library admin cannot soft delete or force delete a user even when sharing a library', function () {
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->create();
     $library = Library::factory()->create();
-    $libraryAdmin->libraries()->attach($library->id);
+    $libraryAdmin->libraries()->attach($library->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $target = User::factory()->create();
     $target->libraries()->attach($library->id);
 
@@ -201,9 +199,9 @@ test('library admin cannot soft delete or force delete a user even when sharing 
 });
 
 test('library admin editing a user keeps memberships in libraries it does not manage', function () {
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->create();
     $managed = Library::factory()->create();
-    $libraryAdmin->libraries()->attach($managed->id);
+    $libraryAdmin->libraries()->attach($managed->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $foreign = Library::factory()->create();
     $target = User::factory()->create(['email' => 'clan@example.com']);
     $target->libraries()->attach([$managed->id, $foreign->id]);
@@ -213,8 +211,7 @@ test('library admin editing a user keeps memberships in libraries it does not ma
         'last_name' => 'Anić',
         'username' => 'ana.anic',
         'email' => 'clan@example.com',
-        'role' => 'user',
-        'libraries' => [$managed->id],
+        'libraries' => [['id' => $managed->id, 'role' => 'user']],
     ], crudApiHeaders())->assertOk();
 
     expect($target->fresh()->libraries()->pluck('libraries.id')->all())
@@ -223,9 +220,9 @@ test('library admin editing a user keeps memberships in libraries it does not ma
 });
 
 test('library admin editing a user can remove it from a managed library but not from others', function () {
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->create();
     $managed = Library::factory()->create();
-    $libraryAdmin->libraries()->attach($managed->id);
+    $libraryAdmin->libraries()->attach($managed->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $foreign = Library::factory()->create();
     $target = User::factory()->create(['email' => 'clan2@example.com']);
     $target->libraries()->attach([$managed->id, $foreign->id]);
@@ -235,7 +232,6 @@ test('library admin editing a user can remove it from a managed library but not 
         'last_name' => 'Anić',
         'username' => 'ana.anic2',
         'email' => 'clan2@example.com',
-        'role' => 'user',
         'libraries' => [],
     ], crudApiHeaders())->assertOk();
 
@@ -283,9 +279,9 @@ test('bulk account deletion refuses to delete own account', function () {
 });
 
 test('library admin cannot bulk soft or force delete accounts', function () {
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->create();
     $library = Library::factory()->create();
-    $libraryAdmin->libraries()->attach($library->id);
+    $libraryAdmin->libraries()->attach($library->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $target = User::factory()->create();
     $target->libraries()->attach($library->id);
 

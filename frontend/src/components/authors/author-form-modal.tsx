@@ -26,7 +26,7 @@ export function AuthorFormModal({ open, onClose, onSuccess, author }: AuthorForm
   const queryClient = useQueryClient()
   const { user } = useAuth()
   const editing = Boolean(author)
-  const isSuperAdmin = user?.role === 'superadmin'
+  const isSuperAdmin = user?.is_super_admin
   const [selectedLibrary, setSelectedLibrary] = useState<LibraryOption[]>([])
 
   const schema = useMemo(

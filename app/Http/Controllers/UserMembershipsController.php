@@ -6,6 +6,7 @@ use App\Models\Library;
 use App\Models\User;
 use App\Services\ActiveLibraryService;
 use App\Services\LibraryMembershipService;
+use App\Services\UserAccessContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +22,8 @@ class UserMembershipsController extends Controller
 
         $memberships->deactivateMemberships($user, $data['library_ids']);
 
+        app(UserAccessContext::class)->flush($user);
+
         return response()->json(status: 204);
     }
 
@@ -32,6 +35,8 @@ class UserMembershipsController extends Controller
         ]);
 
         $memberships->activateMemberships($user, $data['library_ids']);
+
+        app(UserAccessContext::class)->flush($user);
 
         return response()->json(status: 204);
     }
@@ -46,16 +51,16 @@ class UserMembershipsController extends Controller
         $actor = $request->user();
 
         if (! $actor->isSuperAdmin()) {
-            $managed = $actor->libraries()->pluck('libraries.id')->all();
-
             foreach ($data['library_ids'] as $libraryId) {
-                if (! in_array((int) $libraryId, $managed, true)) {
+                if (! $actor->isLibraryAdminIn((int) $libraryId)) {
                     return response()->json(['message' => __('validation.custom.library_not_managed')], 422);
                 }
             }
         }
 
         $memberships->removeMemberships($user, $data['library_ids']);
+
+        app(UserAccessContext::class)->flush($user);
 
         return response()->json(status: 204);
     }
@@ -100,7 +105,7 @@ class UserMembershipsController extends Controller
 
         $libraryId = (int) $library->id;
 
-        if (! $actor->isSuperAdmin() && ! $actor->managesLibrary($libraryId)) {
+        if (! $actor->isSuperAdmin() && ! $actor->isLibraryAdminIn($libraryId)) {
             return response()->json(['message' => __('validation.custom.library_not_managed')], 422);
         }
 
@@ -127,6 +132,10 @@ class UserMembershipsController extends Controller
                 };
             }
         });
+
+        foreach ($users as $user) {
+            app(UserAccessContext::class)->flush($user);
+        }
 
         return response()->json(status: 204);
     }

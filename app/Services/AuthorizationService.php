@@ -6,12 +6,14 @@ use App\Models\Author;
 use App\Models\BarcodePrintJob;
 use App\Models\Book;
 use App\Models\BookCopy;
+use App\Models\Borrow;
 use App\Models\Category;
 use App\Models\InventoryBook;
 use App\Models\Library;
 use App\Models\News;
 use App\Models\Place;
 use App\Models\Region;
+use App\Models\Reservation;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -75,6 +77,8 @@ class AuthorizationService
             'inventory_books' => $this->collectionPermissions($actor, InventoryBook::class),
             'barcode_print_jobs' => $this->collectionPermissions($actor, BarcodePrintJob::class),
             'news' => $this->collectionPermissions($actor, News::class),
+            'reservations' => $this->collectionPermissions($actor, Reservation::class),
+            'borrows' => $this->collectionPermissions($actor, Borrow::class),
         ];
     }
 }

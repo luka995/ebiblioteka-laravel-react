@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Enums\BarcodePrintFormat;
+use App\Enums\LibraryRole;
+use App\Enums\ReservationStatus;
 use App\Http\Requests\PrintUserBarcodeRequest;
 use App\Http\Requests\PrintUserBulkBarcodeRequest;
 use App\Http\Requests\StoreUserRequest;
@@ -18,9 +20,12 @@ use App\Services\AuthorizationService;
 use App\Services\BarcodePdfService;
 use App\Services\LibraryMembershipService;
 use App\Services\Mail\UserMailService;
+use App\Services\ReservationService;
+use App\Services\UserAccessContext;
 use App\Support\BarCode;
 use App\Support\BarCodeImage;
 use App\Support\BarcodeLabel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,6 +33,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Arr;
 
 class UsersController extends Controller
 {
@@ -53,15 +59,31 @@ class UsersController extends Controller
             unset($filters['library_id']);
         }
 
+        if (! empty($filters['role'])) {
+            $active = $activeLibrary->resolve($actor);
+            $roleLibraryId = ! empty($filters['library_id'])
+                ? (int) $filters['library_id']
+                : $active?->id;
+
+            if ($roleLibraryId !== null) {
+                $filters['role_library_id'] = $roleLibraryId;
+            }
+        }
+
         $query = (new UserFilters)->apply(
             User::query()->with(['libraries', 'librariesWithTrashed']),
             $filters
         );
+        if ($actor->isSuperAdmin()) {
+            // Superadmin vidi sve, ili aktivnu biblioteku ako je izabrao.
+            if (empty($filters['library_id'])) {
+                $query = $activeLibrary->scopeUsers($query, $actor);
+            }
+        } else {
+            // Ostali korisnici uvek rade u kontekstu aktivne biblioteke.
+            $library = $activeLibrary->requireActiveLibrary($actor);
 
-        if (! ($actor->isSuperAdmin() && ! empty($filters['library_id']))) {
-            // Superadmin sa izabranim library_id filterom se ne sužava i na aktivnu
-            // biblioteku (filter ima prednost); ostali idu kroz scope po aktivnoj biblioteci.
-            $query = $activeLibrary->scopeUsers($query, $actor);
+            $query->whereHas('libraries', fn (Builder $membership) => $membership->whereKey($library->id));
         }
 
         $users = $query
@@ -79,23 +101,45 @@ class UsersController extends Controller
     {
         $data = $request->validated();
         $plainPassword = $data['password'];
+        $membershipRoles = $request->memberships();
 
-        $user = new User($data);
+        if (! $request->user()->isSuperAdmin()) {
+            $active = app(ActiveLibraryService::class)->resolve($request->user());
+
+            if ($active !== null) {
+                $membershipRoles[$active->id] ??= LibraryRole::User;
+            }
+        }
+
+        $user = new User(Arr::except($data, ['libraries']));
         $user->name = trim($data['first_name'].' '.$data['last_name']);
         $user->password = Hash::make($plainPassword);
         $user->bar_code = BarCode::generate();
         $user->save();
 
-        $memberships->syncMemberships($user, $data['libraries'] ?? []);
+        $memberships->syncMemberships($user, $membershipRoles);
+
+        app(UserAccessContext::class)->flush($user);
 
         app(UserMailService::class)->sendAccountCreated($user, $plainPassword);
 
         return new UserResource($user->load(['libraries', 'librariesWithTrashed', 'tags']));
     }
 
-    public function show(User $user): UserDetailResource
+    public function show(User $user, ReservationService $reservations): UserDetailResource
     {
-        return new UserDetailResource($user->load(['libraries', 'librariesWithTrashed', 'tags']));
+        $reservations->expireOverdue();
+
+        return new UserDetailResource($user->load([
+            'libraries',
+            'librariesWithTrashed',
+            'tags',
+            'reservations' => fn ($query) => $query
+                ->with(['book.authors', 'bookCopy', 'library'])
+                ->where('status', ReservationStatus::Active)
+                ->where('valid_till', '>', now())
+                ->orderBy('valid_till'),
+        ]));
     }
 
     public function barcode(User $user): Response
@@ -136,7 +180,7 @@ class UsersController extends Controller
             $data['password'] = Hash::make($data['password']);
         }
 
-        $user->fill($data);
+        $user->fill(Arr::except($data, ['libraries']));
         $user->name = trim($user->first_name.' '.$user->last_name);
 
         if ($regenerateBarcode) {
@@ -146,19 +190,31 @@ class UsersController extends Controller
         $user->save();
 
         if ($request->has('libraries')) {
-            $desired = array_values(array_unique(array_map('intval', $data['libraries'] ?? [])));
+            $membershipRoles = $request->memberships();
 
             if (! $request->user()->isSuperAdmin()) {
-                $managed = $request->user()->libraries()->pluck('libraries.id')->all();
-                $kept = $user->libraries()
-                    ->whereNotIn('libraries.id', $managed)
-                    ->pluck('libraries.id')
-                    ->all();
+                $active = app(ActiveLibraryService::class)->resolve($request->user());
 
-                $desired = array_values(array_unique([...$kept, ...$desired]));
+                if ($active !== null) {
+                    $current = $user->libraries()
+                        ->get()
+                        ->mapWithKeys(fn ($library): array => [
+                            (int) $library->id => $library->pivot->role,
+                        ])
+                        ->all();
+
+                    if (array_key_exists($active->id, $membershipRoles)) {
+                        $current[$active->id] = $membershipRoles[$active->id];
+                    } else {
+                        unset($current[$active->id]);
+                    }
+
+                    $membershipRoles = $current;
+                }
             }
 
-            $memberships->syncMemberships($user, $desired);
+            $memberships->syncMemberships($user, $membershipRoles);
+            app(UserAccessContext::class)->flush($user);
         }
 
         return new UserResource($user->load(['libraries', 'librariesWithTrashed', 'tags']));
@@ -166,9 +222,19 @@ class UsersController extends Controller
 
     public function updatePassword(UpdateUserPasswordRequest $request, User $user): JsonResponse
     {
+        $plainPassword = $request->string('password')->toString();
+
         $user->forceFill([
-            'password' => Hash::make($request->string('password')),
+            'password' => Hash::make($plainPassword),
         ])->save();
+
+        try {
+            app(UserMailService::class)->sendPasswordChanged($user, $plainPassword);
+        } catch (\Throwable $e) {
+            // Promena lozinke je već sačuvana; problem sa queue-om ne sme da
+            // vrati grešku administratoru.
+            report($e);
+        }
 
         return response()->json(status: 204);
     }
@@ -336,7 +402,7 @@ class UsersController extends Controller
 
         $libraryId = (int) $library->id;
 
-        if (! $actor->managesLibrary($libraryId)) {
+        if (! $actor->isLibraryAdminIn($libraryId)) {
             return response()->json(['message' => __('validation.custom.library_not_managed')], 422);
         }
 

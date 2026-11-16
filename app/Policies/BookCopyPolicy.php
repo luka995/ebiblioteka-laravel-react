@@ -14,7 +14,7 @@ class BookCopyPolicy
 
     public function view(User $actor, BookCopy $copy): bool
     {
-        return $actor->isStaff() && $this->inScope($actor, $copy);
+        return $this->inScope($actor, $copy);
     }
 
     public function create(User $actor): bool
@@ -24,27 +24,27 @@ class BookCopyPolicy
 
     public function update(User $actor, BookCopy $copy): bool
     {
-        return $actor->isStaff() && $this->inScope($actor, $copy);
+        return $this->inScope($actor, $copy);
     }
 
     public function delete(User $actor, BookCopy $copy): bool
     {
-        return $actor->isStaff() && $this->inScope($actor, $copy);
+        return $this->inScope($actor, $copy);
     }
 
     public function restore(User $actor, BookCopy $copy): bool
     {
-        return $actor->isStaff() && $this->inScope($actor, $copy);
+        return $this->inScope($actor, $copy);
     }
 
     public function forceDelete(User $actor, BookCopy $copy): bool
     {
-        return $actor->isStaff() && $this->inScope($actor, $copy);
+        return $this->inScope($actor, $copy);
     }
 
     public function writeOff(User $actor, BookCopy $copy): bool
     {
-        return $actor->isStaff() && $this->inScope($actor, $copy);
+        return $this->inScope($actor, $copy);
     }
 
     public function syncInventory(User $actor): bool
@@ -54,6 +54,6 @@ class BookCopyPolicy
 
     private function inScope(User $actor, BookCopy $copy): bool
     {
-        return $actor->isSuperAdmin() || $actor->managesLibrary($copy->library_id);
+        return $actor->isSuperAdmin() || $actor->isStaffIn($copy->library_id);
     }
 }

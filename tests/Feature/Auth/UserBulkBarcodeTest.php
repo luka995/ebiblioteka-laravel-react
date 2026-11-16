@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Models\Library;
 use App\Models\User;
 use App\Services\ActiveLibraryService;
@@ -35,9 +35,9 @@ test('superadmin can bulk regenerate barcodes', function () {
 });
 
 test('library admin can bulk regenerate barcodes for active library members', function () {
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->create();
     $library = Library::factory()->create();
-    $libraryAdmin->libraries()->attach($library->id);
+    $libraryAdmin->libraries()->attach($library->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $member = User::factory()->create(['bar_code' => '0000000001236']);
     $member->libraries()->attach($library->id);
 
@@ -54,10 +54,11 @@ test('library admin can bulk regenerate barcodes for active library members', fu
 });
 
 test('library admin without an active library cannot bulk regenerate barcodes', function () {
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->create();
     $first = Library::factory()->create();
     $second = Library::factory()->create();
-    $libraryAdmin->libraries()->attach([$first->id, $second->id]);
+    $libraryAdmin->libraries()->attach($first->id, ['role' => LibraryRole::LibraryAdmin->value]);
+    $libraryAdmin->libraries()->attach($second->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $member = User::factory()->create(['bar_code' => '0000000001236']);
     $member->libraries()->attach($first->id);
 
@@ -69,9 +70,9 @@ test('library admin without an active library cannot bulk regenerate barcodes', 
 });
 
 test('library admin cannot bulk regenerate barcodes for users outside the active library', function () {
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->create();
     $library = Library::factory()->create();
-    $libraryAdmin->libraries()->attach($library->id);
+    $libraryAdmin->libraries()->attach($library->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $outsider = User::factory()->create(['bar_code' => '0000000001236']);
 
     app(ActiveLibraryService::class)->set($libraryAdmin, $library->id);
@@ -84,7 +85,9 @@ test('library admin cannot bulk regenerate barcodes for users outside the active
 });
 
 test('librarian cannot bulk regenerate barcodes', function () {
-    $librarian = User::factory()->role(UserRole::Librarian)->create();
+    $library = Library::factory()->create();
+    $librarian = User::factory()->create();
+    $librarian->libraries()->attach($library->id, ['role' => LibraryRole::Librarian->value]);
     $target = User::factory()->create(['bar_code' => '0000000001236']);
 
     $this->actingAs($librarian)->postJson('/api/v1/users/bulk/barcode', [

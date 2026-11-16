@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\LibraryRole;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -17,6 +18,17 @@ class LibraryUserPivot extends Pivot
     use SoftDeletes;
 
     public $incrementing = false;
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'role' => LibraryRole::class,
+            'deleted_at' => 'datetime',
+        ];
+    }
 
     public function delete()
     {

@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { LibrarySelect, type LibraryOption } from '@/components/libraries/library-select'
 import { useAuth } from '@/hooks/useAuth'
-import type { RoleOption, User } from '@/types'
+import type { RoleOption, RoleValue, User } from '@/types'
 
 interface UserFormModalProps {
   open: boolean
@@ -24,13 +24,20 @@ interface UserFormModalProps {
   user?: User | null
 }
 
+interface MembershipDraft {
+  id: number
+  name: string
+  role: RoleValue
+}
+
 export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { user: actor, activeLibrary } = useAuth()
   const editing = Boolean(user)
-  const isSuperAdmin = actor?.role === 'superadmin'
-  const [selectedLibraries, setSelectedLibraries] = useState<LibraryOption[]>([])
+  const isSuperAdmin = actor?.is_super_admin === true
+  const [memberships, setMemberships] = useState<MembershipDraft[]>([])
+  const [activeRole, setActiveRole] = useState<RoleValue>('user')
   const [regenerateBarcode, setRegenerateBarcode] = useState(false)
 
   const rolesQuery = useQuery({
@@ -55,7 +62,6 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
           .or(z.literal('')),
         email: z.string().trim().min(1, t('errors.required')).email(t('errors.emailInvalid')).max(255),
         password: editing ? z.string().optional().or(z.literal('')) : z.string().min(8, t('errors.minPassword')),
-        role: z.string().min(1, t('errors.required')),
         jmbg: z.string().trim().regex(/^\d{13}$/, t('errors.jmbgInvalid')).optional().or(z.literal('')),
         address: z.string().trim().max(255).optional().or(z.literal('')),
         city: z.string().trim().max(255).optional().or(z.literal('')),
@@ -75,7 +81,6 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
       username: '',
       email: '',
       password: '',
-      role: '',
       jmbg: '',
       address: '',
       city: '',
@@ -92,35 +97,64 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
       username: user?.username ?? '',
       email: user?.email ?? '',
       password: '',
-      role: user?.role ?? '',
       jmbg: user?.jmbg ?? '',
       address: user?.address ?? '',
       city: user?.city ?? '',
       post_code: user?.post_code ?? '',
     })
-    setSelectedLibraries(isSuperAdmin ? (user?.libraries ?? []) : [])
+
+    setMemberships(
+      isSuperAdmin
+        ? (user?.libraries ?? []).map((library) => ({
+            id: library.id,
+            name: library.name,
+            role: library.role,
+          }))
+        : [],
+    )
+
+    const currentRole = activeLibrary
+      ? user?.libraries?.find((library) => library.id === activeLibrary.id)?.role
+      : null
+
+    setActiveRole(currentRole ?? 'user')
     setRegenerateBarcode(false)
-  }, [open, user, form]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, user, form, isSuperAdmin, activeLibrary]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleLibrariesChange = (next: LibraryOption[]) => {
+    setMemberships((current) =>
+      next.map((library) => ({
+        id: library.id,
+        name: library.name,
+        role: current.find((item) => item.id === library.id)?.role ?? 'user',
+      })),
+    )
+  }
+
+  const setMembershipRole = (id: number, role: RoleValue) => {
+    setMemberships((current) =>
+      current.map((membership) => (membership.id === id ? { ...membership, role } : membership)),
+    )
+  }
 
   const onSubmit = form.handleSubmit(async (values) => {
-    const libraryIds = isSuperAdmin
-      ? selectedLibraries.map((library) => library.id)
+    const libraries = isSuperAdmin
+      ? memberships.map((membership) => ({ id: membership.id, role: membership.role }))
       : activeLibrary
-        ? [activeLibrary.id]
-        : null
+        ? [{ id: activeLibrary.id, role: activeRole }]
+        : []
 
     const payload = {
       first_name: values.first_name,
       last_name: values.last_name,
       username: values.username || null,
       email: values.email,
-      role: values.role,
       jmbg: values.jmbg || null,
       address: values.address || null,
       city: values.city || null,
       post_code: values.post_code || null,
       ...(editing ? { regenerate_barcode: regenerateBarcode } : {}),
-      ...(libraryIds !== null ? { libraries: libraryIds } : {}),
+      libraries,
       ...(values.password ? { password: values.password } : {}),
     }
 
@@ -220,47 +254,21 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              {!editing ? (
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('fields.password')}</FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder={t('fields.password')} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ) : null}
+            {!editing ? (
               <FormField
                 control={form.control}
-                name="role"
+                name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('fields.role')}</FormLabel>
-                    <Select value={field.value || undefined} onValueChange={field.onChange}>
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder={t('fields.selectPlaceholder')} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {rolesQuery.data?.map((role) => (
-                          <SelectItem key={role.value} value={role.value}>
-                            {role.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>{t('fields.password')}</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder={t('fields.password')} {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
+            ) : null}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
@@ -332,20 +340,64 @@ export function UserFormModal({ open, onClose, onSuccess, user }: UserFormModalP
               />
             </div>
 
-            {isSuperAdmin ? (
-              <div className="space-y-2">
-                <Label>{t('fields.libraries')}</Label>
-                <LibrarySelect value={selectedLibraries} onChange={setSelectedLibraries} />
-              </div>
-            ) : activeLibrary ? (
-              <div className="space-y-2">
-                <Label>{t('fields.libraries')}</Label>
-                <div className="flex items-start gap-2.5 rounded-md border bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
+            <div className="space-y-3">
+              <Label>{t('users.membershipRoles')}</Label>
+
+              {isSuperAdmin ? (
+                <>
+                  <LibrarySelect value={memberships} onChange={handleLibrariesChange} />
+                  {memberships.length > 0 ? (
+                    <div className="space-y-2">
+                      {memberships.map((membership) => (
+                        <div key={membership.id} className="flex items-center gap-3 rounded-md border p-2">
+                          <span className="min-w-0 flex-1 truncate text-sm">{membership.name}</span>
+                          <Select
+                            value={membership.role}
+                            onValueChange={(value) => setMembershipRole(membership.id, value as RoleValue)}
+                          >
+                            <SelectTrigger className="w-44">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {rolesQuery.data?.map((role) => (
+                                <SelectItem key={role.value} value={role.value}>
+                                  {role.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">{t('users.noMemberships')}</p>
+                  )}
+                </>
+              ) : activeLibrary ? (
+                <div className="flex items-start gap-3 rounded-md border bg-muted/40 px-3 py-2.5">
                   <Building2 className="mt-0.5 size-4 shrink-0 text-brand" />
-                  <p>{t('users.librariesActiveLibrary', { library: activeLibrary.name })}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-muted-foreground">
+                      {t('users.librariesActiveLibrary', { library: activeLibrary.name })}
+                    </p>
+                  </div>
+                  <Select value={activeRole} onValueChange={(value) => setActiveRole(value as RoleValue)}>
+                    <SelectTrigger className="w-44">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {rolesQuery.data?.map((role) => (
+                        <SelectItem key={role.value} value={role.value}>
+                          {role.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-            ) : null}
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('users.activeLibraryRequired')}</p>
+              )}
+            </div>
 
             {editing ? (
               <label className="flex items-start gap-3 rounded-md border bg-muted/40 px-3 py-2.5 text-sm">

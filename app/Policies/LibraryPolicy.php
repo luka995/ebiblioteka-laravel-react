@@ -14,8 +14,7 @@ class LibraryPolicy
 
     public function view(User $actor, Library $library): bool
     {
-        return $actor->isSuperAdmin()
-            || ($actor->isLibraryAdmin() && $actor->managesLibrary($library->id));
+        return $actor->isSuperAdmin() || $actor->isLibraryAdminIn($library->id);
     }
 
     public function create(User $actor): bool
@@ -26,6 +25,15 @@ class LibraryPolicy
     public function update(User $actor, Library $library): bool
     {
         return $actor->isSuperAdmin();
+    }
+
+    /**
+     * Podesavanja biblioteke (npr. trajanje rezervacije) moze da menja
+     * superadmin ili administrator te biblioteke.
+     */
+    public function updateSettings(User $actor, Library $library): bool
+    {
+        return $actor->isSuperAdmin() || $actor->isLibraryAdminIn($library->id);
     }
 
     public function delete(User $actor, Library $library): bool

@@ -31,6 +31,7 @@ type Mode = 'toggle' | 'delete'
 interface LibraryRow {
   id: number
   name: string
+  roleLabel: string
   deactivated: boolean
 }
 
@@ -53,12 +54,22 @@ export function UserMembershipModal({ open, onClose, user, mode, onSuccess }: Us
   const deactivated = user.deactivated_libraries ?? []
 
   const rows: LibraryRow[] = [
-    ...active.map((library) => ({ id: library.id, name: library.name, deactivated: false })),
-    ...deactivated.map((library) => ({ id: library.id, name: library.name, deactivated: true })),
+    ...active.map((library) => ({
+      id: library.id,
+      name: library.name,
+      roleLabel: library.role_label,
+      deactivated: false,
+    })),
+    ...deactivated.map((library) => ({
+      id: library.id,
+      name: library.name,
+      roleLabel: library.role_label,
+      deactivated: true,
+    })),
   ]
 
   const scoped = activeLibrary !== null
-  const isSuperAdmin = actor?.role === 'superadmin'
+  const isSuperAdmin = actor?.is_super_admin
   const managedIds = useMemo(() => new Set(actorLibraries.map((library) => library.id)), [actorLibraries])
   const displayRows = isSuperAdmin ? rows : rows.filter((library) => managedIds.has(library.id))
 
@@ -141,6 +152,9 @@ export function UserMembershipModal({ open, onClose, user, mode, onSuccess }: Us
                       onCheckedChange={() => toggleSelected(library.id)}
                     />
                     <span className="min-w-0 flex-1 truncate text-sm">{library.name}</span>
+                    <Badge variant="outline" className="border-transparent">
+                      {library.roleLabel}
+                    </Badge>
                     <Badge variant={library.deactivated ? 'secondary' : 'default'} className="border-transparent">
                       {library.deactivated ? t('membership.deactivated') : t('membership.active')}
                     </Badge>

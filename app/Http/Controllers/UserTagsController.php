@@ -31,7 +31,7 @@ class UserTagsController extends Controller
 
         $actor = $request->user();
 
-        if (! $actor->managesLibrary($libraryId)) {
+        if (! $actor->isSuperAdmin() && ! $actor->isLibraryAdminIn($libraryId)) {
             return response()->json(['message' => __('validation.custom.library_not_managed')], 422);
         }
 
@@ -92,7 +92,7 @@ class UserTagsController extends Controller
         $userIds = array_values(array_unique(array_map('intval', $data['user_ids'])));
         $tagIds = array_values(array_unique(array_map('intval', $data['tag_ids'])));
 
-        if (! $actor->managesLibrary($libraryId)) {
+        if (! $actor->isSuperAdmin() && ! $actor->isLibraryAdminIn($libraryId)) {
             return response()->json(['message' => __('validation.custom.library_not_managed')], 422);
         }
 

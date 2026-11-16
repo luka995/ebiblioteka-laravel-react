@@ -19,16 +19,16 @@ class InventoryBookPolicy
 
     public function view(User $actor, InventoryBook $book): bool
     {
-        return $actor->isStaff() && $this->inScope($actor, $book);
+        return $this->inScope($actor, $book);
     }
 
     public function download(User $actor, InventoryBook $book): bool
     {
-        return $actor->isStaff() && $this->inScope($actor, $book);
+        return $this->inScope($actor, $book);
     }
 
     private function inScope(User $actor, InventoryBook $book): bool
     {
-        return $actor->isSuperAdmin() || $actor->managesLibrary($book->library_id);
+        return $actor->isSuperAdmin() || $actor->isStaffIn($book->library_id);
     }
 }

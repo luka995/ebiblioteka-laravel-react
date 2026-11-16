@@ -19,21 +19,21 @@ class BarcodePrintJobPolicy
 
     public function view(User $actor, BarcodePrintJob $job): bool
     {
-        return $actor->isStaff() && $this->inScope($actor, $job);
+        return $this->inScope($actor, $job);
     }
 
     public function download(User $actor, BarcodePrintJob $job): bool
     {
-        return $actor->isStaff() && $this->inScope($actor, $job);
+        return $this->inScope($actor, $job);
     }
 
     public function delete(User $actor, BarcodePrintJob $job): bool
     {
-        return $actor->isStaff() && $this->inScope($actor, $job);
+        return $this->inScope($actor, $job);
     }
 
     private function inScope(User $actor, BarcodePrintJob $job): bool
     {
-        return $actor->isSuperAdmin() || $actor->managesLibrary($job->library_id);
+        return $actor->isSuperAdmin() || $actor->isStaffIn($job->library_id);
     }
 }

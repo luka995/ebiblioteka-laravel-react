@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Models\Book;
 use App\Models\BookCopy;
 use App\Models\BookCopyWriteOff;
@@ -28,10 +28,10 @@ function bookCopyBook(Library $library): Book
     return Book::factory()->for($library)->create();
 }
 
-function bookCopyStaff(Library $library, UserRole $role = UserRole::Librarian): User
+function bookCopyStaff(Library $library, LibraryRole $role = LibraryRole::Librarian): User
 {
-    $user = User::factory()->role($role)->create();
-    $user->libraries()->attach($library->id);
+    $user = User::factory()->create();
+    $user->libraries()->attach($library->id, ['role' => $role->value]);
 
     return $user;
 }

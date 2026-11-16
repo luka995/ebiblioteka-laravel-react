@@ -2,8 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Enums\LibraryRole;
+use App\Models\Library;
 use App\Models\User;
-use App\Enums\UserRole;
+use App\Services\GlobalSettings;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -31,22 +33,29 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
-            'role' => UserRole::User,
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
         ];
     }
 
-    public function role(UserRole $role): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'role' => $role,
-        ]);
-    }
-
+    /**
+     * Globalna superadmin privilegija se cuva u settings tabeli.
+     */
     public function superAdmin(): static
     {
-        return $this->role(UserRole::SuperAdmin);
+        return $this->afterCreating(function (User $user): void {
+            app(GlobalSettings::class)->addSuperAdmin((int) $user->id);
+        });
+    }
+
+    /**
+     * Dodaje aktivno clanstvo sa konkretnom ulogom u biblioteci.
+     */
+    public function libraryRole(Library $library, LibraryRole $role = LibraryRole::User): static
+    {
+        return $this->afterCreating(function (User $user) use ($library, $role): void {
+            $user->libraries()->attach($library->id, ['role' => $role->value]);
+        });
     }
 
     /**

@@ -27,7 +27,7 @@ export function CategoryFormModal({ open, onClose, onSuccess, category }: Catego
   const queryClient = useQueryClient()
   const { user, activeLibrary } = useAuth()
   const editing = Boolean(category)
-  const isSuperAdmin = user?.role === 'superadmin'
+  const isSuperAdmin = user?.is_super_admin
   const [selectedLibrary, setSelectedLibrary] = useState<LibraryOption[]>([])
   const [parent, setParent] = useState<CategoryOption | null>(null)
 

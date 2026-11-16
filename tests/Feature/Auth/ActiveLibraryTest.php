@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Models\Library;
 use App\Models\Place;
 use App\Models\Region;
@@ -37,7 +37,7 @@ test('selectable returns all non-deleted libraries for superadmin', function () 
 });
 
 test('selectable returns only pivot libraries for non-superadmin', function () {
-    $user = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $user = User::factory()->create();
     $own = makeLibrary('Moja');
     $other = makeLibrary('Tudja');
     $user->libraries()->attach($own->id);
@@ -49,7 +49,7 @@ test('selectable returns only pivot libraries for non-superadmin', function () {
 });
 
 test('resolve auto-selects single library for non-superadmin', function () {
-    $user = User::factory()->role(UserRole::Librarian)->create();
+    $user = User::factory()->create();
     $library = makeLibrary('Jedina');
     $user->libraries()->attach($library->id);
 
@@ -66,7 +66,7 @@ test('resolve returns null for superadmin without selection', function () {
 });
 
 test('resolve returns null for non-superadmin with multiple libraries and no selection', function () {
-    $user = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $user = User::factory()->create();
     $user->libraries()->attach(makeLibrary('Prva')->id);
     $user->libraries()->attach(makeLibrary('Druga')->id);
 
@@ -74,7 +74,7 @@ test('resolve returns null for non-superadmin with multiple libraries and no sel
 });
 
 test('resolve falls back when stored library was soft deleted', function () {
-    $user = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $user = User::factory()->create();
     $library = makeLibrary('Obrisana');
     $user->libraries()->attach($library->id);
 
@@ -99,14 +99,14 @@ test('set persists selection and clears on null for superadmin', function () {
 });
 
 test('set rejects a library that does not belong to the user', function () {
-    $user = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $user = User::factory()->create();
     $foreign = makeLibrary('Tudja');
 
     app(ActiveLibraryService::class)->set($user, $foreign->id);
 })->throws(ValidationException::class);
 
 test('set rejects null for non-superadmin', function () {
-    $user = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $user = User::factory()->create();
 
     app(ActiveLibraryService::class)->set($user, null);
 })->throws(ValidationException::class);
@@ -124,7 +124,7 @@ test('me returns selectable libraries and active library', function () {
 });
 
 test('me auto-selects the only library for a single-library user', function () {
-    $user = User::factory()->role(UserRole::Librarian)->create();
+    $user = User::factory()->create();
     $library = makeLibrary('Jedina');
     $user->libraries()->attach($library->id);
 
@@ -158,7 +158,7 @@ test('active-library endpoint clears selection for superadmin', function () {
 });
 
 test('active-library endpoint rejects a foreign library', function () {
-    $user = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $user = User::factory()->create();
     $foreign = makeLibrary('Tudja');
 
     $this->actingAs($user)->putJson('/api/v1/auth/active-library', [
@@ -167,7 +167,7 @@ test('active-library endpoint rejects a foreign library', function () {
 });
 
 test('active-library endpoint rejects null for non-superadmin', function () {
-    $user = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $user = User::factory()->create();
 
     $this->actingAs($user)->putJson('/api/v1/auth/active-library', [
         'library_id' => null,

@@ -41,7 +41,7 @@ class UpdateTagRequest extends FormRequest
                     return;
                 }
 
-                if (! $this->user()->managesLibrary((int) $this->input('library_id'))) {
+                if (! $this->user()->isLibraryAdminIn((int) $this->input('library_id'))) {
                     $validator->errors()->add('library_id', __('validation.custom.library_not_managed'));
                 }
             },

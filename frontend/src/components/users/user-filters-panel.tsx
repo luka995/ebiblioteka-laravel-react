@@ -60,7 +60,7 @@ interface UserFiltersPanelProps {
 export function UserFiltersPanel({ filters, onApply, onClear }: UserFiltersPanelProps) {
   const { t } = useTranslation()
   const { user } = useAuth()
-  const isSuperAdmin = user?.role === 'superadmin'
+  const isSuperAdmin = user?.is_super_admin
   const [draft, setDraft] = useState<UserFilters>(filters)
   const [selectedLibrary, setSelectedLibrary] = useState<LibraryOption[]>([])
 

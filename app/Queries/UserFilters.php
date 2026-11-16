@@ -2,7 +2,7 @@
 
 namespace App\Queries;
 
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Queries\Concerns\AppliesTransliteratedSearch;
 use App\Support\BarCode;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,12 +51,22 @@ class UserFilters
         }
 
         if (array_key_exists('role', $filters) && $filters['role'] !== '') {
-            $role = UserRole::tryFrom((string) $filters['role']);
+            $role = LibraryRole::tryFrom((string) $filters['role']);
 
             if ($role === null) {
                 $query->whereRaw('1 = 0');
             } else {
-                $query->where('role', $role->value);
+                $roleLibraryId = ! empty($filters['role_library_id'])
+                    ? (int) $filters['role_library_id']
+                    : (! empty($filters['library_id']) ? (int) $filters['library_id'] : null);
+
+                $query->whereHas('libraries', function (Builder $membership) use ($role, $roleLibraryId): void {
+                    $membership->where('library_user.role', $role->value);
+
+                    if ($roleLibraryId !== null) {
+                        $membership->whereKey($roleLibraryId);
+                    }
+                });
             }
         }
 

@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Models\Category;
 use App\Models\Library;
 use App\Models\User;
@@ -183,10 +183,10 @@ test('explicit library_id overrides the active library for superadmin', function
 });
 
 test('non-superadmin cannot override the active library with a foreign library_id', function () {
-    $user = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $user = User::factory()->create();
     $libraryA = makeCategoryLibrary();
     $libraryB = makeCategoryLibrary();
-    $user->libraries()->attach($libraryA->id);
+    $user->libraries()->attach($libraryA->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $inA = Category::factory()->for($libraryA)->create(['name' => 'A kategorija']);
     $inB = Category::factory()->for($libraryB)->create(['name' => 'B kategorija']);
 

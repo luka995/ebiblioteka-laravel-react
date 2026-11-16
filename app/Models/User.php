@@ -3,13 +3,17 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
+use App\Services\ActiveLibraryService;
+use App\Services\GlobalSettings;
 use App\Services\Mail\UserMailService;
+use App\Services\UserAccessContext;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -18,7 +22,6 @@ use Illuminate\Notifications\Notifiable;
     'name',
     'email',
     'password',
-    'role',
     'username',
     'first_name',
     'last_name',
@@ -44,7 +47,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'role' => UserRole::class,
         ];
     }
 
@@ -53,18 +55,125 @@ class User extends Authenticatable
         app(UserMailService::class)->sendPasswordReset($this, $token);
     }
 
-    public function isSuperAdmin(): bool
+    protected static function booted(): void
     {
-        return $this->role->isSuperAdmin();
-    }
-
-    public function isLibraryAdmin(): bool
-    {
-        return $this->role->isLibraryAdmin();
+        // Settings nema FK na users; fizicki obrisan superadmin mora da
+        // nestane i iz super_admin_user_ids.
+        static::forceDeleted(function (User $user): void {
+            app(GlobalSettings::class)->removeSuperAdmin((int) $user->id);
+        });
     }
 
     /**
-     * Administrativne role (superadmin + library_admin).
+     * Globalna superadmin privilegija dolazi iz settings tabele i kešira se
+     * jednom po requestu/job-u.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return app(UserAccessContext::class)->isSuperAdmin($this);
+    }
+
+    public function roleIn(int|Library $library): ?LibraryRole
+    {
+        $libraryId = $library instanceof Library ? (int) $library->id : $library;
+
+        return app(UserAccessContext::class)->roleIn($this, $libraryId);
+    }
+
+    public function hasRoleIn(int|Library $library, LibraryRole $role): bool
+    {
+        return $this->roleIn($library) === $role;
+    }
+
+    public function isMemberOf(int|Library $library): bool
+    {
+        $libraryId = $library instanceof Library ? (int) $library->id : $library;
+
+        return app(UserAccessContext::class)->isMemberOf($this, $libraryId);
+    }
+
+    public function isStaffIn(int|Library $library): bool
+    {
+        $libraryId = $library instanceof Library ? (int) $library->id : $library;
+
+        return app(UserAccessContext::class)->isStaffIn($this, $libraryId);
+    }
+
+    public function isLibraryAdminIn(int|Library $library): bool
+    {
+        $libraryId = $library instanceof Library ? (int) $library->id : $library;
+
+        return app(UserAccessContext::class)->isLibraryAdminIn($this, $libraryId);
+    }
+
+    /**
+     * Uloga u aktivnoj biblioteci (za globalne/nav permisije).
+     */
+    public function activeRole(): ?LibraryRole
+    {
+        $library = app(ActiveLibraryService::class)->resolve($this);
+
+        return $library === null ? null : $this->roleIn($library->id);
+    }
+
+    public function isLibraryAdmin(?int $libraryId = null): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($libraryId !== null) {
+            return $this->isLibraryAdminIn($libraryId);
+        }
+
+        $active = app(ActiveLibraryService::class)->resolve($this);
+
+        if ($active !== null) {
+            return $this->isLibraryAdminIn($active->id);
+        }
+
+        // Bez aktivne biblioteke propustamo do controllera koji vraca 422
+        // ("izaberite aktivnu biblioteku"), ali samo ako je korisnik admin
+        // u bar jednoj biblioteci.
+        return $this->isLibraryAdminAnywhere();
+    }
+
+    /**
+     * Da li je korisnik osoblje u bar jednoj biblioteci (bez potrebe za
+     * aktivnom bibliotekom). Koristi se za collection-level policy provere.
+     */
+    public function isStaffAnywhere(): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        foreach (app(UserAccessContext::class)->roles($this) as $role) {
+            if ($role->isStaff()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function isLibraryAdminAnywhere(): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        foreach (app(UserAccessContext::class)->roles($this) as $role) {
+            if ($role->isLibraryAdmin()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Administrativne role (superadmin + library_admin u aktivnoj biblioteci).
      */
     public function isAdmin(): bool
     {
@@ -72,16 +181,31 @@ class User extends Authenticatable
     }
 
     /**
-     * Osoblje biblioteke (superadmin + library_admin + librarian).
+     * Osoblje biblioteke (superadmin + library_admin + librarian u aktivnoj biblioteci).
      */
-    public function isStaff(): bool
+    public function isStaff(?int $libraryId = null): bool
     {
-        return $this->role->isStaff();
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($libraryId !== null) {
+            return $this->isStaffIn($libraryId);
+        }
+
+        $active = app(ActiveLibraryService::class)->resolve($this);
+
+        if ($active !== null) {
+            return $this->isStaffIn($active->id);
+        }
+
+        // Bez aktivne biblioteke propustamo do controllera koji vraca 422.
+        return $this->isStaffAnywhere();
     }
 
-    public function canManageLibrary(): bool
+    public function canManageLibrary(?int $libraryId = null): bool
     {
-        return $this->role->canManageLibrary();
+        return $this->isStaff($libraryId);
     }
 
     /**
@@ -95,8 +219,29 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Library::class)
             ->using(LibraryUserPivot::class)
+            ->withPivot('role')
             ->withTimestamps()
             ->wherePivotNull('deleted_at');
+    }
+
+    /**
+     * Rezervacije korisnika (ukljucujuci istoriju).
+     *
+     * @return HasMany<Reservation, $this>
+     */
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(Reservation::class);
+    }
+
+    /**
+     * Pozajmice korisnika (ukljucujuci istoriju).
+     *
+     * @return HasMany<Borrow, $this>
+     */
+    public function borrows(): HasMany
+    {
+        return $this->hasMany(Borrow::class);
     }
 
     /**
@@ -108,8 +253,8 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Library::class)
             ->using(LibraryUserPivot::class)
-            ->withTimestamps()
-            ->withPivot('deleted_at');
+            ->withPivot(['role', 'deleted_at'])
+            ->withTimestamps();
     }
 
     /**
@@ -131,7 +276,7 @@ class User extends Authenticatable
             return true;
         }
 
-        return $this->libraries()->whereKey($libraryId)->exists();
+        return $this->isMemberOf($libraryId);
     }
 
     /**

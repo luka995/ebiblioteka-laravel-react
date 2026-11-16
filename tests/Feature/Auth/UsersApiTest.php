@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Models\Library;
 use App\Models\Place;
 use App\Models\Region;
@@ -52,8 +52,7 @@ test('superadmin can create a user with a library membership and auto barcode', 
         'username' => 'petar.petrovic',
         'email' => 'petar@example.com',
         'password' => 'secret123',
-        'role' => 'user',
-        'libraries' => [$library->id],
+        'libraries' => [['id' => $library->id, 'role' => 'user']],
     ], adminApiHeaders());
 
     $response->assertCreated()
@@ -63,7 +62,8 @@ test('superadmin can create a user with a library membership and auto barcode', 
 
     $created = User::where('email', 'petar@example.com')->first();
 
-    expect($created->role)->toBe(UserRole::User)
+    expect($created->roleIn($library))->toBe(LibraryRole::User)
+        ->and($created->isSuperAdmin())->toBeFalse()
         ->and($created->bar_code)->toMatch('/^\d{13}$/')
         ->and(BarCode::validate($created->bar_code))->toBeTrue()
         ->and($created->libraries->pluck('id')->all())->toContain($library->id);
@@ -77,7 +77,6 @@ test('server ignores a client-provided barcode when creating a user', function (
         'last_name' => 'Milić',
         'email' => 'milan@example.com',
         'password' => 'secret123',
-        'role' => 'user',
         'bar_code' => '1234567890128',
     ], adminApiHeaders());
 
@@ -96,7 +95,6 @@ test('server allocates sequential EAN bases for users', function () {
         'last_name' => 'Korisnik',
         'email' => $email,
         'password' => 'secret123',
-        'role' => 'user',
     ], adminApiHeaders())->assertCreated();
 
     $create('first@example.com');
@@ -115,9 +113,11 @@ test('roles assignable reflects actor role', function () {
 
     $this->actingAs($superAdmin)->getJson('/api/v1/roles/assignable', adminApiHeaders())
         ->assertOk()
-        ->assertJsonCount(4, 'roles');
+        ->assertJsonCount(3, 'roles');
 
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $library = Library::factory()->create();
+    $libraryAdmin = User::factory()->create();
+    $libraryAdmin->libraries()->attach($library->id, ['role' => LibraryRole::LibraryAdmin->value]);
 
     $this->actingAs($libraryAdmin)->getJson('/api/v1/roles/assignable', adminApiHeaders())
         ->assertOk()
@@ -129,12 +129,12 @@ test('roles labels are localized via X-Locale header', function () {
 
     $this->actingAs($admin)->getJson('/api/v1/roles', adminApiHeaders(['X-Locale' => 'sr-Cyrl']))
         ->assertOk()
-        ->assertJsonPath('roles.0.value', 'superadmin')
-        ->assertJsonPath('roles.0.label', 'Суперадминистратор');
+        ->assertJsonPath('roles.0.value', 'user')
+        ->assertJsonPath('roles.0.label', 'Корисник');
 
     $this->actingAs($admin)->getJson('/api/v1/roles', adminApiHeaders(['X-Locale' => 'en']))
         ->assertOk()
-        ->assertJsonPath('roles.0.label', 'Super Administrator');
+        ->assertJsonPath('roles.0.label', 'User');
 });
 
 test('non superadmin cannot access libraries endpoints', function () {
@@ -215,7 +215,7 @@ test('me returns the authenticated user with role', function () {
 
     $this->actingAs($admin)->getJson('/api/v1/auth/me', adminApiHeaders())
         ->assertOk()
-        ->assertJsonPath('data.role', 'superadmin')
+        ->assertJsonPath('data.is_super_admin', true)
         ->assertJsonPath('data.email', $admin->email);
 });
 
@@ -313,8 +313,9 @@ test('barcode search restores a dropped leading zero from a twelve digit scan', 
 
 test('superadmin can filter users by role', function () {
     $admin = User::factory()->superAdmin()->create();
-    User::factory()->count(2)->role(UserRole::Librarian)->create();
-    User::factory()->count(3)->role(UserRole::User)->create();
+    $library = Library::factory()->create();
+    User::factory()->count(2)->libraryRole($library, LibraryRole::Librarian)->create();
+    User::factory()->count(3)->create();
 
     $this->actingAs($admin)->getJson('/api/v1/users?role=librarian', adminApiHeaders())
         ->assertOk()
@@ -347,10 +348,10 @@ test('invalid role filter returns empty results without error', function () {
 });
 
 test('library admin library filter is ignored and scope relies on its libraries', function () {
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->create();
     $libraryA = Library::factory()->create();
     $libraryB = Library::factory()->create();
-    $libraryAdmin->libraries()->attach($libraryA->id);
+    $libraryAdmin->libraries()->attach($libraryA->id, ['role' => LibraryRole::LibraryAdmin->value]);
 
     $member = User::factory()->create();
     $member->libraries()->attach($libraryA->id);

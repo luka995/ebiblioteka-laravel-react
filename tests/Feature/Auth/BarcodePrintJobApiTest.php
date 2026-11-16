@@ -2,7 +2,7 @@
 
 use App\Enums\BarcodePrintFormat;
 use App\Enums\BarcodePrintJobStatus;
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Jobs\GenerateBarcodePrintPdf;
 use App\Models\BarcodePrintJob;
 use App\Models\Book;
@@ -22,10 +22,10 @@ function barcodeJobRequestHeaders(): array
     ];
 }
 
-function barcodeJobStaff(Library $library, UserRole $role = UserRole::Librarian): User
+function barcodeJobStaff(Library $library, LibraryRole $role = LibraryRole::Librarian): User
 {
-    $user = User::factory()->role($role)->create();
-    $user->libraries()->attach($library->id);
+    $user = User::factory()->create();
+    $user->libraries()->attach($library->id, ['role' => $role->value]);
 
     return $user;
 }
@@ -92,7 +92,11 @@ test('store rejects an unknown label format', function () {
 test('store requires an active library for a librarian', function () {
     Queue::fake();
 
-    $user = User::factory()->role(UserRole::Librarian)->create();
+    $first = Library::factory()->create();
+    $second = Library::factory()->create();
+    $user = User::factory()->create();
+    $user->libraries()->attach($first->id, ['role' => LibraryRole::Librarian->value]);
+    $user->libraries()->attach($second->id, ['role' => LibraryRole::Librarian->value]);
 
     $this->actingAs($user)->postJson('/api/v1/barcode-print-jobs', [
         'format' => BarcodePrintFormat::Label->value,

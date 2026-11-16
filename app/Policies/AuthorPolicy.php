@@ -14,7 +14,7 @@ class AuthorPolicy
 
     public function view(User $actor, Author $author): bool
     {
-        return $actor->isSuperAdmin() || $actor->isLibraryAdmin();
+        return $actor->isSuperAdmin() || $actor->isLibraryAdminAnywhere();
     }
 
     public function create(User $actor): bool
@@ -24,11 +24,11 @@ class AuthorPolicy
 
     public function update(User $actor, Author $author): bool
     {
-        return $actor->isSuperAdmin() || $actor->isLibraryAdmin();
+        return $actor->isSuperAdmin() || $actor->isLibraryAdminAnywhere();
     }
 
     public function delete(User $actor, Author $author): bool
     {
-        return $actor->isSuperAdmin() || $actor->isLibraryAdmin();
+        return $actor->isSuperAdmin() || $actor->isLibraryAdminAnywhere();
     }
 }

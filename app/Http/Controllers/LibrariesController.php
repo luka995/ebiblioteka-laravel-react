@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\LibraryRole;
 use App\Http\Requests\StoreLibraryRequest;
 use App\Http\Requests\UpdateLibraryRequest;
+use App\Http\Requests\UpdateLibrarySettingsRequest;
 use App\Http\Resources\LibraryResource;
 use App\Models\Library;
+use App\Models\LibrarySettings;
 use App\Queries\LibraryFilters;
 use App\Services\AuthorizationService;
 use App\Services\LibraryMembershipService;
@@ -23,7 +26,12 @@ class LibrariesController extends Controller
         $libraries = Library::query()
             ->with(['place.region'])
             ->when(! $request->user()->isSuperAdmin(), function ($query) use ($request) {
-                $query->whereIn('id', $request->user()->libraries()->pluck('libraries.id'));
+                $query->whereIn(
+                    'id',
+                    $request->user()->libraries()
+                        ->wherePivot('role', LibraryRole::LibraryAdmin->value)
+                        ->pluck('libraries.id')
+                );
             })
             ->when(! $request->boolean('deleted'), fn ($query) => $query->where('deleted', false))
             ->when(

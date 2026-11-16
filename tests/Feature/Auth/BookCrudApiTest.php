@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Models\Author;
 use App\Models\Book;
 use App\Models\BookCopy;
@@ -23,10 +23,10 @@ function makeBookLibrary(): Library
     return Library::factory()->create();
 }
 
-function makeBookStaff(Library $library, UserRole $role = UserRole::Librarian): User
+function makeBookStaff(Library $library, LibraryRole $role = LibraryRole::Librarian): User
 {
-    $user = User::factory()->role($role)->create();
-    $user->libraries()->attach($library->id);
+    $user = User::factory()->create();
+    $user->libraries()->attach($library->id, ['role' => $role->value]);
 
     return $user;
 }

@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\UserRole;
 use App\Models\User;
+use App\Services\GlobalSettings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Hash;
 
@@ -13,9 +13,9 @@ class EnsureSuperAdmin extends Command
         {--email=admin@ebiblioteka.rs : Email superadmin naloga}
         {--password= : Lozinka superadmin naloga (fallback: env ADMIN_PASSWORD)}';
 
-    protected $description = 'Kreira (ili promovise) superadmin nalog za razvoj i pocetni pristup dashboardu';
+    protected $description = 'Kreira (ili promovise) superadmin nalog i upisuje ga u globalna podesavanja';
 
-    public function handle(): int
+    public function handle(GlobalSettings $settings): int
     {
         $email = strtolower(trim((string) $this->option('email')));
         $password = $this->option('password') ?: env('ADMIN_PASSWORD', 'fw2wwc');
@@ -30,20 +30,14 @@ class EnsureSuperAdmin extends Command
                 'username' => 'admin',
                 'email' => $email,
                 'password' => Hash::make($password),
-                'role' => UserRole::SuperAdmin,
             ]);
 
             $this->info("Superadmin nalog kreiran: {$email}");
-
-            return self::SUCCESS;
         }
 
-        if (! $user->role->isSuperAdmin()) {
-            $user->update(['role' => UserRole::SuperAdmin]);
-            $this->info("Korisnik {$email} promovisan u superadmin ulogu.");
-        } else {
-            $this->info("Superadmin nalog vec postoji: {$email}");
-        }
+        $settings->addSuperAdmin((int) $user->id);
+
+        $this->info("Korisnik {$email} je u listi superadmina.");
 
         return self::SUCCESS;
     }

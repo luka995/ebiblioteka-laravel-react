@@ -69,7 +69,7 @@ function useUsersQuery(page: number, filters: UserFilters) {
 export function UsersPage() {
   const { t } = useTranslation()
   const { can, user } = useAuth()
-  const isSuperAdmin = user?.role === 'superadmin'
+  const isSuperAdmin = user?.is_super_admin
   const [searchParams, setSearchParams] = useSearchParams()
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
@@ -320,10 +320,10 @@ export function UsersPage() {
                   </TableCell>
                   <TableCell className="px-4 text-muted-foreground">{item.email}</TableCell>
                   <TableCell className="px-4">
-                    <Badge className="border-transparent bg-brand-soft text-brand">{item.role_label}</Badge>
+                    <Badge className="border-transparent bg-brand-soft text-brand">{item.role_label ?? '—'}</Badge>
                   </TableCell>
                   <TableCell className="px-4 text-muted-foreground">
-                    {item.libraries?.map((library) => library.name).join(', ') || '—'}
+                    {item.libraries?.map((library) => `${library.name} (${library.role_label})`).join(', ') || '—'}
                   </TableCell>
                   <TableCell className="px-4 font-mono text-xs text-muted-foreground">{item.bar_code ?? '—'}</TableCell>
                   <TableCell className="px-4">

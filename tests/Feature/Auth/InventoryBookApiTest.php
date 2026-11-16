@@ -1,7 +1,7 @@
 <?php
 
 use App\Enums\InventoryBookStatus;
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Jobs\GenerateInventoryBookPdf;
 use App\Models\Author;
 use App\Models\Book;
@@ -21,10 +21,10 @@ function inventoryHeaders(): array
     ];
 }
 
-function inventoryStaff(Library $library, UserRole $role = UserRole::Librarian): User
+function inventoryStaff(Library $library, LibraryRole $role = LibraryRole::Librarian): User
 {
-    $user = User::factory()->role($role)->create();
-    $user->libraries()->attach($library->id);
+    $user = User::factory()->create();
+    $user->libraries()->attach($library->id, ['role' => $role->value]);
 
     return $user;
 }
@@ -62,7 +62,10 @@ test('store requires an active library for a librarian', function () {
     Queue::fake();
 
     $library = Library::factory()->create();
-    $user = User::factory()->role(UserRole::Librarian)->create();
+    $second = Library::factory()->create();
+    $user = User::factory()->create();
+    $user->libraries()->attach($library->id, ['role' => LibraryRole::Librarian->value]);
+    $user->libraries()->attach($second->id, ['role' => LibraryRole::Librarian->value]);
 
     $this->actingAs($user)->postJson('/api/v1/inventory-books', [], inventoryHeaders())
         ->assertStatus(422);

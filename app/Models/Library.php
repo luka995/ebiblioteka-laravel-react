@@ -35,9 +35,15 @@ class Library extends Model
 
     protected static function booted(): void
     {
-        // Svaka biblioteka dobija svoju sekvencu inventarnih brojeva.
+        // Svaka biblioteka dobija svoju sekvencu inventarnih brojeva i
+        // podrazumevana podesavanja (rok rezervacije).
         static::created(function (Library $library): void {
             $library->inventorySequence()->firstOrCreate([], ['last_number' => 0]);
+            $library->settings()->firstOrCreate([], [
+                'reservation_hours' => LibrarySettings::DEFAULT_RESERVATION_HOURS,
+                'lend_days' => LibrarySettings::DEFAULT_LEND_DAYS,
+                'overdue_price_per_day' => LibrarySettings::DEFAULT_OVERDUE_PRICE_PER_DAY,
+            ]);
         });
     }
 
@@ -70,6 +76,7 @@ class Library extends Model
     {
         return $this->belongsToMany(User::class)
             ->using(LibraryUserPivot::class)
+            ->withPivot('role')
             ->withTimestamps()
             ->wherePivotNull('deleted_at');
     }
@@ -83,8 +90,8 @@ class Library extends Model
     {
         return $this->belongsToMany(User::class)
             ->using(LibraryUserPivot::class)
-            ->withTimestamps()
-            ->withPivot('deleted_at');
+            ->withPivot(['role', 'deleted_at'])
+            ->withTimestamps();
     }
 
     /**
@@ -115,6 +122,36 @@ class Library extends Model
     public function inventorySequence(): HasOne
     {
         return $this->hasOne(BookInventorySequence::class);
+    }
+
+    /**
+     * Podesavanja biblioteke (rok rezervacije i slicno).
+     *
+     * @return HasOne<LibrarySettings, $this>
+     */
+    public function settings(): HasOne
+    {
+        return $this->hasOne(LibrarySettings::class);
+    }
+
+    /**
+     * Rezervacije vezane za ovu biblioteku.
+     *
+     * @return HasMany<Reservation, $this>
+     */
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(Reservation::class);
+    }
+
+    /**
+     * Pozajmice vezane za ovu biblioteku.
+     *
+     * @return HasMany<Borrow, $this>
+     */
+    public function borrows(): HasMany
+    {
+        return $this->hasMany(Borrow::class);
     }
 
     /**

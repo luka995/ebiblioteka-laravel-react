@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Models\Author;
 use App\Models\Category;
 use App\Models\Library;
@@ -21,8 +21,8 @@ function makeCatAuthorLibrary(): Library
 
 function makeCatAuthorAdmin(Library $library): User
 {
-    $admin = User::factory()->role(UserRole::LibraryAdmin)->create();
-    $admin->libraries()->attach($library->id);
+    $admin = User::factory()->create();
+    $admin->libraries()->attach($library->id, ['role' => LibraryRole::LibraryAdmin->value]);
 
     return $admin;
 }
@@ -82,7 +82,9 @@ test('library admin cannot update or delete a foreign category or author', funct
 });
 
 test('librarian and regular user cannot access categories or authors', function () {
-    $librarian = User::factory()->role(UserRole::Librarian)->create();
+    $library = Library::factory()->create();
+    $librarian = User::factory()->create();
+    $librarian->libraries()->attach($library->id, ['role' => LibraryRole::Librarian->value]);
     $regular = User::factory()->create();
 
     $this->actingAs($librarian)->getJson('/api/v1/categories', catAuthorHeaders())->assertForbidden();

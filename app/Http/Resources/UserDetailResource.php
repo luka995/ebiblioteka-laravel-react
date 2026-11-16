@@ -19,6 +19,11 @@ class UserDetailResource extends UserResource
             ? BarCodeImage::render($this->bar_code)
             : null;
 
+        $data['reservations'] = $this->whenLoaded(
+            'reservations',
+            fn () => ReservationResource::collection($this->reservations)->resolve($request)
+        );
+
         return $data;
     }
 }

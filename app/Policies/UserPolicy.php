@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\User;
+use App\Services\ActiveLibraryService;
 
 class UserPolicy
 {
@@ -13,8 +14,7 @@ class UserPolicy
 
     public function view(User $actor, User $target): bool
     {
-        return $actor->isSuperAdmin()
-            || ($actor->isLibraryAdmin() && $actor->sharesLibraryWith($target));
+        return $actor->isSuperAdmin() || $this->managesTargetAsAdmin($actor, $target);
     }
 
     public function create(User $actor): bool
@@ -24,8 +24,7 @@ class UserPolicy
 
     public function update(User $actor, User $target): bool
     {
-        return $actor->isSuperAdmin()
-            || ($actor->isLibraryAdmin() && $actor->sharesLibraryWith($target));
+        return $actor->isSuperAdmin() || $this->managesTargetAsAdmin($actor, $target);
     }
 
     public function delete(User $actor, User $target): bool
@@ -52,8 +51,7 @@ class UserPolicy
      */
     public function removeMemberships(User $actor, User $target): bool
     {
-        return $actor->isSuperAdmin()
-            || ($actor->isLibraryAdmin() && $actor->sharesLibraryWith($target));
+        return $actor->isSuperAdmin() || $this->managesTargetAsAdmin($actor, $target);
     }
 
     /**
@@ -106,5 +104,16 @@ class UserPolicy
     public function bulkPrintBarcode(User $actor): bool
     {
         return $actor->isSuperAdmin() || $actor->isLibraryAdmin();
+    }
+
+    private function managesTargetAsAdmin(User $actor, User $target): bool
+    {
+        $library = app(ActiveLibraryService::class)->resolve($actor);
+
+        if ($library === null) {
+            return false;
+        }
+
+        return $actor->isLibraryAdminIn($library->id) && $target->isMemberOf($library->id);
     }
 }

@@ -26,7 +26,7 @@ interface UserTagModalProps {
 export function UserTagModal({ open, onClose, user, onSuccess }: UserTagModalProps) {
   const { t } = useTranslation()
   const { user: actor } = useAuth()
-  const isSuperAdmin = actor?.role === 'superadmin'
+  const isSuperAdmin = actor?.is_super_admin
   const [libraryId, setLibraryId] = useState<number | null>(null)
   const [selectedLibraries, setSelectedLibraries] = useState<LibraryOption[]>([])
   const [selectedTags, setSelectedTags] = useState<TagOption[]>([])

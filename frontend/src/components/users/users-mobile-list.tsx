@@ -108,14 +108,14 @@ export function UsersMobileList({
                 label={t('users.columns.role')}
                 value={
                   <Badge className="border-transparent bg-brand-soft text-brand">
-                    {item.role_label}
+                    {item.role_label ?? '—'}
                   </Badge>
                 }
               />
               <ListItemField label={t('users.columns.email')} value={item.email} />
               <ListItemField
                 label={t('users.columns.libraries')}
-                value={item.libraries?.map((library) => library.name).join(', ')}
+                value={item.libraries?.map((library) => `${library.name} (${library.role_label})`).join(', ')}
               />
               <ListItemField label={t('users.columns.barcode')} value={item.bar_code} />
             </ListItemMeta>

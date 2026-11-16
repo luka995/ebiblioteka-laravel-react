@@ -43,7 +43,7 @@ function useAuthorsQuery(page: number, search: string, libraryId: string) {
 export function AuthorsPage() {
   const { t } = useTranslation()
   const { can, user } = useAuth()
-  const isSuperAdmin = user?.role === 'superadmin'
+  const isSuperAdmin = user?.is_super_admin
   const [searchParams, setSearchParams] = useSearchParams()
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)

@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Models\Library;
 use App\Models\Place;
 use App\Models\Region;
@@ -19,8 +19,8 @@ test('authenticated user can fetch their own profile with libraries', function (
     $place = Place::factory()->for($region)->create();
     $library = Library::factory()->for($place)->create();
 
-    $user = User::factory()->role(UserRole::Librarian)->create();
-    $user->libraries()->sync([$library->id]);
+    $user = User::factory()->create();
+    $user->libraries()->attach($library->id, ['role' => LibraryRole::Librarian->value]);
 
     $this->actingAs($user)->getJson('/api/v1/profile', profileApiHeaders())
         ->assertOk()
@@ -41,7 +41,7 @@ test('unauthenticated request to profile returns 401', function () {
 });
 
 test('authenticated user can update their own profile', function () {
-    $user = User::factory()->role(UserRole::User)->create([
+    $user = User::factory()->create([
         'email' => 'before@example.com',
     ]);
 
@@ -72,7 +72,7 @@ test('role, libraries and bar_code cannot be changed via profile update', functi
     $place = Place::factory()->for($region)->create();
     $library = Library::factory()->for($place)->create();
 
-    $user = User::factory()->role(UserRole::User)->create([
+    $user = User::factory()->create([
         'bar_code' => '1000000000123',
     ]);
 
@@ -88,13 +88,13 @@ test('role, libraries and bar_code cannot be changed via profile update', functi
 
     $fresh = $user->fresh();
 
-    expect($fresh->role)->toBe(UserRole::User)
+    expect($fresh->isSuperAdmin())->toBeFalse()
         ->and($fresh->bar_code)->toBe('1000000000123')
         ->and($fresh->libraries->count())->toBe(0);
 });
 
 test('profile update ignores the password field', function () {
-    $user = User::factory()->role(UserRole::User)->create();
+    $user = User::factory()->create();
     $originalPassword = $user->password;
 
     $this->actingAs($user)->putJson('/api/v1/profile', [
@@ -109,7 +109,7 @@ test('profile update ignores the password field', function () {
 });
 
 test('profile password update requires a valid current password', function () {
-    $user = User::factory()->role(UserRole::User)->create();
+    $user = User::factory()->create();
 
     $this->actingAs($user)->putJson('/api/v1/profile/password', [
         'current_password' => 'wrong-password',
@@ -121,7 +121,7 @@ test('profile password update requires a valid current password', function () {
 });
 
 test('profile password update changes the password with a valid current password', function () {
-    $user = User::factory()->role(UserRole::User)->create();
+    $user = User::factory()->create();
     $originalPassword = $user->password;
 
     $this->actingAs($user)->putJson('/api/v1/profile/password', [

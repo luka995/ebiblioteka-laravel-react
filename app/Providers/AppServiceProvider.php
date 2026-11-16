@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\GlobalSettings;
 use App\Services\Isbn\CategoryTranslator;
 use App\Services\Isbn\GoogleBooksProvider;
 use App\Services\Isbn\IsbnMetadataService;
@@ -9,6 +10,7 @@ use App\Services\Isbn\IsbnNormalizer;
 use App\Services\Isbn\NbsCatalogProvider;
 use App\Services\Isbn\OpenLibraryProvider;
 use App\Services\Security\TurnstileService;
+use App\Services\UserAccessContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -21,6 +23,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Request/job-scoped keševi. Ne koristiti singleton: u Octane-u i
+        // queue workerima bi zadržali podatke izmedju requestova/jobova.
+        $this->app->scoped(GlobalSettings::class);
+        $this->app->scoped(UserAccessContext::class);
+
         $this->app->bind(TurnstileService::class, function (): TurnstileService {
             return new TurnstileService((string) config('services.turnstile.secret'));
         });

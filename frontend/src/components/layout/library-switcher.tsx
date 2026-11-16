@@ -19,7 +19,7 @@ export function LibrarySwitcher() {
   const { t } = useTranslation()
   const { user, libraries, activeLibrary, setActiveLibrary } = useAuth()
 
-  if (!user || user.role === 'superadmin') {
+  if (!user || user.is_super_admin) {
     return null
   }
 
@@ -92,7 +92,7 @@ export function HeaderLibrarySwitcher() {
     setSelection(activeLibrary ? [{ id: activeLibrary.id, name: activeLibrary.name }] : [])
   }, [activeLibrary])
 
-  if (user?.role !== 'superadmin') {
+  if (!user?.is_super_admin) {
     return null
   }
 

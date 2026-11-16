@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Models\Library;
 use App\Models\User;
 use App\Services\ActiveLibraryService;
@@ -188,7 +188,7 @@ test('user resource exposes deactivated libraries', function () {
 });
 
 test('selectable libraries exclude deactivated memberships', function () {
-    $user = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $user = User::factory()->create();
     $active = Library::factory()->create();
     $inactive = Library::factory()->create();
     $user->libraries()->attach([$active->id, $inactive->id]);
@@ -201,9 +201,9 @@ test('selectable libraries exclude deactivated memberships', function () {
 });
 
 test('library admin can remove a membership from a library it manages', function () {
-    $admin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $admin = User::factory()->create();
     $library = Library::factory()->create();
-    $admin->libraries()->attach($library->id);
+    $admin->libraries()->attach($library->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $member = User::factory()->create();
     $member->libraries()->attach($library->id);
 
@@ -218,9 +218,9 @@ test('library admin can remove a membership from a library it manages', function
 });
 
 test('library admin cannot remove a membership from a library it does not manage', function () {
-    $admin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $admin = User::factory()->create();
     $managed = Library::factory()->create();
-    $admin->libraries()->attach($managed->id);
+    $admin->libraries()->attach($managed->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $foreign = Library::factory()->create();
     $member = User::factory()->create();
     $member->libraries()->attach([$managed->id, $foreign->id]);
@@ -237,9 +237,9 @@ test('library admin cannot remove a membership from a library it does not manage
 });
 
 test('library admin cannot deactivate or activate memberships', function () {
-    $admin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $admin = User::factory()->create();
     $library = Library::factory()->create();
-    $admin->libraries()->attach($library->id);
+    $admin->libraries()->attach($library->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $member = User::factory()->create();
     $member->libraries()->attach($library->id);
 
@@ -368,9 +368,9 @@ test('membership bulk actions require an active library', function () {
 });
 
 test('library admin can bulk remove memberships from its library but not bulk deactivate', function () {
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->create();
     $library = Library::factory()->create();
-    $libraryAdmin->libraries()->attach($library->id);
+    $libraryAdmin->libraries()->attach($library->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $member = User::factory()->create();
     $member->libraries()->attach($library->id);
 
@@ -387,9 +387,9 @@ test('library admin can bulk remove memberships from its library but not bulk de
 });
 
 test('library admin cannot bulk deactivate or activate memberships', function () {
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->create();
     $library = Library::factory()->create();
-    $libraryAdmin->libraries()->attach($library->id);
+    $libraryAdmin->libraries()->attach($library->id, ['role' => LibraryRole::LibraryAdmin->value]);
     $member = User::factory()->create();
     $member->libraries()->attach($library->id);
 

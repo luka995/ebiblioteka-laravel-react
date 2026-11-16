@@ -26,7 +26,7 @@ export function TagFormModal({ open, onClose, onSuccess, tag }: TagFormModalProp
   const queryClient = useQueryClient()
   const { user } = useAuth()
   const editing = Boolean(tag)
-  const isSuperAdmin = user?.role === 'superadmin'
+  const isSuperAdmin = user?.is_super_admin
   const [selectedLibrary, setSelectedLibrary] = useState<LibraryOption[]>([])
 
   const librariesQuery = useQuery({

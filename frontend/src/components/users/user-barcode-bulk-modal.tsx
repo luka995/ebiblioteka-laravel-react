@@ -26,7 +26,7 @@ export function UserBarcodeBulkModal({ open, onClose, userIds, onSuccess }: User
   const { user, activeLibrary } = useAuth()
   const [busy, setBusy] = useState(false)
 
-  const isSuperAdmin = user?.role === 'superadmin'
+  const isSuperAdmin = user?.is_super_admin
   const needsActiveLibrary = !isSuperAdmin
   const canSubmit = !needsActiveLibrary || activeLibrary !== null
 

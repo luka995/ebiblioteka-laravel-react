@@ -44,7 +44,7 @@ function useTagsQuery(page: number, search: string, libraryId: string, activeLib
 export function TagsPage() {
   const { t } = useTranslation()
   const { can, user, activeLibrary } = useAuth()
-  const isSuperAdmin = user?.role === 'superadmin'
+  const isSuperAdmin = user?.is_super_admin
   const [searchParams, setSearchParams] = useSearchParams()
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)

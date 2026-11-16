@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Models\Library;
 use App\Models\Place;
 use App\Models\Region;
@@ -91,7 +91,7 @@ test('superadmin cannot delete a place that has libraries', function () {
 });
 
 test('non superadmin cannot access regions or places', function () {
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->create();
 
     $this->actingAs($libraryAdmin)->getJson('/api/v1/regions', regionPlaceHeaders())
         ->assertForbidden();

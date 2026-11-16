@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\LibraryRole;
 use App\Models\Library;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -89,6 +90,13 @@ class ActiveLibraryService
         }
 
         return $active;
+    }
+
+    public function role(User $user): ?LibraryRole
+    {
+        $library = $this->resolve($user);
+
+        return $library === null ? null : $user->roleIn($library->id);
     }
 
     /**

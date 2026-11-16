@@ -14,8 +14,7 @@ class TagPolicy
 
     public function view(User $actor, Tag $tag): bool
     {
-        return $actor->isSuperAdmin()
-            || ($actor->isLibraryAdmin() && $actor->managesLibrary($tag->library_id));
+        return $actor->isSuperAdmin() || $actor->isLibraryAdminIn($tag->library_id);
     }
 
     public function create(User $actor): bool
@@ -25,13 +24,11 @@ class TagPolicy
 
     public function update(User $actor, Tag $tag): bool
     {
-        return $actor->isSuperAdmin()
-            || ($actor->isLibraryAdmin() && $actor->managesLibrary($tag->library_id));
+        return $actor->isSuperAdmin() || $actor->isLibraryAdminIn($tag->library_id);
     }
 
     public function delete(User $actor, Tag $tag): bool
     {
-        return $actor->isSuperAdmin()
-            || ($actor->isLibraryAdmin() && $actor->managesLibrary($tag->library_id));
+        return $actor->isSuperAdmin() || $actor->isLibraryAdminIn($tag->library_id);
     }
 }

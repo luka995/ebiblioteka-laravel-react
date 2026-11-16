@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\LibraryRole;
+use App\Models\Library;
 use App\Models\News;
 use App\Models\User;
 
@@ -62,12 +64,12 @@ test('news requires title body and date', function () {
 
 test('regular user and library admin cannot access news', function () {
     $user = User::factory()->create();
-    $libraryAdmin = User::factory()->superAdmin()->create();
+    $library = Library::factory()->create();
+    $libraryAdmin = User::factory()->create();
+    $libraryAdmin->libraries()->attach($library->id, ['role' => LibraryRole::LibraryAdmin->value]);
 
     $this->actingAs($user)->getJson('/api/v1/news', newsCrudHeaders())
         ->assertForbidden();
-
-    $libraryAdmin->update(['role' => App\Enums\UserRole::LibraryAdmin]);
 
     $this->actingAs($libraryAdmin)->getJson('/api/v1/news', newsCrudHeaders())
         ->assertForbidden();

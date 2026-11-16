@@ -1,6 +1,6 @@
 <?php
 
-use App\Enums\UserRole;
+use App\Enums\LibraryRole;
 use App\Models\Library;
 use App\Models\Place;
 use App\Models\Region;
@@ -99,7 +99,7 @@ test('rejects assignment when user is not a member of the library', function () 
 });
 
 test('non superadmin cannot assign tags', function () {
-    $libraryAdmin = User::factory()->role(UserRole::LibraryAdmin)->create();
+    $libraryAdmin = User::factory()->create();
     $library = makeTagAssignLibrary();
 
     $user = User::factory()->create();
