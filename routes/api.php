@@ -3,15 +3,21 @@
 use App\Http\Controllers\AuthorsController;
 use App\Http\Controllers\BarcodePrintJobsController;
 use App\Http\Controllers\BookCopiesController;
+use App\Http\Controllers\BookHistoryController;
 use App\Http\Controllers\BooksController;
+use App\Http\Controllers\BorrowsController;
+use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CategoriesController;
 use App\Http\Controllers\InventoryBooksController;
 use App\Http\Controllers\LibrariesController;
+use App\Http\Controllers\LibraryRequestsController;
 use App\Http\Controllers\NewsController;
 use App\Http\Controllers\PlacesController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegionsController;
+use App\Http\Controllers\ReservationsController;
 use App\Http\Controllers\RolesController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TagsController;
 use App\Http\Controllers\UserMembershipsController;
 use App\Http\Controllers\UsersController;
@@ -28,6 +34,41 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::put('/profile', [ProfileController::class, 'update']);
     Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
 
+    // Globalna podesavanja (samo superadmin) i korisnicki katalog.
+    Route::get('/settings', [SettingsController::class, 'index']);
+    Route::put('/settings', [SettingsController::class, 'update']);
+    Route::get('/settings/users', [SettingsController::class, 'users']);
+
+    // Zahtevi za otvaranje biblioteka (samo superadmin).
+    Route::get('/library-requests', [LibraryRequestsController::class, 'index'])
+        ->middleware('can:viewAny,App\Models\LibraryRequest');
+    Route::get('/library-requests/{libraryRequest}', [LibraryRequestsController::class, 'show'])
+        ->middleware('can:view,libraryRequest');
+    Route::post('/library-requests/{libraryRequest}/approve', [LibraryRequestsController::class, 'approve'])
+        ->middleware('can:approve,libraryRequest');
+    Route::post('/library-requests/{libraryRequest}/reject', [LibraryRequestsController::class, 'reject'])
+        ->middleware('can:reject,libraryRequest');
+
+    Route::get('/catalog/books/{book}', [CatalogController::class, 'book']);
+    Route::get('/reservations', [ReservationsController::class, 'index']);
+    Route::get('/reservations/library', [ReservationsController::class, 'library'])
+        ->middleware('can:viewAny,App\Models\Reservation');
+    Route::post('/reservations', [ReservationsController::class, 'store']);
+    Route::delete('/reservations/{reservation}', [ReservationsController::class, 'destroy'])
+        ->middleware('can:cancel,reservation');
+    Route::post('/reservations/{reservation}/issue', [ReservationsController::class, 'issue'])
+        ->middleware('can:issue,reservation');
+
+    Route::get('/borrows', [BorrowsController::class, 'index']);
+    Route::get('/borrows/library', [BorrowsController::class, 'library'])
+        ->middleware('can:viewAny,App\Models\Borrow');
+    Route::get('/borrows/lookup', [BorrowsController::class, 'lookup'])
+        ->middleware('can:create,App\Models\Borrow');
+    Route::post('/borrows', [BorrowsController::class, 'store'])
+        ->middleware('can:create,App\Models\Borrow');
+    Route::post('/borrows/{borrow}/return', [BorrowsController::class, 'returnBook'])
+        ->middleware('can:returnBook,borrow');
+
     Route::post('/users/memberships/deactivate', [UserMembershipsController::class, 'bulkDeactivate'])->middleware('can:bulkManageMemberships,App\Models\User');
     Route::post('/users/memberships/activate', [UserMembershipsController::class, 'bulkActivate'])->middleware('can:bulkManageMemberships,App\Models\User');
     Route::delete('/users/memberships', [UserMembershipsController::class, 'bulkRemove'])->middleware('can:bulkRemoveMemberships,App\Models\User');
@@ -41,6 +82,7 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::get('/users/{user}/barcode', [UsersController::class, 'barcode'])->middleware('can:view,user');
     Route::get('/users/{user}/barcode/print', [UsersController::class, 'printBarcode'])->middleware('can:view,user');
     Route::get('/users/{user}', [UsersController::class, 'show'])->middleware('can:view,user');
+    Route::get('/users/{user}/borrows', [BorrowsController::class, 'forUser'])->middleware('can:view,user');
     Route::put('/users/{user}', [UsersController::class, 'update'])->middleware('can:update,user');
     Route::put('/users/{user}/password', [UsersController::class, 'updatePassword'])->middleware('can:update,user');
     Route::delete('/users/{user}', [UsersController::class, 'destroy'])->middleware('can:delete,user');
@@ -55,6 +97,8 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::get('/libraries', [LibrariesController::class, 'index'])->middleware('can:viewAny,App\Models\Library');
     Route::post('/libraries', [LibrariesController::class, 'store'])->middleware('can:create,App\Models\Library');
     Route::get('/libraries/{library}', [LibrariesController::class, 'show'])->middleware('can:view,library');
+    Route::get('/libraries/{library}/settings', [LibrariesController::class, 'settings'])->middleware('can:view,library');
+    Route::put('/libraries/{library}/settings', [LibrariesController::class, 'updateSettings'])->middleware('can:updateSettings,library');
     Route::put('/libraries/{library}', [LibrariesController::class, 'update'])->middleware('can:update,library');
     Route::delete('/libraries/{library}', [LibrariesController::class, 'destroy'])->middleware('can:delete,library');
     Route::post('/libraries/{library}/restore', [LibrariesController::class, 'restore'])->middleware('can:restore,library');
@@ -102,6 +146,8 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::post('/book-copies/inventory-sequence/sync', [BookCopiesController::class, 'syncInventorySequence'])->middleware('can:syncInventory,App\Models\BookCopy');
     Route::get('/book-copies/archive', [BookCopiesController::class, 'archive'])->middleware('can:viewAny,App\Models\BookCopy');
     Route::get('/book-copies', [BookCopiesController::class, 'index'])->middleware('can:viewAny,App\Models\BookCopy');
+    Route::get('/book-copies/{bookCopy}/history', [BookHistoryController::class, 'forCopy'])
+        ->middleware('can:view,bookCopy');
     Route::post('/book-copies/{bookCopy}/restore', [BookCopiesController::class, 'restore'])->middleware('can:restore,bookCopy')->withTrashed();
     Route::delete('/book-copies/{bookCopy}/force', [BookCopiesController::class, 'forceDestroy'])->middleware('can:forceDelete,bookCopy')->withTrashed();
     Route::post('/book-copies/{bookCopy}/write-off', [BookCopiesController::class, 'writeOff'])->middleware('can:writeOff,bookCopy');

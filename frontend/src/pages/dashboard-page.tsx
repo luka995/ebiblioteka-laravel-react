@@ -1,11 +1,65 @@
+import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Sparkles } from 'lucide-react'
+import { BookCheck, BookMarked, BookOpen, Building2, Users, type LucideIcon } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { LibrarySwitcher } from '@/components/layout/library-switcher'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
+interface DashboardCard {
+  to: string
+  icon: LucideIcon
+  title: string
+  description: string
+  external?: boolean
+}
 
 export function DashboardPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { user, can, publicUrl } = useAuth()
+
+  const booksUrl = can('books.viewAny')
+    ? '/books'
+    : publicUrl
+      ? `${publicUrl}/biblioteke`
+      : '/reservations'
+
+  const cards: DashboardCard[] = [
+    {
+      to: '/reservations',
+      icon: BookMarked,
+      title: t('dashboard.cards.reservationsTitle'),
+      description: t('dashboard.cards.reservationsDescription'),
+    },
+    {
+      to: '/borrows',
+      icon: BookCheck,
+      title: t('dashboard.cards.borrowsTitle'),
+      description: t('dashboard.cards.borrowsDescription'),
+    },
+    {
+      to: booksUrl,
+      icon: BookOpen,
+      title: t('dashboard.cards.booksTitle'),
+      description: t('dashboard.cards.booksDescription'),
+      external: !booksUrl.startsWith('/'),
+    },
+    ...(can('users.viewAny')
+      ? [{
+          to: '/users',
+          icon: Users,
+          title: t('dashboard.cards.usersTitle'),
+          description: t('dashboard.cards.usersDescription'),
+        }]
+      : []),
+    ...(user?.is_super_admin
+      ? [{
+          to: '/libraries',
+          icon: Building2,
+          title: t('dashboard.cards.librariesTitle'),
+          description: t('dashboard.cards.librariesDescription'),
+        }]
+      : []),
+  ]
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -18,12 +72,26 @@ export function DashboardPage() {
 
       <LibrarySwitcher />
 
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed bg-card px-6 py-16 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full bg-brand-soft text-brand">
-          <Sparkles className="size-6" />
-        </span>
-        <h3 className="font-brand-heading mt-4 text-lg font-semibold">{t('dashboard.emptyTitle')}</h3>
-        <p className="mt-1 max-w-sm text-sm text-muted-foreground">{t('dashboard.emptyText')}</p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {cards.map((card) => (
+          <Link
+            key={card.to}
+            to={card.to}
+            target={card.external ? '_blank' : undefined}
+            rel={card.external ? 'noreferrer' : undefined}
+            className="group"
+          >
+            <Card className="h-full transition-colors group-hover:border-brand-accent">
+              <CardHeader>
+                <span className="flex size-11 items-center justify-center rounded-lg bg-brand-accent/25 text-brand">
+                  <card.icon className="size-5" />
+                </span>
+                <CardTitle className="mt-3 font-brand-heading text-lg">{card.title}</CardTitle>
+                <CardDescription>{card.description}</CardDescription>
+              </CardHeader>
+            </Card>
+          </Link>
+        ))}
       </div>
     </div>
   )

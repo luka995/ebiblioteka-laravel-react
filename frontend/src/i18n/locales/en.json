@@ -19,7 +19,14 @@
     "settings": "Settings",
     "categories": "Categories",
     "authors": "Authors",
-    "books": "Books"
+    "books": "Books",
+    "myReservations": "My reservations",
+    "libraryReservations": "Library reservations",
+    "myBorrows": "My loans",
+    "libraryBorrows": "Lending",
+    "reference": "Reference data",
+    "systemSettings": "System settings",
+    "libraryRequests": "Library requests"
   },
   "auth": {
     "heroTitle": "A workspace for libraries and readers",
@@ -48,7 +55,11 @@
     "resetSuccessTitle": "Password changed",
     "resetSuccessText": "You can now sign in with your new password.",
     "passwordHint": "At least 8 characters.",
-    "backToSite": "Back to website"
+    "backToSite": "Back to website",
+    "turnstileLabel": "Security check",
+    "turnstileRequired": "Please confirm you are not a robot.",
+    "turnstileFailed": "Security verification failed. Please try again.",
+    "turnstileUnavailable": "Security verification is unavailable. Refresh the page."
   },
   "dashboard": {
     "kicker": "eBiblioteka",
@@ -59,7 +70,19 @@
     "allLibraries": "All libraries",
     "chooseLibraryHint": "Choose the library you want to work in.",
     "emptyTitle": "Your workspace is ready",
-    "emptyText": "Overview widgets will appear here depending on your account type. Soon."
+    "emptyText": "Overview widgets will appear here depending on your account type. Soon.",
+    "cards": {
+      "reservationsTitle": "My reservations",
+      "reservationsDescription": "Reserved copies and pickup deadlines.",
+      "booksTitle": "Books",
+      "booksDescription": "Browse the catalog and find your next book.",
+      "usersTitle": "Users",
+      "usersDescription": "Manage members and their memberships.",
+      "librariesTitle": "Libraries",
+      "librariesDescription": "Review and manage libraries in the system.",
+      "borrowsTitle": "My loans",
+      "borrowsDescription": "Review issued books, due dates and returns."
+    }
   },
   "users": {
     "title": "Users",
@@ -111,7 +134,10 @@
       "reservations": "Reservations",
       "borrows": "Borrows"
     },
-    "soonText": "This section is under construction and will be available soon."
+    "soonText": "This section is under construction and will be available soon.",
+    "membershipRoles": "Memberships and roles",
+    "noMemberships": "The user is not a member of any library.",
+    "activeLibraryRequired": "Select an active library to assign a role."
   },
   "profile": {
     "title": "My profile",
@@ -135,6 +161,24 @@
       "light": "Light",
       "dark": "Dark",
       "system": "System"
+    },
+    "superAdmins": {
+      "title": "Global super administrators",
+      "description": "Users with full control over the system, regardless of library membership.",
+      "selected": "Selected super administrators",
+      "empty": "No super administrators selected.",
+      "add": "Add a super administrator",
+      "searchPlaceholder": "Search by name or email...",
+      "noResults": "No results.",
+      "remove": "Remove",
+      "updated": "The super administrator list has been saved.",
+      "history": "Change history",
+      "noLogs": "No changes recorded yet.",
+      "system": "System"
+    },
+    "system": {
+      "title": "System settings",
+      "subtitle": "Global application settings available to superadmins only."
     }
   },
   "libs": {
@@ -168,7 +212,24 @@
     "regionPlaceholder": "Select a region",
     "showDeleted": "Show deleted",
     "restore": "Restore",
-    "restored": "Library restored."
+    "restored": "Library restored.",
+    "settings": {
+      "title": "Library settings",
+      "subtitle": "Separate settings that apply to all reservations in the library.",
+      "reservationHours": "Reservation duration (hours)",
+      "reservationHoursHint": "How many hours the library holds a reserved copy for the user.",
+      "hoursValue": "{{count}} hours",
+      "invalidHours": "Enter a number of hours between 1 and 720.",
+      "updated": "Library settings saved.",
+      "lendDays": "Loan period (days)",
+      "lendDaysHint": "Default number of days a book is issued for.",
+      "overduePrice": "Overdue price per day (RSD)",
+      "overduePriceHint": "Amount charged for each day past the due date.",
+      "daysValue": "{{count}} days",
+      "priceValue": "{{amount}} RSD",
+      "invalidLendDays": "Enter a number of days between 1 and 365.",
+      "invalidOverduePrice": "Enter an amount between 0 and 100000."
+    }
   },
   "membership": {
     "toggleTitle": "Deactivate / activate membership",
@@ -323,6 +384,43 @@
       "body": "Content"
     }
   },
+  "reservations": {
+    "myTitle": "My reservations",
+    "mySubtitle": "Reserved copies and pickup deadlines.",
+    "activeCount": "Active reservations ({{count}})",
+    "availableCopies": "Available copies: {{count}}",
+    "holdHours": "We hold the copy for {{count}} hours",
+    "reserveAction": "Reserve",
+    "cancelAction": "Cancel reservation",
+    "reserved": "The book has been reserved.",
+    "cancelled": "The reservation has been cancelled.",
+    "activeUntil": "Reserved until {{date}}",
+    "dateFrom": "From date",
+    "dateTo": "To date",
+    "validTill": "Valid until",
+    "notMember": "You are not a member of the library that holds this title.",
+    "noCopies": "There are currently no available copies.",
+    "emptyTitle": "No active reservations",
+    "emptyText": "When you reserve a book, the hold deadline will appear here.",
+    "userEmptyText": "This user currently has no active reservations.",
+    "bookNotFound": "Book not found.",
+    "cancelConfirmTitle": "Cancel the reservation?",
+    "cancelConfirmText": "The reservation for \"{{title}}\" will be cancelled and the copy will become available again.",
+    "howItWorksTitle": "How reservations work",
+    "howItWorksText": "A reservation holds the selected copy for {{count}} hours. If the book is not picked up within that period, the reservation expires and the copy returns to the available pool.",
+    "libraryTitle": "Library reservations",
+    "librarySubtitle": "All reservations in {{library}}.",
+    "libraryCount": "Total reservations: {{count}}",
+    "searchPlaceholder": "Search by book, user or barcode...",
+    "statusActive": "Active",
+    "statusHistory": "History",
+    "statusAll": "All",
+    "user": "User",
+    "statusColumn": "Status",
+    "libraryEmptyText": "There are no reservations in this library for the selected filter.",
+    "historyEmptyText": "There are no cancelled or expired reservations yet.",
+    "selectLibrary": "Select an active library to see its reservations."
+  },
   "fields": {
     "firstName": "First name",
     "lastName": "Last name",
@@ -337,6 +435,8 @@
     "city": "City",
     "postCode": "Postal code",
     "name": "Name",
+    "title": "Title",
+    "library": "Library",
     "place": "Place",
     "region": "Region",
     "tags": "Tags",
@@ -365,6 +465,7 @@
   },
   "common": {
     "save": "Save",
+    "add": "Add",
     "cancel": "Cancel",
     "search": "Search",
     "clear": "Clear",
@@ -381,7 +482,8 @@
     "close": "Close",
     "none": "None",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "change": "Change"
   },
   "pagination": {
     "showing": "Showing {{from}}–{{to}} of {{total}}",
@@ -483,7 +585,13 @@
       "inventoryTitle": "Inventory book PDF",
       "inventoryDescription": "Generate and download the library inventory book.",
       "barcodePrintTitle": "Fund barcode printing",
-      "barcodePrintDescription": "Generate a PDF with barcodes for all library copies."
+      "barcodePrintDescription": "Generate a PDF with barcodes for all library copies.",
+      "auditTitle": "Circulation audit",
+      "auditDescription": "History of reservations, cancellations and expirations by library.",
+      "libraryReservationsTitle": "Library reservations",
+      "libraryReservationsDescription": "Overview of all active and historical reservations in the library.",
+      "libraryBorrowsTitle": "Library loans",
+      "libraryBorrowsDescription": "Issue, return and review the library loan history."
     },
     "columns": {
       "name": "Title",
@@ -652,6 +760,7 @@
     "status": {
       "available": "Available",
       "borrowed": "Borrowed",
+      "reserved": "Reserved",
       "record_error": "Record error",
       "written_off": "Written off",
       "archived": "Archived"
@@ -731,5 +840,142 @@
         "failed": "Failed"
       }
     }
+  },
+  "borrows": {
+    "myTitle": "My loans",
+    "mySubtitle": "Issued books, due dates and loan history.",
+    "myCount": "Total loans: {{count}}",
+    "myEmptyText": "You currently have no active loans.",
+    "libraryTitle": "Library loans",
+    "librarySubtitle": "Issue and return loans in {{library}}.",
+    "count": "Total loans: {{count}}",
+    "searchPlaceholder": "Search by user, book or barcode...",
+    "dateFrom": "Date from",
+    "dateTo": "Date to",
+    "statusActive": "Active",
+    "statusOverdue": "Overdue",
+    "statusHistory": "History",
+    "statusAll": "All",
+    "status": "Status",
+    "statusLabel": {
+      "active": "Active",
+      "overdue": "Overdue",
+      "returned": "Returned"
+    },
+    "user": "User",
+    "fromDate": "Issued",
+    "validTill": "Due date",
+    "returnDate": "Returned",
+    "newLoan": "New loan",
+    "issueAction": "Create loan",
+    "returnAction": "Return",
+    "returnTitle": "Return this loan?",
+    "returnText": "“{{title}}” will be returned for {{user}}. The due date was {{due}}.",
+    "overdueNotice": "Overdue: {{days}} days, calculated {{amount}} RSD.",
+    "returned": "The loan has been returned.",
+    "returnedOverdue": "Overdue: {{days}} days · {{amount}} RSD",
+    "emptyTitle": "No loans",
+    "libraryEmptyText": "Issued books will appear here.",
+    "historyEmptyText": "There are no returned loans yet.",
+    "userEmptyText": "This user currently has no active loans.",
+    "selectLibrary": "Select an active library to view its loans.",
+    "reservationsLink": "Reservations",
+    "activeLibraryRequired": "Select an active library to issue a book.",
+    "issued": "The book has been issued.",
+    "copyStatus": {
+      "available": "Available",
+      "reserved": "Reserved",
+      "borrowed": "Borrowed",
+      "written_off": "Written off",
+      "record_error": "Record error"
+    },
+    "modal": {
+      "title": "Issue a book",
+      "subtitle": "Scan the book barcode and find the user, or vice versa.",
+      "userLabel": "User (barcode or username)",
+      "userPlaceholder": "Scan the card or enter a username...",
+      "userNotFound": "User not found.",
+      "userCounts": "Active loans: {{borrows}} · Reservations: {{reservations}}",
+      "copyLabel": "Book (physical copy barcode)",
+      "copyPlaceholder": "Scan the book barcode...",
+      "copyNotFound": "The physical copy was not found in the active library.",
+      "reservedFor": "Reserved for {{name}} until {{date}}.",
+      "validTill": "Due date",
+      "validTillHint": "Default is {{days}} days from today.",
+      "submit": "Create loan",
+      "reservationModeTitle": "Issue from reservation",
+      "reservationModeText": "Reserved copy {{barcode}}, pickup deadline {{date}}."
+    },
+    "conflict": {
+      "title": "The user has a reservation for another copy",
+      "text": "Copy {{reserved}} is reserved until {{date}}, but {{scanned}} was scanned. Fulfil the reservation with the scanned copy and release the reserved one?",
+      "hint": "The reserved copy will become available again, and the loan will be linked to the scanned copy.",
+      "confirm": "Yes, create a loan with the scanned copy"
+    }
+  },
+  "bookHistory": {
+    "title": "Activity history",
+    "subtitle": "Event history in {{library}}.",
+    "count": "Total events: {{count}}",
+    "searchPlaceholder": "Search by book, user or barcode...",
+    "allActions": "All actions",
+    "emptyTitle": "No activity",
+    "emptyText": "Loans, reservations and returns will appear here.",
+    "date": "Date",
+    "action": "Action",
+    "user": "User",
+    "actor": "Performed by",
+    "system": "System",
+    "actions": {
+      "reservation": "Reservation",
+      "reservation_cancel": "Reservation cancelled",
+      "reservation_expired": "Reservation expired",
+      "reservation_fulfilled": "Reservation fulfilled",
+      "borrow": "Loan",
+      "return": "Return"
+    }
+  },
+  "libraryRequests": {
+    "title": "Library requests",
+    "subtitle": "Review school requests and open a library from an application.",
+    "searchPlaceholder": "School name, city or contact",
+    "allStatuses": "All statuses",
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "columns": {
+      "school": "School",
+      "type": "Type",
+      "city": "City",
+      "contact": "Contact",
+      "created": "Received",
+      "status": "Status"
+    },
+    "empty": "No requests to show.",
+    "open": "Open request",
+    "libraryAddress": "Address",
+    "contact": "Contact",
+    "email": "Email",
+    "students": "Students",
+    "employees": "Employees",
+    "message": "Message",
+    "handledBy": "Handled by",
+    "approveTitle": "Open the library",
+    "approveSubtitle": "The details are taken from the request. Choose a place and confirm.",
+    "libraryName": "Library name",
+    "region": "Region",
+    "place": "Place",
+    "selectRegion": "Select a region",
+    "selectPlace": "Select a place",
+    "workTime": "Working hours",
+    "workTimePlaceholder": "Mon - Fri, 08:00 - 16:00",
+    "invNumberAuto": "Automatically assign inventory numbers",
+    "placeHint": "Place from the request: {{city}}. If it is not in the directory, add it under Places.",
+    "approve": "Open library",
+    "reject": "Reject request",
+    "approveSuccess": "Library opened.",
+    "rejectSuccess": "Request rejected."
   }
 }

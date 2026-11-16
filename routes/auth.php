@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Resources\UserResource;
 use App\Models\Library;
+use App\Models\LibrarySettings;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
 use Illuminate\Http\Request;
@@ -41,7 +42,11 @@ Route::prefix('v1/auth')->group(function (): void {
         $user = $request->user();
         $active = $activeLibrary->resolve($user);
 
-        return (new UserResource($user))
+        if ($active instanceof Library) {
+            $active->loadMissing('settings');
+        }
+
+        return (new UserResource($user->load('libraries')))
             ->additional([
                 'permissions' => app(AuthorizationService::class)->globalPermissions($user),
                 'selectable_libraries' => $activeLibrary->selectable($user)
@@ -49,11 +54,24 @@ Route::prefix('v1/auth')->group(function (): void {
                         'id' => $library->id,
                         'name' => $library->name,
                         'inv_number_auto' => (bool) $library->inv_number_auto,
+                        'role' => $library->pivot?->role?->value,
+                        'role_label' => $library->pivot?->role?->getLabel(),
                     ])
                     ->values(),
                 'active_library' => $active instanceof Library
-                    ? ['id' => $active->id, 'name' => $active->name, 'inv_number_auto' => (bool) $active->inv_number_auto]
+                    ? [
+                        'id' => $active->id,
+                        'name' => $active->name,
+                        'inv_number_auto' => (bool) $active->inv_number_auto,
+                        'lend_days' => $active->settings?->lendDays()
+                            ?? LibrarySettings::DEFAULT_LEND_DAYS,
+                        'overdue_price_per_day' => $active->settings?->overduePricePerDay()
+                            ?? LibrarySettings::DEFAULT_OVERDUE_PRICE_PER_DAY,
+                        'role' => $user->roleIn($active->id)?->value,
+                        'role_label' => $user->roleIn($active->id)?->getLabel(),
+                    ]
                     : null,
+                'public_url' => rtrim((string) config('app.url'), '/'),
             ]);
     })->middleware('auth')->name('me');
 

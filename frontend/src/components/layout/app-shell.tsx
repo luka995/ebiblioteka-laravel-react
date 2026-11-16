@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BadgeCheck, BookOpen, Building2, FolderTree, KeyRound, LayoutDashboard, LogOut, Map, MapPin, Menu, Newspaper, PenLine, Settings, Tag, Users, X } from 'lucide-react'
+import { BadgeCheck, BookCheck, BookOpen, Building2, ChevronDown, ClipboardList, FolderTree, KeyRound, LayoutDashboard, LogOut, Map, MapPin, Menu, Newspaper, PenLine, Settings, SlidersHorizontal, Tag, Users, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { BrandMark } from '@/components/brand'
 import { HeaderLibrarySwitcher } from '@/components/layout/library-switcher'
@@ -29,20 +29,58 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: null },
   { to: '/users', labelKey: 'nav.users', icon: Users, permission: 'users.viewAny' },
   { to: '/libraries', labelKey: 'nav.libraries', icon: Building2, permission: 'libraries.viewAny' },
-  { to: '/regions', labelKey: 'nav.regions', icon: Map, permission: 'regions.viewAny' },
-  { to: '/places', labelKey: 'nav.places', icon: MapPin, permission: 'places.viewAny' },
   { to: '/tags', labelKey: 'nav.tags', icon: Tag, permission: 'tags.viewAny' },
   { to: '/categories', labelKey: 'nav.categories', icon: FolderTree, permission: 'categories.viewAny' },
   { to: '/authors', labelKey: 'nav.authors', icon: PenLine, permission: 'authors.viewAny' },
   { to: '/books', labelKey: 'nav.books', icon: BookOpen, permission: 'books.viewAny' },
+  { to: '/borrows/library', labelKey: 'nav.libraryBorrows', icon: BookCheck, permission: 'borrows.viewAny' },
+]
+
+const REFERENCE_ITEMS: NavItem[] = [
+  { to: '/regions', labelKey: 'nav.regions', icon: Map, permission: 'regions.viewAny' },
+  { to: '/places', labelKey: 'nav.places', icon: MapPin, permission: 'places.viewAny' },
   { to: '/news', labelKey: 'nav.news', icon: Newspaper, permission: 'news.viewAny' },
 ]
 
+function navItemClass(isActive: boolean, nested = false): string {
+  return cn(
+    'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+    nested && 'ml-3',
+    isActive
+      ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+      : 'text-sidebar-foreground/75 hover:bg-muted hover:text-sidebar-foreground',
+  )
+}
+
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { t } = useTranslation()
-  const { user, can, logout } = useAuth()
+  const { user, can, activeLibrary, logout } = useAuth()
   const [passwordOpen, setPasswordOpen] = useState(false)
+  const location = useLocation()
   const items = NAV_ITEMS.filter((item) => item.permission === null || can(item.permission))
+  const referenceItems = REFERENCE_ITEMS.filter((item) => item.permission === null || can(item.permission))
+
+  if (user?.is_super_admin) {
+    referenceItems.push({
+      to: '/library-requests',
+      labelKey: 'nav.libraryRequests',
+      icon: ClipboardList,
+      permission: null,
+    })
+    referenceItems.push({
+      to: '/settings/system',
+      labelKey: 'nav.systemSettings',
+      icon: SlidersHorizontal,
+      permission: null,
+    })
+  }
+
+  const referenceActive = referenceItems.some((item) => location.pathname.startsWith(item.to))
+  const [referenceOpen, setReferenceOpen] = useState(referenceActive)
+
+  useEffect(() => {
+    if (referenceActive) setReferenceOpen(true)
+  }, [referenceActive])
 
   return (
     <div className="flex h-full flex-col">
@@ -53,26 +91,49 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3 py-2" aria-label="Main">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-2" aria-label="Main">
         {items.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.to === '/'}
             onClick={onNavigate}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/75 hover:bg-muted hover:text-sidebar-foreground',
-              )
-            }
+            className={({ isActive }) => navItemClass(isActive)}
           >
             <item.icon className="size-4" />
             {t(item.labelKey)}
           </NavLink>
         ))}
+
+        {referenceItems.length > 0 ? (
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setReferenceOpen((value) => !value)}
+              className="flex w-full items-center justify-between rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted hover:text-sidebar-foreground"
+              aria-expanded={referenceOpen}
+            >
+              {t('nav.reference')}
+              <ChevronDown className={cn('size-4 transition-transform', referenceOpen && 'rotate-180')} />
+            </button>
+
+            {referenceOpen ? (
+              <div className="mt-1 space-y-1">
+                {referenceItems.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={onNavigate}
+                    className={({ isActive }) => navItemClass(isActive, true)}
+                  >
+                    <item.icon className="size-4" />
+                    {t(item.labelKey)}
+                  </NavLink>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
       </nav>
 
       <div className="border-t px-2 py-2">
@@ -86,7 +147,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">{user.name}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{user.role_label}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {user.is_super_admin
+                        ? t('roles.superadmin')
+                        : activeLibrary?.role_label ?? user.role_label}
+                    </span>
                   </span>
                 </button>
               </DropdownMenuTrigger>
@@ -139,6 +204,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function pageTitleFor(pathname: string): string {
+  if (pathname.startsWith('/borrows/library')) return 'nav.libraryBorrows'
+  if (pathname.startsWith('/borrows')) return 'nav.myBorrows'
+  if (pathname.startsWith('/reservations/library')) return 'nav.libraryReservations'
+  if (pathname.startsWith('/reservations')) return 'nav.myReservations'
+  if (pathname.startsWith('/catalog')) return 'nav.myReservations'
   if (pathname.startsWith('/users')) return 'nav.users'
   if (pathname.startsWith('/libraries')) return 'nav.libraries'
   if (pathname.startsWith('/regions')) return 'nav.regions'
@@ -148,6 +218,8 @@ function pageTitleFor(pathname: string): string {
   if (pathname.startsWith('/authors')) return 'nav.authors'
   if (pathname.startsWith('/books')) return 'nav.books'
   if (pathname.startsWith('/news')) return 'nav.news'
+  if (pathname.startsWith('/library-requests')) return 'nav.libraryRequests'
+  if (pathname.startsWith('/settings/system')) return 'nav.systemSettings'
   if (pathname.startsWith('/profile')) return 'nav.account'
   if (pathname.startsWith('/settings')) return 'nav.settings'
   return 'nav.dashboard'

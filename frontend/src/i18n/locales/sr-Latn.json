@@ -19,7 +19,14 @@
     "settings": "Podešavanja",
     "categories": "Kategorije",
     "authors": "Autori",
-    "books": "Knjige"
+    "books": "Knjige",
+    "myReservations": "Moje rezervacije",
+    "libraryReservations": "Rezervacije biblioteke",
+    "myBorrows": "Moje pozajmice",
+    "libraryBorrows": "Izdavanje",
+    "reference": "Šifarnici",
+    "systemSettings": "Sistemska podešavanja",
+    "libraryRequests": "Zahtevi za biblioteke"
   },
   "auth": {
     "heroTitle": "Radni prostor za biblioteke i čitaoce",
@@ -48,7 +55,11 @@
     "resetSuccessTitle": "Lozinka je promenjena",
     "resetSuccessText": "Sada se možete prijaviti sa novom lozinkom.",
     "passwordHint": "Najmanje 8 karaktera.",
-    "backToSite": "Nazad na sajt"
+    "backToSite": "Nazad na sajt",
+    "turnstileLabel": "Provera bezbednosti",
+    "turnstileRequired": "Potrebna je potvrda da niste robot.",
+    "turnstileFailed": "Provera bezbednosti nije uspela. Pokušajte ponovo.",
+    "turnstileUnavailable": "Provera bezbednosti nije dostupna. Osvežite stranicu."
   },
   "dashboard": {
     "kicker": "eBiblioteka",
@@ -59,7 +70,19 @@
     "allLibraries": "Sve biblioteke",
     "chooseLibraryHint": "Izaberite biblioteku u kojoj ćete raditi.",
     "emptyTitle": "Radni prostor je spreman",
-    "emptyText": "Ovde će se pojaviti pregledi i widgeti u skladu sa tipom vašeg naloga. Uskoro."
+    "emptyText": "Ovde će se pojaviti pregledi i widgeti u skladu sa tipom vašeg naloga. Uskoro.",
+    "cards": {
+      "reservationsTitle": "Moje rezervacije",
+      "reservationsDescription": "Pregled rezervisanih primeraka i rokova preuzimanja.",
+      "booksTitle": "Knjige",
+      "booksDescription": "Pregledajte katalog i pronađite sledeću knjigu.",
+      "usersTitle": "Korisnici",
+      "usersDescription": "Upravljajte članovima i njihovim članstvima.",
+      "librariesTitle": "Biblioteke",
+      "librariesDescription": "Pregled i upravljanje bibliotekama u sistemu.",
+      "borrowsTitle": "Moje pozajmice",
+      "borrowsDescription": "Pregled izdatih knjiga, rokova i vraćanja."
+    }
   },
   "users": {
     "title": "Korisnici",
@@ -111,7 +134,10 @@
       "reservations": "Rezervacije",
       "borrows": "Pozajmice"
     },
-    "soonText": "Ovaj deo je u pripremi i biće dostupan uskoro."
+    "soonText": "Ovaj deo je u pripremi i biće dostupan uskoro.",
+    "membershipRoles": "Članstva i uloge",
+    "noMemberships": "Korisnik trenutno nije član nijedne biblioteke.",
+    "activeLibraryRequired": "Izaberite aktivnu biblioteku da biste dodelili ulogu."
   },
   "profile": {
     "title": "Moj profil",
@@ -135,6 +161,24 @@
       "light": "Svetla",
       "dark": "Tamna",
       "system": "Sistem"
+    },
+    "superAdmins": {
+      "title": "Globalni superadministratori",
+      "description": "Korisnici koji imaju punu kontrolu nad sistemom, nezavisno od članstva u biblioteci.",
+      "selected": "Izabrani superadministratori",
+      "empty": "Nema izabranih superadministratora.",
+      "add": "Dodaj superadministratora",
+      "searchPlaceholder": "Pretraga po imenu ili email-u...",
+      "noResults": "Nema rezultata.",
+      "remove": "Ukloni",
+      "updated": "Lista superadministratora je sačuvana.",
+      "history": "Istorija izmena",
+      "noLogs": "Nema zabeleženih izmena.",
+      "system": "Sistem"
+    },
+    "system": {
+      "title": "Sistemska podešavanja",
+      "subtitle": "Globalna podešavanja aplikacije dostupna samo superadminima."
     }
   },
   "libs": {
@@ -168,7 +212,24 @@
     "regionPlaceholder": "Izaberite regiju",
     "showDeleted": "Prikaži obrisane",
     "restore": "Vrati",
-    "restored": "Biblioteka je vraćena."
+    "restored": "Biblioteka je vraćena.",
+    "settings": {
+      "title": "Podešavanja biblioteke",
+      "subtitle": "Odvojena podešavanja koja važe za sve rezervacije u biblioteci.",
+      "reservationHours": "Trajanje rezervacije (sati)",
+      "reservationHoursHint": "Koliko sati biblioteka čuva rezervisani primerak za korisnika.",
+      "hoursValue": "{{count}} sati",
+      "invalidHours": "Unesite broj sati između 1 i 720.",
+      "updated": "Podešavanja biblioteke su sačuvana.",
+      "lendDays": "Rok pozajmice (dani)",
+      "lendDaysHint": "Podrazumevani broj dana do kog se knjiga izdaje.",
+      "overduePrice": "Cena prekoračenja po danu (RSD)",
+      "overduePriceHint": "Iznos koji se obračunava za svaki dan prekoračenja roka.",
+      "daysValue": "{{count}} dana",
+      "priceValue": "{{amount}} RSD",
+      "invalidLendDays": "Unesite broj dana između 1 i 365.",
+      "invalidOverduePrice": "Unesite iznos između 0 i 100000."
+    }
   },
   "membership": {
     "toggleTitle": "Deaktiviraj / aktiviraj članstvo",
@@ -323,6 +384,43 @@
       "body": "Sadržaj"
     }
   },
+  "reservations": {
+    "myTitle": "Moje rezervacije",
+    "mySubtitle": "Pregled rezervisanih primeraka i rokova preuzimanja.",
+    "activeCount": "Aktivne rezervacije ({{count}})",
+    "availableCopies": "Dostupnih primeraka: {{count}}",
+    "holdHours": "Čuvamo primerak {{count}} sati",
+    "reserveAction": "Rezerviši",
+    "cancelAction": "Poništi rezervaciju",
+    "reserved": "Knjiga je rezervisana.",
+    "cancelled": "Rezervacija je poništena.",
+    "activeUntil": "Rezervisano do {{date}}",
+    "dateFrom": "Od datuma",
+    "dateTo": "Do datuma",
+    "validTill": "Važi do",
+    "notMember": "Nemate članstvo u biblioteci ovog naslova.",
+    "noCopies": "Trenutno nema slobodnih primeraka.",
+    "emptyTitle": "Nema aktivnih rezervacija",
+    "emptyText": "Kada rezervišete knjigu, ovde ćete videti rok do kog je primerak sačuvan.",
+    "userEmptyText": "Korisnik trenutno nema aktivnih rezervacija.",
+    "bookNotFound": "Knjiga nije pronađena.",
+    "cancelConfirmTitle": "Poništi rezervaciju?",
+    "cancelConfirmText": "Rezervacija za „{{title}}“ će biti otkazana i primerak će ponovo biti dostupan.",
+    "howItWorksTitle": "Kako rezervacija radi",
+    "howItWorksText": "Rezervacijom čuvamo izabrani primerak {{count}} sati. Ako ne preuzmete knjigu u tom roku, rezervacija ističe i primerak se vraća u dostupan fond.",
+    "libraryTitle": "Rezervacije biblioteke",
+    "librarySubtitle": "Pregled svih rezervacija u biblioteci {{library}}.",
+    "libraryCount": "Ukupno rezervacija: {{count}}",
+    "searchPlaceholder": "Pretraga po knjizi, korisniku ili bar-kodu...",
+    "statusActive": "Aktivne",
+    "statusHistory": "Istorija",
+    "statusAll": "Sve",
+    "user": "Korisnik",
+    "statusColumn": "Status",
+    "libraryEmptyText": "U biblioteci trenutno nema rezervacija za izabrani filter.",
+    "historyEmptyText": "Još uvek nema otkazanih ili isteklih rezervacija.",
+    "selectLibrary": "Izaberite aktivnu biblioteku da biste videli njene rezervacije."
+  },
   "fields": {
     "firstName": "Ime",
     "lastName": "Prezime",
@@ -337,6 +435,8 @@
     "city": "Grad",
     "postCode": "Poštanski broj",
     "name": "Naziv",
+    "title": "Naslov",
+    "library": "Biblioteka",
     "place": "Mesto",
     "region": "Regija",
     "tags": "Tagovi",
@@ -365,6 +465,7 @@
   },
   "common": {
     "save": "Sačuvaj",
+    "add": "Dodaj",
     "cancel": "Otkaži",
     "search": "Pretraga",
     "actions": "Akcije",
@@ -381,7 +482,8 @@
     "close": "Zatvori",
     "none": "Bez",
     "yes": "Da",
-    "no": "Ne"
+    "no": "Ne",
+    "change": "Promeni"
   },
   "pagination": {
     "showing": "Prikaz {{from}}–{{to}} od {{total}}",
@@ -483,7 +585,13 @@
       "inventoryTitle": "PDF knjiga inventara",
       "inventoryDescription": "Generisanje i preuzimanje inventarne knjige biblioteke.",
       "barcodePrintTitle": "Štampa bar-kodova fonda",
-      "barcodePrintDescription": "Generisanje PDF-a sa bar-kodovima svih jedinica biblioteke."
+      "barcodePrintDescription": "Generisanje PDF-a sa bar-kodovima svih jedinica biblioteke.",
+      "auditTitle": "Audit cirkulacije",
+      "auditDescription": "Istorija rezervacija, otkazivanja i isteka po biblioteci.",
+      "libraryReservationsTitle": "Rezervacije biblioteke",
+      "libraryReservationsDescription": "Pregled svih aktivnih i istorijskih rezervacija u biblioteci.",
+      "libraryBorrowsTitle": "Pozajmice biblioteke",
+      "libraryBorrowsDescription": "Izdavanje, razduživanje i istorija pozajmica u biblioteci."
     },
     "columns": {
       "name": "Naslov",
@@ -652,6 +760,7 @@
     "status": {
       "available": "Dostupna",
       "borrowed": "Pozajmljena",
+      "reserved": "Rezervisana",
       "record_error": "Greška u zapisu",
       "written_off": "Otpisana",
       "archived": "Arhivirana"
@@ -731,5 +840,142 @@
         "failed": "Greška"
       }
     }
+  },
+  "borrows": {
+    "myTitle": "Moje pozajmice",
+    "mySubtitle": "Izdate knjige, rokovi vraćanja i istorija pozajmica.",
+    "myCount": "Ukupno pozajmica: {{count}}",
+    "myEmptyText": "Trenutno nemate aktivnih pozajmica.",
+    "libraryTitle": "Pozajmice biblioteke",
+    "librarySubtitle": "Izdavanje i razduživanje pozajmica u biblioteci {{library}}.",
+    "count": "Ukupno pozajmica: {{count}}",
+    "searchPlaceholder": "Pretraga po korisniku, knjizi ili bar-kodu...",
+    "dateFrom": "Datum od",
+    "dateTo": "Datum do",
+    "statusActive": "Aktivne",
+    "statusOverdue": "Prekoračene",
+    "statusHistory": "Istorija",
+    "statusAll": "Sve",
+    "status": "Status",
+    "statusLabel": {
+      "active": "Aktivna",
+      "overdue": "Prekoračena",
+      "returned": "Vraćena"
+    },
+    "user": "Korisnik",
+    "fromDate": "Izdato",
+    "validTill": "Rok vraćanja",
+    "returnDate": "Vraćeno",
+    "newLoan": "Nova pozajmica",
+    "issueAction": "Kreiraj pozajmicu",
+    "returnAction": "Razduži",
+    "returnTitle": "Razdužiti pozajmicu?",
+    "returnText": "Knjiga „{{title}}“ biće vraćena za korisnika {{user}}. Rok je bio {{due}}.",
+    "overdueNotice": "Prekoračenje: {{days}} dana, obračunato {{amount}} RSD.",
+    "returned": "Pozajmica je razdužena.",
+    "returnedOverdue": "Prekoračenje: {{days}} dana · {{amount}} RSD",
+    "emptyTitle": "Nema pozajmica",
+    "libraryEmptyText": "Kada izdate knjigu, pozajmica će se pojaviti ovde.",
+    "historyEmptyText": "Još uvek nema vraćenih pozajmica.",
+    "userEmptyText": "Korisnik trenutno nema aktivnih pozajmica.",
+    "selectLibrary": "Izaberite aktivnu biblioteku da biste videli njene pozajmice.",
+    "reservationsLink": "Rezervacije",
+    "activeLibraryRequired": "Izaberite aktivnu biblioteku da biste izdali knjigu.",
+    "issued": "Knjiga je izdata.",
+    "copyStatus": {
+      "available": "Dostupna",
+      "reserved": "Rezervisana",
+      "borrowed": "Pozajmljena",
+      "written_off": "Otpisana",
+      "record_error": "Greška u zapisu"
+    },
+    "modal": {
+      "title": "Izdavanje knjige",
+      "subtitle": "Očitajte bar-kod knjige i pronađite korisnika, ili obrnuto.",
+      "userLabel": "Korisnik (bar-kod ili korisničko ime)",
+      "userPlaceholder": "Očitajte karticu ili unesite korisničko ime...",
+      "userNotFound": "Korisnik nije pronađen.",
+      "userCounts": "Aktivne pozajmice: {{borrows}} · Rezervacije: {{reservations}}",
+      "copyLabel": "Knjiga (bar-kod fizičke jedinice)",
+      "copyPlaceholder": "Očitajte bar-kod knjige...",
+      "copyNotFound": "Fizička jedinica nije pronađena u aktivnoj biblioteci.",
+      "reservedFor": "Rezervisano za {{name}} do {{date}}.",
+      "validTill": "Rok vraćanja",
+      "validTillHint": "Podrazumevano {{days}} dana od danas.",
+      "submit": "Kreiraj pozajmicu",
+      "reservationModeTitle": "Izdavanje iz rezervacije",
+      "reservationModeText": "Rezervisan primerak {{barcode}}, rok preuzimanja {{date}}."
+    },
+    "conflict": {
+      "title": "Korisnik ima rezervaciju za drugi primerak",
+      "text": "Rezervisan je primerak {{reserved}} do {{date}}, a skeniran je {{scanned}}. Da li da rezervaciju realizujete skeniranim primerkom i oslobodite rezervisani?",
+      "hint": "Rezervisani primerak će ponovo biti dostupan, a pozajmica će biti vezana za skenirani primerak.",
+      "confirm": "Da, kreiraj pozajmicu sa skeniranim primerkom"
+    }
+  },
+  "bookHistory": {
+    "title": "Istorija aktivnosti",
+    "subtitle": "Istorija događaja u biblioteci {{library}}.",
+    "count": "Ukupno događaja: {{count}}",
+    "searchPlaceholder": "Pretraga po knjizi, korisniku ili bar-kodu...",
+    "allActions": "Sve akcije",
+    "emptyTitle": "Nema aktivnosti",
+    "emptyText": "Kada se dogode pozajmice, rezervacije ili vraćanja, pojaviće se ovde.",
+    "date": "Datum",
+    "action": "Akcija",
+    "user": "Korisnik",
+    "actor": "Izvršio",
+    "system": "Sistem",
+    "actions": {
+      "reservation": "Rezervacija",
+      "reservation_cancel": "Otkazivanje rezervacije",
+      "reservation_expired": "Istek rezervacije",
+      "reservation_fulfilled": "Realizovana rezervacija",
+      "borrow": "Pozajmica",
+      "return": "Razduživanje"
+    }
+  },
+  "libraryRequests": {
+    "title": "Zahtevi za biblioteke",
+    "subtitle": "Pregledajte zahteve škola i otvorite biblioteku iz prijave.",
+    "searchPlaceholder": "Naziv škole, mesto ili kontakt",
+    "allStatuses": "Svi statusi",
+    "status": {
+      "pending": "Na čekanju",
+      "approved": "Odobren",
+      "rejected": "Odbijen"
+    },
+    "columns": {
+      "school": "Škola",
+      "type": "Tip",
+      "city": "Mesto",
+      "contact": "Kontakt",
+      "created": "Primljeno",
+      "status": "Status"
+    },
+    "empty": "Nema zahteva za prikaz.",
+    "open": "Otvori zahtev",
+    "libraryAddress": "Adresa",
+    "contact": "Kontakt",
+    "email": "E-pošta",
+    "students": "Učenika",
+    "employees": "Zaposlenih",
+    "message": "Poruka",
+    "handledBy": "Obradio",
+    "approveTitle": "Otvori biblioteku",
+    "approveSubtitle": "Podaci su preuzeti iz zahteva. Izaberite mesto i potvrdite.",
+    "libraryName": "Naziv biblioteke",
+    "region": "Regija",
+    "place": "Mesto",
+    "selectRegion": "Izaberite regiju",
+    "selectPlace": "Izaberite mesto",
+    "workTime": "Radno vreme",
+    "workTimePlaceholder": "Pon - Pet, 08:00 - 16:00",
+    "invNumberAuto": "Automatsko dodeljivanje inventarnih brojeva",
+    "placeHint": "Mesto iz zahteva: {{city}}. Ako ga nema u šifarniku, dodajte ga u „Mesta“.",
+    "approve": "Otvori biblioteku",
+    "reject": "Odbij zahtev",
+    "approveSuccess": "Biblioteka je otvorena.",
+    "rejectSuccess": "Zahtev je odbijen."
   }
 }

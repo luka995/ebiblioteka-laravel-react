@@ -254,7 +254,32 @@ export const apiPaths = {
   usersBulkBarcodePrint: '/api/v1/users/bulk/barcode/print',
   libraries: '/api/v1/libraries',
   library: (id: number) => `/api/v1/libraries/${id}`,
+  librarySettings: (id: number) => `/api/v1/libraries/${id}/settings`,
   libraryRestore: (id: number) => `/api/v1/libraries/${id}/restore`,
+  catalogBook: (id: number) => `/api/v1/catalog/books/${id}`,
+  settings: '/api/v1/settings',
+  settingsUsers: (search: string) => `/api/v1/settings/users?search=${encodeURIComponent(search)}`,
+  libraryRequests: '/api/v1/library-requests',
+  libraryRequest: (id: number) => `/api/v1/library-requests/${id}`,
+  libraryRequestApprove: (id: number) => `/api/v1/library-requests/${id}/approve`,
+  libraryRequestReject: (id: number) => `/api/v1/library-requests/${id}/reject`,
+  bookCopyHistory: (id: number) => `/api/v1/book-copies/${id}/history`,
+  reservations: '/api/v1/reservations',
+  libraryReservations: '/api/v1/reservations/library',
+  reservation: (id: number) => `/api/v1/reservations/${id}`,
+  reservationIssue: (id: number) => `/api/v1/reservations/${id}/issue`,
+  borrows: '/api/v1/borrows',
+  libraryBorrows: '/api/v1/borrows/library',
+  borrowLookup: (params: { user?: string; barcode?: string }) => {
+    const search = new URLSearchParams()
+
+    if (params.user) search.set('user', params.user)
+    if (params.barcode) search.set('barcode', params.barcode)
+
+    return `/api/v1/borrows/lookup?${search.toString()}`
+  },
+  borrowReturn: (id: number) => `/api/v1/borrows/${id}/return`,
+  userBorrows: (id: number) => `/api/v1/users/${id}/borrows`,
   regions: '/api/v1/regions',
   places: '/api/v1/places',
   tags: '/api/v1/tags',

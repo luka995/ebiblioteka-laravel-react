@@ -7,6 +7,7 @@ interface LoginPayload {
   email: string
   password: string
   remember: boolean
+  turnstile_token: string
 }
 
 interface MeEnvelope {
@@ -14,6 +15,7 @@ interface MeEnvelope {
   permissions: GlobalPermissions
   libraries: LibraryOption[]
   activeLibrary: ActiveLibrary
+  publicUrl: string
 }
 
 interface AuthContextValue {
@@ -21,6 +23,7 @@ interface AuthContextValue {
   permissions: GlobalPermissions
   libraries: LibraryOption[]
   activeLibrary: ActiveLibrary
+  publicUrl: string
   isLoading: boolean
   isAuthenticated: boolean
   can: (permission: string) => boolean
@@ -45,12 +48,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           permissions: GlobalPermissions
           selectable_libraries: LibraryOption[]
           active_library: LibraryOption | null
+          public_url?: string
         }>(apiPaths.me)
         return {
           user: response.data,
           permissions: response.permissions ?? {},
           libraries: response.selectable_libraries ?? [],
           activeLibrary: response.active_library ?? null,
+          publicUrl: response.public_url ?? '',
         }
       } catch (error) {
         if (error instanceof Error && 'status' in error && (error as { status: number }).status === 401) {
@@ -92,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const permissions = meQuery.data?.permissions ?? {}
   const libraries = meQuery.data?.libraries ?? []
   const activeLibrary = meQuery.data?.activeLibrary ?? null
+  const publicUrl = meQuery.data?.publicUrl ?? ''
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
@@ -113,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     permissions,
     libraries,
     activeLibrary,
+    publicUrl,
     isLoading: meQuery.isLoading,
     isAuthenticated: user !== null,
     can,

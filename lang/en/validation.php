@@ -202,9 +202,31 @@ return [
         'book_copy_order_number_too_long' => 'The inventory number cannot contain more than 12 digits.',
         'book_copy_book_mismatch' => 'The selected copy does not belong to the given title.',
         'book_copy_borrowed' => 'The copy is borrowed and cannot be deleted.',
+        'borrow_copy_already_borrowed' => 'The physical copy is already on loan to another user.',
+        'borrow_copy_borrowed_by' => 'The physical copy is on loan to :name until :date.',
+        'book_copy_reserved' => 'The copy is reserved and cannot be deleted or written off.',
+        'reservation_not_member' => 'You are not a member of the library that holds this title.',
+        'reservation_duplicate' => 'You already have an active reservation for this title in this library.',
+        'reservation_no_copies' => 'There are currently no available copies to reserve.',
+        'reservation_book_unavailable' => 'This title is no longer available for reservation.',
+        'reservation_library_unavailable' => 'The library holding this title is not available.',
+        'reservation_not_active' => 'The reservation is no longer active or has expired.',
+        'borrow_user_not_member' => 'The user is not a member of the active library.',
+        'borrow_user_not_found' => 'No user was found with that barcode or username.',
+        'borrow_copy_not_found' => 'No physical copy with that barcode was found in the active library.',
+        'borrow_copy_library_mismatch' => 'The physical copy does not belong to the active library.',
+        'borrow_copy_reserved_for_other' => 'The copy is reserved for :name until :date.',
+        'borrow_copy_rec_error' => 'The physical copy is marked as incorrectly recorded and cannot be issued.',
+        'borrow_copy_written_off' => 'The physical copy has been written off and cannot be issued.',
+        'borrow_valid_till_past' => 'The due date cannot be in the past.',
+        'borrow_already_returned' => 'The loan has already been returned.',
+        'borrow_not_found' => 'The loan was not found.',
+        'borrow_lookup_term_required' => 'Enter a barcode or username.',
+        'borrow_reservation_exchange_required' => 'The user has a reservation for another copy of the same title. Confirm that the scanned copy fulfils the reservation.',
         'inventory_reconciliation_required' => 'There is a gap in inventory numbers. Resolve the archive before adding copies.',
         'book_isbn_invalid' => 'The ISBN format is invalid.',
         'book_copies_without_barcode' => 'Selected copies without a valid barcode: :count.',
+        'super_admin_invalid_user' => 'All selected users must exist and be active.',
     ],
 
     /*
@@ -219,6 +241,7 @@ return [
     */
 
     'attributes' => [
+        'book_id' => 'title',
         'current_password' => 'current password',
     ],
 

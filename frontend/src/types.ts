@@ -1,14 +1,16 @@
-export type RoleValue = 'superadmin' | 'library_admin' | 'librarian' | 'user'
+export type RoleValue = 'user' | 'librarian' | 'library_admin'
 
 export interface ResourceCan {
   view: boolean
   update: boolean
+  updateSettings?: boolean
   delete: boolean
   restore?: boolean
   forceDelete?: boolean
   writeOff?: boolean
   manageMemberships?: boolean
   removeMemberships?: boolean
+  returnBook?: boolean
 }
 
 export type CollectionPermissions = Record<string, boolean>
@@ -24,6 +26,10 @@ export interface LibraryOption {
   id: number
   name: string
   inv_number_auto?: boolean
+  role?: RoleValue | null
+  role_label?: string | null
+  lend_days?: number
+  overdue_price_per_day?: number | string
 }
 
 export type ActiveLibrary = LibraryOption | null
@@ -35,8 +41,9 @@ export interface User {
   last_name: string | null
   username: string | null
   email: string
-  role: RoleValue
-  role_label: string
+  is_super_admin: boolean
+  role: RoleValue | null
+  role_label: string | null
   jmbg: string | null
   address: string | null
   city: string | null
@@ -46,9 +53,10 @@ export interface User {
   email_verified_at: string | null
   created_at: string
   updated_at: string
-  libraries?: Array<{ id: number; name: string }>
-  deactivated_libraries?: Array<{ id: number; name: string }>
+  libraries?: Array<{ id: number; name: string; role: RoleValue; role_label: string }>
+  deactivated_libraries?: Array<{ id: number; name: string; role: RoleValue; role_label: string }>
   tags?: Array<{ id: number; name: string; library_id: number }>
+  reservations?: Reservation[]
   can?: ResourceCan
 }
 
@@ -104,6 +112,7 @@ export interface Library {
   address: string
   work_time: string | null
   inv_number_auto: boolean
+  settings?: LibrarySettings
   deleted: boolean
   place_id: number
   place?: {
@@ -113,6 +122,42 @@ export interface Library {
     region: { id: number; name: string } | null
   }
   can?: ResourceCan
+}
+
+export interface LibrarySettings {
+  reservation_hours: number
+  lend_days: number
+  overdue_price_per_day: number | string
+}
+
+export type LibraryRequestStatus = 'pending' | 'approved' | 'rejected'
+
+export interface LibraryRequest {
+  id: number
+  school_name: string
+  school_type: string
+  school_type_label: string
+  city: string
+  address: string
+  contact_name: string
+  contact_email: string
+  contact_phone: string
+  student_count: number | null
+  employee_count: number | null
+  message: string | null
+  status: LibraryRequestStatus
+  status_label: string
+  handled_by?: string | null
+  handled_at: string | null
+  handled_at_formatted: string | null
+  created_at: string
+  created_at_formatted: string | null
+  updated_at: string
+  can?: {
+    view: boolean
+    approve: boolean
+    reject: boolean
+  }
 }
 
 export interface News {
@@ -159,7 +204,7 @@ export interface Book {
   can?: ResourceCan
 }
 
-export type BookCopyStatus = 'available' | 'borrowed' | 'record_error' | 'written_off' | 'archived'
+export type BookCopyStatus = 'available' | 'borrowed' | 'reserved' | 'record_error' | 'written_off' | 'archived'
 
 export interface BookCopyWriteOff {
   id: number
@@ -210,6 +255,8 @@ export interface BookCopy {
   rec_error_notice: string | null
   status: BookCopyStatus
   active_write_off: BookCopyWriteOff | null
+  active_reservation?: BorrowReservationSummary | null
+  active_borrow?: Borrow | null
   deleted_at: string | null
   created_at: string
   updated_at: string
@@ -325,4 +372,205 @@ export interface PaginatedResponse<T> {
   }
   meta: PaginatedMeta
   permissions?: CollectionPermissions
+}
+
+export type ReservationStatus = 'active' | 'cancelled' | 'expired' | 'fulfilled'
+
+export interface Reservation {
+  id: number
+  library_id: number
+  library_name?: string | null
+  user_id: number
+  user_name?: string | null
+  book_id: number
+  book_name?: string | null
+  book_authors?: string | null
+  book_copy_id: number
+  barcode?: string | null
+  order_number?: string | null
+  from_date: string | null
+  from_date_formatted: string | null
+  valid_till: string | null
+  valid_till_formatted: string | null
+  status: ReservationStatus
+  status_label: string
+  ended_at: string | null
+  can: {
+    cancel: boolean
+    issue: boolean
+  }
+}
+
+export interface CatalogBook {
+  id: number
+  name: string
+  slug: string
+  library_id: number
+  library_name: string | null
+  library_address: string | null
+  category_primary_id: number | null
+  category_primary_name: string | null
+  description: string | null
+  image: string | null
+  image_url: string | null
+  cover_url: string | null
+  authors: BookAuthor[]
+}
+
+export interface CatalogBookResponse {
+  data: CatalogBook
+  availability: {
+    total: number
+    available: number
+    archived: number
+    written_off: number
+  }
+  publish_year: string | null
+  reservation_hours: number
+  membership: boolean
+  active_reservation: Reservation | null
+  can_reserve: boolean
+}
+
+export type BorrowStatus = 'active' | 'overdue' | 'returned'
+
+export interface Borrow {
+  id: number
+  library_id: number
+  library_name?: string | null
+  user_id: number
+  user_name?: string | null
+  user_barcode?: string | null
+  book_id: number
+  book_name?: string | null
+  book_authors?: string | null
+  book_copy_id: number
+  barcode?: string | null
+  order_number?: string | null
+  reservation_id: number | null
+  from_date: string | null
+  from_date_formatted: string | null
+  valid_till: string | null
+  valid_till_formatted: string | null
+  return_date: string | null
+  return_date_formatted: string | null
+  returned: boolean
+  status: BorrowStatus
+  is_overdue: boolean
+  overdue_days: number
+  overdue_amount: number
+  created_by?: string | null
+  created_at: string | null
+  updated_at: string | null
+  can?: ResourceCan
+}
+
+export interface BorrowUserSummary {
+  id: number
+  name: string
+  first_name: string | null
+  last_name: string | null
+  username: string | null
+  email: string
+  bar_code: string | null
+  is_member: boolean
+  active_borrows: number
+  active_reservations: number
+}
+
+export interface BorrowCopyLookup {
+  id: number
+  book_id: number
+  book_name: string | null
+  book_authors: string | null
+  barcode: string | null
+  order_number: string | null
+  status: 'available' | 'reserved' | 'borrowed' | 'written_off' | 'record_error'
+  issuable: boolean
+  block_reason: string | null
+  active_reservation: BorrowReservationSummary | null
+  active_borrow: {
+    id: number
+    user_id: number
+    user_name: string | null
+    valid_till_formatted: string | null
+  } | null
+}
+
+export interface BorrowReservationSummary {
+  id: number
+  user_id: number
+  user_name: string | null
+  valid_till: string | null
+  valid_till_formatted: string | null
+}
+
+export interface BorrowLookupResponse {
+  data: {
+    user: BorrowUserSummary | null
+    users: BorrowUserSummary[]
+    copy: BorrowCopyLookup | null
+    defaults: {
+      lend_days: number
+      overdue_price_per_day: number | string
+      valid_till: string
+    }
+  }
+}
+
+export interface ReservationConflict {
+  reservation_id: number
+  user_id: number
+  user_name: string | null
+  book_id: number
+  book_name: string | null
+  reserved_book_copy_id: number
+  reserved_barcode: string | null
+  reserved_order_number: string | null
+  reserved_valid_till: string | null
+  reserved_valid_till_formatted: string | null
+  scanned_book_copy_id: number
+  scanned_barcode: string | null
+  scanned_order_number: string | null
+}
+
+export interface SuperAdminUser {
+  id: number
+  name: string
+  email: string
+}
+
+export interface AppSettings {
+  super_admin_user_ids: number[]
+  super_admins: SuperAdminUser[]
+  logs: SettingLogEntry[]
+}
+
+export interface SettingLogEntry {
+  id: number
+  key: string
+  old_value: unknown
+  new_value: unknown
+  changed_by: string | null
+  created_at: string | null
+  created_at_formatted: string | null
+}
+
+export interface BookHistoryEntry {
+  id: number
+  library_id: number | null
+  library_name: string | null
+  book_id: number | null
+  book_name: string | null
+  book_copy_id: number | null
+  barcode: string | null
+  order_number: string | null
+  user_id: number | null
+  user_name: string | null
+  actor_id: number | null
+  actor_name: string | null
+  action: string
+  action_date: string | null
+  action_date_formatted: string | null
+  meta: Record<string, unknown> | null
 }

@@ -24,9 +24,16 @@ import { BookCopyDetailPage } from '@/pages/books/book-copy-detail-page'
 import { BooksArchivePage } from '@/pages/books/books-archive-page'
 import { BooksInventoryBooksPage } from '@/pages/books/books-inventory-books-page'
 import { BooksBarcodePrintPage } from '@/pages/books/books-barcode-print-page'
+import { LibraryBorrowsPage } from '@/pages/borrows/library-borrows-page'
+import { MyBorrowsPage } from '@/pages/borrows/my-borrows-page'
+import { CatalogBookPage } from '@/pages/catalog/catalog-book-page'
+import { MyReservationsPage } from '@/pages/reservations/my-reservations-page'
+import { LibraryReservationsPage } from '@/pages/reservations/library-reservations-page'
 import { NewsPage } from '@/pages/news/news-page'
+import { LibraryRequestsPage } from '@/pages/library-requests/library-requests-page'
 import { ProfilePage } from '@/pages/profile/profile-page'
 import { SettingsPage } from '@/pages/settings/settings-page'
+import { SystemSettingsPage } from '@/pages/settings/system-settings-page'
 
 function App() {
   return (
@@ -52,6 +59,11 @@ function App() {
           }
         >
           <Route path="/" element={<DashboardPage />} />
+          <Route path="/reservations" element={<MyReservationsPage />} />
+          <Route path="/reservations/library" element={<LibraryReservationsPage />} />
+          <Route path="/borrows" element={<MyBorrowsPage />} />
+          <Route path="/borrows/library" element={<LibraryBorrowsPage />} />
+          <Route path="/catalog/books/:id" element={<CatalogBookPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/users/:id" element={<UserDetailPage />} />
           <Route path="/libraries" element={<LibrariesPage />} />
@@ -70,8 +82,10 @@ function App() {
           <Route path="/books/inventory-books" element={<BooksInventoryBooksPage />} />
           <Route path="/books/barcode-print" element={<BooksBarcodePrintPage />} />
           <Route path="/news" element={<NewsPage />} />
+          <Route path="/library-requests" element={<LibraryRequestsPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings/system" element={<SystemSettingsPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
