@@ -8,10 +8,14 @@ use Illuminate\Support\Facades\Mail;
 
 class TransactionalMailService
 {
+    private const SUPPORTED_LOCALES = ['sr-Cyrl', 'sr-Latn', 'en'];
+
+    private const FALLBACK_LOCALE = 'sr-Cyrl';
+
     public function send(Mailable $mail): void
     {
         Mail::mailer(config('mail.transactional_mailer'))
-            ->send($mail->locale(app()->getLocale()));
+            ->send($mail->locale($this->currentLocale()));
     }
 
     /**
@@ -36,8 +40,19 @@ class TransactionalMailService
 
     private function recipientLocale(User $recipient): string
     {
-        return in_array($recipient->locale, ['sr-Cyrl', 'sr-Latn', 'en'], true)
-            ? $recipient->locale
-            : app()->getLocale();
+        if (in_array($recipient->locale, self::SUPPORTED_LOCALES, true)) {
+            return $recipient->locale;
+        }
+
+        return $this->currentLocale();
+    }
+
+    private function currentLocale(): string
+    {
+        $locale = app()->getLocale();
+
+        return in_array($locale, self::SUPPORTED_LOCALES, true)
+            ? $locale
+            : self::FALLBACK_LOCALE;
     }
 }

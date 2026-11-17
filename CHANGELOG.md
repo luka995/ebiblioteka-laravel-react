@@ -1,5 +1,17 @@
 # Changelog
 
+## [17.11.2026] Notifikacije: fallback jezika i tekst dnevnog pregleda
+
+### Changed
+
+- **Fallback jezika emailova** (`app/Services/Mail/TransactionalMailService.php`) — nepodržan `APP_LOCALE` ili jezik primaoca koristi `sr-Cyrl`, umesto sirovih translation ključeva
+- **Dnevni digest** (`lang/sr-Cyrl/emails.php`) — naslov i uvod sada koriste „pregled aktivnosti“ umesto „pregled cirkulacije“
+
+### Tests
+
+- **Testovi notifikacija** (`tests/Feature/Auth/CirculationNotificationTest.php`) — pokriveni su staff obaveštenja za superadmine i fallback na podržani jezik emaila
+- **Playwright testovi notifikacija** — proverene su situacije slanja različitih tipova obaveštenja korisnicima i bibliotekarima, u zavisnosti od tipova uključenih u podešavanjima biblioteke
+
 ## [16.11.2026] Notifikacije: rezervacije, pozajmice, rokovi i dnevni digest
 
 Dodat email notification sloj za cirkulaciju sa deduplikacijom, queue-om i schedulerom.
@@ -36,7 +48,6 @@ Dodat email notification sloj za cirkulaciju sa deduplikacijom, queue-om i sched
 - **Testovi** (`tests/Feature/Auth/PasswordChangedMailTest.php`) — provera slanja pri admin resetu i da promena sopstvene lozinke preko profila ne pokreće ovaj mejl
 
 ## [13.11.2026] Cirkulacija: izdavanje i razduživanje pozajmica
-
 
 Realizovan legacy tok pozajmica: izdavanje po barkodu fizičke jedinice, izdavanje bez rezervacije, realizacija rezervacije, razduživanje sa obračunom prekoračenja i indeks pozajmica biblioteke.
 
@@ -420,7 +431,6 @@ Realizovan deo PRD §14 — brza štampa cele biblioteke jednim klikom (legacy p
 - **.env.example** (`.env.example`) — produkcijske vrednosti (`FRONTEND_URL_PUBLIC`, `SESSION_COOKIE_DOMAIN_PUBLIC`, `CONTACT_EMAIL`) zamenjene generičkim placeholderima uz komentare; konkretni domeni i email prebačeni u lokalni `.env`
 - **Config contact** (`config/contact.php`) — uklonjen hardkodovani fallback `akademijafilipovic@gmail.com`; `recipient` se čita isključivo iz `env('CONTACT_EMAIL')`
 
-
 ### Added
 
 - **Policy autorizacija** (`app/Policies/UserPolicy.php`, `LibraryPolicy.php`, `RegionPolicy.php`, `PlacePolicy.php`, `TagPolicy.php`) — zamenjena ad-hoc `Gate` pravila (`manage-users`, `manage-libraries`) Laravel policy-ima; rute koriste `can:` abilities (`viewAny`, `view`, `create`, `update`, `delete`, `restore`, `forceDelete`, `manageMemberships`)
@@ -452,8 +462,6 @@ Realizovan deo PRD §14 — brza štampa cele biblioteke jednim klikom (legacy p
 - **Javni view-ovi prevedeni na ćirilicu** (`resources/views/public/*`, `resources/css/app.css`) — home, project, contact, libraries, footer, nav; testovi `PublicContactTest`/`PublicHomeTest`/`PublicProjectTest` ažurirani
 - **i18n** (`frontend/src/i18n/locales/*.json`) — ključevi za nav, profil, tagove, regione, mesta, članstva, podešavanja
 - **Frontend build** (`frontend/dist/`) — regenerisani asseti
-
-
 
 ### Added
 

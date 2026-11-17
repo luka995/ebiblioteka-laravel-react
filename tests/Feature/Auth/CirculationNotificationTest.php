@@ -121,6 +121,23 @@ test('a new reservation notifies both the user and library staff', function () {
         ->and($reservation->status)->toBe(ReservationStatus::Active);
 });
 
+test('superadmins are treated as library staff notification recipients', function () {
+    Bus::fake();
+
+    $library = notificationLibrary();
+    $member = notificationMember($library);
+    $staff = notificationStaff($library);
+    $superAdmin = User::factory()->superAdmin()->create();
+    $superAdmin->libraries()->attach($library->id, ['role' => LibraryRole::LibraryAdmin->value]);
+    $book = notificationBook($library);
+    notificationCopy($book);
+
+    app(ReservationService::class)->create($member, $book);
+
+    Bus::assertDispatched(SendCirculationNotification::class, sentTo($staff));
+    Bus::assertDispatched(SendCirculationNotification::class, sentTo($superAdmin));
+});
+
 test('cancellation by the owner notifies the user and library staff', function () {
     Bus::fake();
 
@@ -385,4 +402,28 @@ test('notification email templates render with circulation data', function () {
     ]);
 
     expect($digest->render())->toContain($book->name);
+});
+
+test('circulation mail falls back to a supported locale instead of raw translation keys', function () {
+    app()->setLocale('sr');
+
+    $recipient = User::factory()->create(['locale' => null]);
+    $mail = new CirculationNotificationMail(
+        $recipient,
+        CirculationNotificationType::ReservationCreatedStaff,
+        [],
+    );
+
+    app(TransactionalMailService::class)->sendNowFor($recipient, $mail);
+
+    $transport = Mail::mailer('array')->getSymfonyTransport();
+    $message = $transport->messages()->last()->getOriginalMessage();
+    $html = (string) $message->getHtmlBody();
+
+    expect($html)
+        ->not->toContain('emails.circulation.')
+        ->not->toContain('emails.brand.')
+        ->toContain('Нова резервација');
+
+    app()->setLocale('en');
 });
