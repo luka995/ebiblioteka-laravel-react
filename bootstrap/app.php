@@ -4,12 +4,16 @@ use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SetSessionCookieDomain;
 use App\Services\DatabaseExceptionService;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -64,5 +68,27 @@ return Application::configure(basePath: dirname(__DIR__))
             return response()->json([
                 'message' => __($messageKey),
             ], 422);
+        });
+
+        $exceptions->render(function (Throwable $exception, Request $request) {
+            if (! $request->expectsJson() && ! $request->is('api/*')) {
+                return null;
+            }
+
+            if (
+                $exception instanceof ValidationException
+                || $exception instanceof AuthenticationException
+                || $exception instanceof HttpResponseException
+            ) {
+                return null;
+            }
+
+            if ($exception instanceof HttpExceptionInterface && $exception->getStatusCode() < 500) {
+                return null;
+            }
+
+            return response()->json([
+                'message' => __('errors.server_error'),
+            ], 500);
         });
     })->create();

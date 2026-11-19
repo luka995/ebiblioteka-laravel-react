@@ -28,9 +28,14 @@ Postavljena je baza, modeli, CRUD i scheduler za školske godine i odeljenja, te
 - **Notifikacije** (`app/Services/Notification/SchoolYearNotificationService.php`, `SchoolYearNotificationMail.php`, `SendSchoolYearNotification.php`, `app/Enums/SchoolYearNotificationType.php`, `resources/views/emails/school-year/*`, `lang/*/emails.php`) — „upcoming“ i „activated“ emailovi samo za bibliotekare, administratore biblioteka i superadministratore, uz `notification_deliveries` deduplikaciju i prevode
 - **Frontend** (`frontend/src/components/settings/school-year-settings-card.tsx`, `school-year-form-modal.tsx`, `frontend/src/pages/settings/system-settings-page.tsx`, `frontend/src/{types.ts,lib/api.ts}`, i18n) — lista godina, kreiranje/izmena/brisanje, aktivacija i prekidač automatske aktivacije u sistemskim podešavanjima
 
+### Globalni API error fallback
+
+- **`bootstrap/app.php` + `lang/{sr-Cyrl,sr-Latn,en}/errors.php`** — neobrađene greške na API/JSON zahtevima vraćaju generički 500 JSON sa prevedenom porukom; validacione, autentifikacione, `HttpResponse` i HTTP greške ispod 500 zadržavaju svoj standardni odgovor
+- **Test** (`tests/Feature/Auth/ApiExceptionHandlerTest.php`) — provera generičkog 500 odgovora za neobrađenu API grešku
+
 ### Tests
 
-- Cela suite na PostgreSQL-u: 476 testa, 1745 assertiona
+- Cela suite na PostgreSQL-u: 477 testa, 1747 assertiona
 - `pint --test` prolazi
 
 ## [17.11.2026] Notifikacije: fallback jezika i tekst dnevnog pregleda
