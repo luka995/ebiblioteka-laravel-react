@@ -3,9 +3,12 @@
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SetSessionCookieDomain;
+use App\Services\DatabaseExceptionService;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -36,5 +39,30 @@ return Application::configure(basePath: dirname(__DIR__))
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Generic fallback for unhandled PostgreSQL data-integrity errors on
+        // API requests. Domain-specific pre-checks keep their own messages.
+        $exceptions->render(function (QueryException $exception, Request $request) {
+            if (! $request->expectsJson() && ! $request->is('api/*')) {
+                return null;
+            }
+
+            $databaseErrors = app(DatabaseExceptionService::class);
+
+            $messageKey = match (true) {
+                $databaseErrors->isForeignKeyViolation($exception) => 'validation.custom.related_records_exist',
+                $databaseErrors->isUniqueViolation($exception) => 'validation.custom.duplicate_record',
+                $databaseErrors->isCheckConstraintViolation($exception) => 'validation.custom.invalid_data',
+                default => null,
+            };
+
+            if ($messageKey === null) {
+                return null;
+            }
+
+            // 422 follows the existing API convention for domain conflicts;
+            // 409 is reserved for state conflicts (file not ready...).
+            return response()->json([
+                'message' => __($messageKey),
+            ], 422);
+        });
     })->create();

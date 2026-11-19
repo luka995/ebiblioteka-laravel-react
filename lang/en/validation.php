@@ -227,6 +227,9 @@ return [
         'book_isbn_invalid' => 'The ISBN format is invalid.',
         'book_copies_without_barcode' => 'Selected copies without a valid barcode: :count.',
         'super_admin_invalid_user' => 'All selected users must exist and be active.',
+        'related_records_exist' => 'The record cannot be changed or deleted because related records exist.',
+        'duplicate_record' => 'A record with the same data already exists.',
+        'invalid_data' => 'The data does not satisfy the database constraints.',
     ],
 
     /*

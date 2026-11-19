@@ -80,6 +80,9 @@ return [
         'book_isbn_invalid' => 'ISBN nije važećeg formata.',
         'book_copies_without_barcode' => 'Broj izabranih kopija bez važećeg bar-koda: :count.',
         'super_admin_invalid_user' => 'Svi izabrani korisnici moraju postojati i biti aktivni.',
+        'related_records_exist' => 'Zapis se ne može izmeniti ili obrisati jer postoje povezani podaci.',
+        'duplicate_record' => 'Zapis sa istim podacima već postoji.',
+        'invalid_data' => 'Podaci ne zadovoljavaju pravila baze.',
     ],
 
     'attributes' => [

@@ -173,10 +173,14 @@ Rad sa artisanom/composerom/npm unutar kontejnera — vidi `docker-compose.yml`
 ## Testovi i kod
 
 ```bash
-composer test            # Pest feature/unit testovi (config:clear + test)
+composer test            # Pest feature/unit testovi (PostgreSQL baza: ebiblioteka_testing)
 vendor/bin/pint          # PHP kodni stil (config: pint.json)
 cd frontend && npm run build   # TypeScript check + Vite build
 ```
+
+Testovi koriste PostgreSQL bazu `ebiblioteka_testing` (podešeno u `phpunit.xml`).
+Host, korisnik i lozinka se preuzimaju iz `.env`; baza se kreira jednom
+(`CREATE DATABASE ebiblioteka_testing OWNER <db_user>`).
 
 ## Struktura repozitorijuma
 

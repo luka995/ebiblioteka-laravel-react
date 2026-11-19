@@ -1,5 +1,28 @@
 # Changelog
 
+## [19.11.2026] Školske godine, odeljenja i centralni DB exception handler
+
+Postavljena je baza za školske godine i odeljenja, testovi su prebačeni na PostgreSQL, a neobrađene data-integrity greške sada vraćaju kontrolisan API odgovor.
+
+### Added
+
+- **Migracije** (`database/migrations/2026_11_19_000001_create_school_years_table.php`, `2026_11_19_000002_create_classes_table.php`, `2026_11_19_000003_create_student_class_table.php`, `2026_11_19_000004_create_classroom_history_table.php`) — globalne `school_years`, `classes` sa obaveznim `library_id` i `school_year_id`, current `student_class` po korisniku/biblioteci/godini i append-only `classroom_history`; composite FK-ovi čuvaju da odeljenje pripada istoj biblioteci i školskoj godini, a CHECK constrainti pokrivaju datume, `grade` 1–8 i smislen history događaj
+- **`DatabaseExceptionService`** (`app/Services/DatabaseExceptionService.php`) — prepoznavanje PostgreSQL FK (`23503`), unique (`23505`) i check (`23514`) grešaka
+- **Centralni exception handler** (`bootstrap/app.php`) — za API/JSON zahteve vraća generički 422 za neobrađene FK, unique i check violation greške, sa porukama na sva tri jezika
+- **Testovi** (`tests/Feature/Auth/DatabaseExceptionHandlerTest.php`, `tests/Unit/DatabaseExceptionServiceTest.php`) — unique/check fallback kroz stvarni API zahtev i klasifikacija SQLSTATE kodova
+
+### Changed
+
+- **Test baza** (`phpunit.xml`, `README.md`) — testovi više ne koriste SQLite, već PostgreSQL bazu `ebiblioteka_testing`; host, korisnik i lozinka se preuzimaju iz `.env`
+- **Notifikacije** (`app/Services/Notification/NotificationDeliveryService.php`) — deduplikacija koristi `insertOrIgnore` (`ON CONFLICT DO NOTHING`), pa unique konflikt ne abortuje spoljnu PostgreSQL transakciju
+- **Brisanje korisnika** (`app/Http/Controllers/UsersController.php`) — `forceDestroy` je u `DB::transaction` (savepoint u testovima), a lokalni FK `try/catch` je uklonjen u korist centralnog handlera
+- **Validacija** (`lang/{sr-Cyrl,sr-Latn,en}/validation.php`) — generičke poruke za povezane zapise, duplikate i nevalidne podatke
+
+### Tests
+
+- Cela suite na PostgreSQL-u: 454 testa, 1629 assertiona
+- `pint --test` prolazi
+
 ## [17.11.2026] Notifikacije: fallback jezika i tekst dnevnog pregleda
 
 ### Changed

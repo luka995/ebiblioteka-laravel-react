@@ -7,7 +7,6 @@ use App\Models\Library;
 use App\Models\NotificationDelivery;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\UniqueConstraintViolationException;
 
 /**
  * Evidencija poslatih notifikacija i deduplikacija.
@@ -25,21 +24,32 @@ class NotificationDeliveryService
         ?Model $related = null,
         array $meta = [],
     ): ?NotificationDelivery {
-        try {
-            return NotificationDelivery::create([
-                'type' => $type->value,
-                'channel' => 'email',
-                'user_id' => $recipient?->id,
-                'library_id' => $library?->id,
-                'related_type' => $related !== null ? $related::class : null,
-                'related_id' => $related?->getKey(),
-                'dedupe_key' => $dedupeKey,
-                'status' => NotificationDelivery::STATUS_QUEUED,
-                'meta' => $meta === [] ? null : $meta,
-            ]);
-        } catch (UniqueConstraintViolationException) {
+        $now = now();
+
+        // insertOrIgnore koristi ON CONFLICT DO NOTHING na PostgreSQL-u, pa
+        // duplikat ne prekida spoljnu transakciju (bitno za testove i za
+        // slanje unutar DB::transaction).
+        $inserted = NotificationDelivery::query()->insertOrIgnore([
+            'type' => $type->value,
+            'channel' => 'email',
+            'user_id' => $recipient?->id,
+            'library_id' => $library?->id,
+            'related_type' => $related !== null ? $related::class : null,
+            'related_id' => $related?->getKey(),
+            'dedupe_key' => $dedupeKey,
+            'status' => NotificationDelivery::STATUS_QUEUED,
+            'meta' => $meta === [] ? null : json_encode($meta, JSON_UNESCAPED_UNICODE),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        if ($inserted === 0) {
             return null;
         }
+
+        return NotificationDelivery::query()
+            ->where('dedupe_key', $dedupeKey)
+            ->first();
     }
 
     public function markSent(NotificationDelivery $delivery): void

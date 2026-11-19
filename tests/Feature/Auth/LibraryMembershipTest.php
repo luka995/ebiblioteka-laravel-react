@@ -271,7 +271,8 @@ test('force delete is blocked at db level when the account has related records',
     ]);
 
     $this->actingAs($admin)->deleteJson("/api/v1/users/{$user->id}/force", [], membershipHeaders())
-        ->assertStatus(422);
+        ->assertStatus(422)
+        ->assertJsonPath('message', __('validation.custom.related_records_exist'));
 
     expect(User::withTrashed()->find($user->id))->not->toBeNull();
 

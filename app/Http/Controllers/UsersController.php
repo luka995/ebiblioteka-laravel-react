@@ -26,14 +26,13 @@ use App\Support\BarCode;
 use App\Support\BarCodeImage;
 use App\Support\BarcodeLabel;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Arr;
 
 class UsersController extends Controller
 {
@@ -256,15 +255,11 @@ class UsersController extends Controller
             return response()->json(['message' => __('validation.custom.cannot_delete_self')], 422);
         }
 
-        try {
-            $user->forceDelete();
-        } catch (QueryException $e) {
-            if (! $this->isForeignKeyViolation($e)) {
-                throw $e;
-            }
-
-            return response()->json(['message' => __('validation.custom.cannot_force_delete')], 422);
-        }
+        // Keep the delete atomic. In tests (RefreshDatabase) this creates a
+        // savepoint; a PostgreSQL FK violation then rolls back only this
+        // block instead of aborting the whole test transaction (25P02).
+        // In production this is a regular top-level transaction.
+        DB::transaction(fn () => $user->forceDelete());
 
         return response()->json(status: 204);
     }
@@ -298,17 +293,9 @@ class UsersController extends Controller
             return response()->json(['message' => __('validation.custom.cannot_delete_self')], 422);
         }
 
-        try {
-            DB::transaction(function () use ($userIds) {
-                User::whereIn('id', $userIds)->get()->each->forceDelete();
-            });
-        } catch (QueryException $e) {
-            if (! $this->isForeignKeyViolation($e)) {
-                throw $e;
-            }
-
-            return response()->json(['message' => __('validation.custom.cannot_force_delete')], 422);
-        }
+        DB::transaction(function () use ($userIds) {
+            User::whereIn('id', $userIds)->get()->each->forceDelete();
+        });
 
         return response()->json(status: 204);
     }
@@ -428,26 +415,5 @@ class UsersController extends Controller
         ]);
 
         return array_values(array_unique(array_map('intval', $data['user_ids'])));
-    }
-
-    /**
-     * FK ON DELETE RESTRICT (SQLSTATE 23503/23000, SQLITE_CONSTRAINT) štiti nalog
-     * sa zabeleženim relacijama (pozajmice, rezervacije, članarine, istorija...).
-     */
-    private function isForeignKeyViolation(QueryException $e): bool
-    {
-        $codes = [
-            (string) $e->getCode(),
-            (string) ($e->errorInfo[0] ?? ''),
-            (string) ($e->errorInfo[1] ?? ''),
-        ];
-
-        return collect($codes)->contains(fn (string $code) => in_array($code, [
-            '23503', // PostgreSQL foreign_key_violation
-            '23000', // MySQL ER_NO_REFERENCED_ROW_2 / generic integrity
-            '1451',  // MySQL ER_ROW_IS_REFERENCED_2
-            '19',    // SQLite SQLITE_CONSTRAINT
-            '787',   // SQLite SQLITE_CONSTRAINT_FOREIGNKEY
-        ], true));
     }
 }
