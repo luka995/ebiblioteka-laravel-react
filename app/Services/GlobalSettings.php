@@ -17,6 +17,12 @@ class GlobalSettings
 {
     public const SUPER_ADMIN_USER_IDS = 'super_admin_user_ids';
 
+    public const ACTIVE_SCHOOL_YEAR_ID = 'active_school_year_id';
+
+    public const SCHOOL_YEAR_AUTOMATIC_ACTIVATION = 'school_year_automatic_activation';
+
+    public const SCHOOL_YEAR_ACTIVE_NOTIFIED_ID = 'school_year_active_notified_id';
+
     /** @var array<string, mixed>|null */
     private ?array $values = null;
 

@@ -246,6 +246,54 @@ class User extends Authenticatable
     }
 
     /**
+     * Trenutna odeljenja korisnika po bibliotekama i skolskim godinama.
+     *
+     * @return HasMany<ClassEnrollment, $this>
+     */
+    public function classEnrollments(): HasMany
+    {
+        return $this->hasMany(ClassEnrollment::class);
+    }
+
+    /**
+     * Sva trenutna odeljenja korisnika (jedan red po biblioteci i godini).
+     *
+     * @return BelongsToMany<SchoolClass, $this>
+     */
+    public function classes(): BelongsToMany
+    {
+        return $this->belongsToMany(SchoolClass::class, 'student_class', 'user_id', 'class_id')
+            ->withPivot(['library_id', 'school_year_id', 'assigned_by_id'])
+            ->withTimestamps();
+    }
+
+    public function getClassByLibrary(int|Library $library, ?SchoolYear $schoolYear = null): ?SchoolClass
+    {
+        $libraryId = $library instanceof Library ? (int) $library->id : $library;
+        $schoolYear ??= SchoolYear::getActiveSchoolYear();
+
+        if ($schoolYear === null) {
+            return null;
+        }
+
+        return $this->classes()
+            ->where('classes.library_id', $libraryId)
+            ->where('classes.school_year_id', $schoolYear->id)
+            ->where('classes.is_active', true)
+            ->first();
+    }
+
+    /**
+     * Istorija promena odeljenja korisnika.
+     *
+     * @return HasMany<ClassroomHistory, $this>
+     */
+    public function classroomHistory(): HasMany
+    {
+        return $this->hasMany(ClassroomHistory::class);
+    }
+
+    /**
      * Sve biblioteke uključujući deaktivirana članstva.
      *
      * @return BelongsToMany<Library, $this>

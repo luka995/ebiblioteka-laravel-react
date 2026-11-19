@@ -2,14 +2,16 @@
 
 ## [19.11.2026] Školske godine, odeljenja i centralni DB exception handler
 
-Postavljena je baza za školske godine i odeljenja, testovi su prebačeni na PostgreSQL, a neobrađene data-integrity greške sada vraćaju kontrolisan API odgovor.
+Postavljena je baza i modeli za školske godine i odeljenja, testovi su prebačeni na PostgreSQL, a neobrađene data-integrity greške sada vraćaju kontrolisan API odgovor.
 
 ### Added
 
 - **Migracije** (`database/migrations/2026_11_19_000001_create_school_years_table.php`, `2026_11_19_000002_create_classes_table.php`, `2026_11_19_000003_create_student_class_table.php`, `2026_11_19_000004_create_classroom_history_table.php`) — globalne `school_years`, `classes` sa obaveznim `library_id` i `school_year_id`, current `student_class` po korisniku/biblioteci/godini i append-only `classroom_history`; composite FK-ovi čuvaju da odeljenje pripada istoj biblioteci i školskoj godini, a CHECK constrainti pokrivaju datume, `grade` 1–8 i smislen history događaj
+- **Modeli i enum** (`app/Enums/SchoolGrade.php`, `app/Models/SchoolYear.php`, `SchoolClass.php`, `ClassEnrollment.php`, `ClassroomHistory.php`, dopune `User` i `Library`) — `SchoolGrade` 1–8 sa rimskim labelama, `SchoolYear` sa izvedenim nazivom `2026/2027`, odeljenja sa castom razreda, current raspored po korisniku/biblioteci/godini, append-only istorija promena i relacije ka korisnicima i bibliotekama
+- **Fabrike i seeder** (`database/factories/SchoolYearFactory.php`, `SchoolClassFactory.php`, `ClassEnrollmentFactory.php`, `ClassroomHistoryFactory.php`, `database/seeders/SchoolYearSeeder.php`, `DatabaseSeeder`) — idempotentno kreiranje tekuće i naredne godine, aktivna podešavanja i konzistentni test podaci
 - **`DatabaseExceptionService`** (`app/Services/DatabaseExceptionService.php`) — prepoznavanje PostgreSQL FK (`23503`), unique (`23505`) i check (`23514`) grešaka
 - **Centralni exception handler** (`bootstrap/app.php`) — za API/JSON zahteve vraća generički 422 za neobrađene FK, unique i check violation greške, sa porukama na sva tri jezika
-- **Testovi** (`tests/Feature/Auth/DatabaseExceptionHandlerTest.php`, `tests/Unit/DatabaseExceptionServiceTest.php`) — unique/check fallback kroz stvarni API zahtev i klasifikacija SQLSTATE kodova
+- **Testovi** (`tests/Feature/Auth/DatabaseExceptionHandlerTest.php`, `tests/Unit/DatabaseExceptionServiceTest.php`, `tests/Feature/SchoolYearModelTest.php`) — unique/check fallback kroz stvarni API zahtev, klasifikacija SQLSTATE kodova i modeli/relacije/seeder
 
 ### Changed
 
@@ -20,7 +22,7 @@ Postavljena je baza za školske godine i odeljenja, testovi su prebačeni na Pos
 
 ### Tests
 
-- Cela suite na PostgreSQL-u: 454 testa, 1629 assertiona
+- Cela suite na PostgreSQL-u: 458 testa, 1648 assertiona
 - `pint --test` prolazi
 
 ## [17.11.2026] Notifikacije: fallback jezika i tekst dnevnog pregleda

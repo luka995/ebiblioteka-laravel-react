@@ -101,6 +101,16 @@ class Library extends Model
     }
 
     /**
+     * Odeljenja ove biblioteke.
+     *
+     * @return HasMany<SchoolClass, $this>
+     */
+    public function classes(): HasMany
+    {
+        return $this->hasMany(SchoolClass::class);
+    }
+
+    /**
      * Fizicke jedinice ove biblioteke (ukljucujuci arhivirane).
      *
      * @return HasMany<BookCopy, $this>
