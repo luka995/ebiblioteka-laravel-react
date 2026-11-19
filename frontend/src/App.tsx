@@ -9,6 +9,8 @@ import { ResetPasswordPage } from '@/pages/auth/reset-password-page'
 import { DashboardPage } from '@/pages/dashboard-page'
 import { UsersPage } from '@/pages/users/users-page'
 import { UserDetailPage } from '@/pages/users/user-detail-page'
+import { ClassesPage } from '@/pages/classes/classes-page'
+import { ClassDetailPage } from '@/pages/classes/class-detail-page'
 import { LibrariesPage } from '@/pages/libraries/libraries-page'
 import { LibraryDetailPage } from '@/pages/libraries/library-detail-page'
 import { RegionsPage } from '@/pages/regions/regions-page'
@@ -66,6 +68,8 @@ function App() {
           <Route path="/catalog/books/:id" element={<CatalogBookPage />} />
           <Route path="/users" element={<UsersPage />} />
           <Route path="/users/:id" element={<UserDetailPage />} />
+          <Route path="/classes" element={<ClassesPage />} />
+          <Route path="/classes/:id" element={<ClassDetailPage />} />
           <Route path="/libraries" element={<LibrariesPage />} />
           <Route path="/libraries/:id" element={<LibraryDetailPage />} />
           <Route path="/regions" element={<RegionsPage />} />

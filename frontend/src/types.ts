@@ -12,6 +12,9 @@ export interface ResourceCan {
   removeMemberships?: boolean
   returnBook?: boolean
   activate?: boolean
+  viewStudents?: boolean
+  assignStudents?: boolean
+  unassignStudents?: boolean
 }
 
 export type CollectionPermissions = Record<string, boolean>
@@ -565,6 +568,64 @@ export interface SchoolYear {
 export interface SchoolYearsMeta {
   active_school_year_id: number | null
   automatic_activation: boolean
+}
+
+export interface SchoolClass {
+  id: number
+  library_id: number
+  library_name?: string | null
+  school_year_id: number
+  school_year_name?: string | null
+  grade: number | null
+  grade_label: string | null
+  grade_full_label: string | null
+  name: string
+  teacher_name: string | null
+  is_active: boolean
+  students_count?: number
+  created_at?: string | null
+  updated_at?: string | null
+  can?: ResourceCan
+}
+
+export interface ClassStudent {
+  id: number
+  user_id: number
+  name: string | null
+  email: string | null
+  username: string | null
+  bar_code: string | null
+  assigned_at: string | null
+  assigned_at_formatted: string | null
+  assigned_by: string | null
+}
+
+export interface ClassCandidate {
+  id: number
+  name: string
+  email: string
+  username: string | null
+  bar_code: string | null
+  current_class: {
+    id: number
+    name: string
+    grade_label: string | null
+  } | null
+}
+
+export interface SchoolClassOptions {
+  school_years: Array<{
+    id: number
+    year: number
+    name: string
+    is_active: boolean
+  }>
+  active_school_year_id: number | null
+  grades: Array<{
+    value: number
+    label: string
+    full_label: string
+  }>
 }
 
 export interface SuperAdminUser {

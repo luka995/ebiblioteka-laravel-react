@@ -9,6 +9,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "users": "Users",
+    "classes": "Classes",
     "libraries": "Libraries",
     "regions": "Regions",
     "places": "Places",
@@ -82,6 +83,83 @@
       "librariesDescription": "Review and manage libraries in the system.",
       "borrowsTitle": "My loans",
       "borrowsDescription": "Review issued books, due dates and returns."
+    }
+  },
+  "classes": {
+    "title": "Classes",
+    "subtitle": "Classes in the active library and school year.",
+    "add": "New class",
+    "searchPlaceholder": "Search by class name or homeroom teacher...",
+    "activeLibraryRequired": "Select an active library to view classes.",
+    "activeSchoolYearRequired": "An active school year must be configured before creating a class.",
+    "emptyTitle": "No classes",
+    "emptyText": "Create a class for the selected school year and assign students to it.",
+    "created": "Class created.",
+    "updated": "Class updated.",
+    "deleted": "Class deleted.",
+    "notFound": "Class not found.",
+    "active": "Active",
+    "inactive": "Inactive",
+    "teacherValue": "Homeroom teacher: {{name}}",
+    "noTeacher": "No homeroom teacher",
+    "deleteTitle": "Delete class?",
+    "deleteText": "Are you sure you want to delete the class “{{name}}”?",
+    "deleteDisabledStudents": "A class with students cannot be deleted.",
+    "formTitle": "New class",
+    "formSubtitle": "Create a class in the active school year.",
+    "editTitle": "Edit class",
+    "editSubtitle": "Update the class details.",
+    "filters": {
+      "schoolYear": "School year",
+      "allYears": "All years",
+      "grade": "Grade",
+      "allGrades": "All grades"
+    },
+    "fields": {
+      "schoolYear": "School year",
+      "schoolYearPlaceholder": "Choose a year",
+      "grade": "Grade",
+      "gradePlaceholder": "Choose a grade",
+      "name": "Class name",
+      "teacher": "Homeroom teacher",
+      "teacherPlaceholder": "Homeroom teacher's full name",
+      "active": "Active class",
+      "activeHint": "Inactive classes cannot receive new students.",
+      "activeYear": "active"
+    },
+    "columns": {
+      "name": "Class",
+      "grade": "Grade",
+      "schoolYear": "School year",
+      "teacher": "Homeroom teacher",
+      "students": "Students",
+      "status": "Status"
+    },
+    "students": {
+      "title": "Class students",
+      "count": "{{count}} students",
+      "add": "Add students",
+      "addTitle": "Add students to the class",
+      "addSubtitle": "Choose existing user accounts that are members of this library.",
+      "searchPlaceholder": "Search students by name, email or barcode...",
+      "noCandidates": "No students available to add.",
+      "currentClass": "Currently in class {{name}} — assigning will move them.",
+      "selectedCount": "Selected: {{count}}",
+      "assign": "Assign students",
+      "assigned": "Students assigned.",
+      "assignedSummary": "Assigned: {{assigned}}, moved: {{moved}}.",
+      "emptyTitle": "No students in this class",
+      "emptyText": "Add students from the library's existing user accounts.",
+      "remove": "Remove from class",
+      "removeTitle": "Remove student?",
+      "removeText": "Do you want to remove student “{{name}}” from the class?",
+      "removed": "Student removed from the class.",
+      "columns": {
+        "name": "Student",
+        "account": "Account",
+        "barcode": "Barcode",
+        "assignedAt": "Assigned"
+      }
     }
   },
   "users": {

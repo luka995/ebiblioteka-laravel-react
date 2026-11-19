@@ -231,6 +231,9 @@ return [
         'duplicate_record' => 'A record with the same data already exists.',
         'invalid_data' => 'The data does not satisfy the database constraints.',
         'active_school_year_required' => 'No active school year is configured.',
+        'class_active_school_year_required' => 'Classes can only be created in the active school year.',
+        'class_year_super_admin_only' => 'Only a superadmin can change the school year of a class.',
+        'class_year_has_records' => 'The school year cannot be changed because the class has students or assignment history.',
         'school_year_start_mismatch' => 'The start date must belong to the selected starting year.',
         'school_year_end_mismatch' => 'The end date must fall in the following calendar year.',
         'school_year_overlap' => 'The selected period overlaps with an existing school year.',
@@ -238,6 +241,12 @@ return [
         'school_year_active_delete' => 'The active school year cannot be deleted.',
         'school_year_has_classes' => 'The school year cannot be deleted because it has related classes or history.',
         'school_year_auto_activation_enabled' => 'Manual activation is disabled while automatic school year activation is enabled.',
+        'class_duplicate' => 'A class with that name already exists in the selected school year.',
+        'class_grade_invalid' => 'Select a grade between 1 and 8.',
+        'class_has_students' => 'The class cannot be deleted because it has assigned students.',
+        'class_has_history' => 'The class cannot be deleted because it has assignment history.',
+        'class_students_invalid' => 'All selected users must be active library members with the user role.',
+        'class_inactive' => 'Students cannot be assigned to an inactive class.',
     ],
 
     /*

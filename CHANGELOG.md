@@ -1,5 +1,23 @@
 # Changelog
 
+## [20.11.2026] Odeljenja: pregled, kreiranje i dodela učenika
+
+Dodata je stranica odeljenja na nivou biblioteke, sa karticama, detaljima odeljenja i dodelom postojećih korisničkih naloga.
+
+### Added
+
+- **API i servisi** (`app/Http/Controllers/SchoolClassesController.php`, `app/Services/SchoolClassService.php`, `app/Policies/SchoolClassPolicy.php`, `app/Http/Requests/{StoreSchoolClassRequest,UpdateSchoolClassRequest,AssignSchoolClassStudentsRequest}.php`, `app/Http/Resources/{SchoolClassResource,ClassStudentResource,ClassCandidateResource}.php`, `app/Queries/SchoolClassesSearch.php`, `app/DTOs/StudentAssignmentResultCollection.php`, `app/Enums/StudentAssignmentOutcomeEnum.php`, `routes/api.php`) — `GET/POST/PUT/DELETE /api/v1/classes`, opcije za filtere, lista učenika, dostupni učenici, dodela i uklanjanje
+- **Pravila** — bibliotekar, administrator biblioteke i superadmin vide odeljenja i učenike aktivne biblioteke; kreiranje/izmena/brisanje odeljenja je dostupno administratoru biblioteke i superadminu; odeljenja se kreiraju samo u aktivnoj školskoj godini; superadmin može promeniti godinu odeljenja samo ako ono nema učenike ni istoriju
+- **Dodela učenika** — dodeljuju se samo postojeći aktivni članovi biblioteke sa rolom `user`; premeštanje između odeljenja menja current zapis i upisuje `classroom_history`; uklanjanje takođe upisuje istoriju; neaktivno odeljenje ne prima nove učenike
+- **Frontend** (`frontend/src/pages/classes/{classes-page,class-detail-page}.tsx`, `frontend/src/components/classes/{school-class-form-modal,add-class-students-modal}.tsx`, `frontend/src/{App.tsx,components/layout/app-shell.tsx,types.ts,lib/api.ts}`, i18n) — `/classes` kao grid kartica sa filterima, `/classes/:id` sa detaljima i listom učenika, modal za kreiranje/izmenu odeljenja i modal za dodelu postojećih korisnika uz upozorenje o premeštanju
+- **Testovi** (`tests/Feature/Auth/SchoolClassApiTest.php`, `tests/Feature/Auth/SchoolClassStudentApiTest.php`) — CRUD, scope po aktivnoj biblioteci i godini, validacija, dozvole, dodela/premeštanje/uklanjanje i istorija
+
+### Tests
+
+- Cela suite na PostgreSQL-u: 500 testa, 1880 assertiona
+- `pint --test` prolazi
+- `npm run build` prolazi
+
 ## [19.11.2026] Školske godine, odeljenja i centralni DB exception handler
 
 Postavljena je baza, modeli, CRUD i scheduler za školske godine i odeljenja, testovi su prebačeni na PostgreSQL, a neobrađene data-integrity greške sada vraćaju kontrolisan API odgovor.

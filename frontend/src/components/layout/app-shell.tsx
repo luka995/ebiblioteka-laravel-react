@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BadgeCheck, BookCheck, BookOpen, Building2, ChevronDown, ClipboardList, FolderTree, KeyRound, LayoutDashboard, LogOut, Map, MapPin, Menu, Newspaper, PenLine, Settings, SlidersHorizontal, Tag, Users, X } from 'lucide-react'
+import { BadgeCheck, BookCheck, BookOpen, Building2, ChevronDown, ClipboardList, FolderTree, GraduationCap, KeyRound, LayoutDashboard, LogOut, Map, MapPin, Menu, Newspaper, PenLine, Settings, SlidersHorizontal, Tag, Users, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { BrandMark } from '@/components/brand'
 import { HeaderLibrarySwitcher } from '@/components/layout/library-switcher'
@@ -28,6 +28,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: null },
   { to: '/users', labelKey: 'nav.users', icon: Users, permission: 'users.viewAny' },
+  { to: '/classes', labelKey: 'nav.classes', icon: GraduationCap, permission: 'classes.viewAny' },
   { to: '/libraries', labelKey: 'nav.libraries', icon: Building2, permission: 'libraries.viewAny' },
   { to: '/tags', labelKey: 'nav.tags', icon: Tag, permission: 'tags.viewAny' },
   { to: '/categories', labelKey: 'nav.categories', icon: FolderTree, permission: 'categories.viewAny' },
@@ -210,6 +211,7 @@ function pageTitleFor(pathname: string): string {
   if (pathname.startsWith('/reservations')) return 'nav.myReservations'
   if (pathname.startsWith('/catalog')) return 'nav.myReservations'
   if (pathname.startsWith('/users')) return 'nav.users'
+  if (pathname.startsWith('/classes')) return 'nav.classes'
   if (pathname.startsWith('/libraries')) return 'nav.libraries'
   if (pathname.startsWith('/regions')) return 'nav.regions'
   if (pathname.startsWith('/places')) return 'nav.places'

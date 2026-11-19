@@ -84,6 +84,9 @@ return [
         'duplicate_record' => 'Zapis sa istim podacima već postoji.',
         'invalid_data' => 'Podaci ne zadovoljavaju pravila baze.',
         'active_school_year_required' => 'Aktivna školska godina nije podešena.',
+        'class_active_school_year_required' => 'Odeljenja se mogu kreirati samo u aktivnoj školskoj godini.',
+        'class_year_super_admin_only' => 'Samo superadmin može promeniti školsku godinu odeljenja.',
+        'class_year_has_records' => 'Školska godina se ne može promeniti jer odeljenje ima učenike ili istoriju dodela.',
         'school_year_start_mismatch' => 'Početak godine mora biti u naznačenoj početnoj godini.',
         'school_year_end_mismatch' => 'Kraj godine mora biti u narednoj kalendarskoj godini.',
         'school_year_overlap' => 'Izabrani period se preklapa sa postojećom školskom godinom.',
@@ -91,6 +94,12 @@ return [
         'school_year_active_delete' => 'Aktivna školska godina se ne može obrisati.',
         'school_year_has_classes' => 'Školska godina se ne može obrisati jer ima povezana odeljenja ili istoriju.',
         'school_year_auto_activation_enabled' => 'Ručna aktivacija je onemogućena dok je uključena automatska aktivacija školskih godina.',
+        'class_duplicate' => 'Odeljenje sa tim nazivom već postoji u izabranoj školskoj godini.',
+        'class_grade_invalid' => 'Izaberite razred od 1 do 8.',
+        'class_has_students' => 'Odeljenje se ne može obrisati jer ima dodeljene učenike.',
+        'class_has_history' => 'Odeljenje se ne može obrisati jer ima istoriju dodela.',
+        'class_students_invalid' => 'Svi izabrani korisnici moraju biti aktivni članovi biblioteke sa ulogom korisnika.',
+        'class_inactive' => 'Ne možete dodeljivati učenike u neaktivno odeljenje.',
     ],
 
     'attributes' => [

@@ -17,6 +17,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegionsController;
 use App\Http\Controllers\ReservationsController;
 use App\Http\Controllers\RolesController;
+use App\Http\Controllers\SchoolClassesController;
 use App\Http\Controllers\SchoolYearsController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TagsController;
@@ -53,6 +54,28 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
         ->middleware('can:delete,schoolYear');
     Route::post('/system/school-years/{schoolYear}/activate', [SchoolYearsController::class, 'activate'])
         ->middleware('can:activate,schoolYear');
+
+    // Odeljenja u aktivnoj biblioteci (staff).
+    Route::get('/classes/options', [SchoolClassesController::class, 'options'])
+        ->middleware('can:viewAny,App\Models\SchoolClass');
+    Route::get('/classes', [SchoolClassesController::class, 'index'])
+        ->middleware('can:viewAny,App\Models\SchoolClass');
+    Route::post('/classes', [SchoolClassesController::class, 'store'])
+        ->middleware('can:create,App\Models\SchoolClass');
+    Route::get('/classes/{schoolClass}/students', [SchoolClassesController::class, 'students'])
+        ->middleware('can:viewStudents,schoolClass');
+    Route::get('/classes/{schoolClass}/available-students', [SchoolClassesController::class, 'availableStudents'])
+        ->middleware('can:assignStudents,schoolClass');
+    Route::post('/classes/{schoolClass}/students/assign', [SchoolClassesController::class, 'assignStudents'])
+        ->middleware('can:assignStudents,schoolClass');
+    Route::post('/classes/{schoolClass}/students/unassign', [SchoolClassesController::class, 'unassignStudents'])
+        ->middleware('can:unassignStudents,schoolClass');
+    Route::get('/classes/{schoolClass}', [SchoolClassesController::class, 'show'])
+        ->middleware('can:view,schoolClass');
+    Route::put('/classes/{schoolClass}', [SchoolClassesController::class, 'update'])
+        ->middleware('can:update,schoolClass');
+    Route::delete('/classes/{schoolClass}', [SchoolClassesController::class, 'destroy'])
+        ->middleware('can:delete,schoolClass');
 
     // Zahtevi za otvaranje biblioteka (samo superadmin).
     Route::get('/library-requests', [LibraryRequestsController::class, 'index'])

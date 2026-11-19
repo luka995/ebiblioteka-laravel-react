@@ -9,6 +9,7 @@
   "nav": {
     "dashboard": "Početna",
     "users": "Korisnici",
+    "classes": "Odeljenja",
     "libraries": "Biblioteke",
     "regions": "Regije",
     "places": "Mesta",
@@ -82,6 +83,83 @@
       "librariesDescription": "Pregled i upravljanje bibliotekama u sistemu.",
       "borrowsTitle": "Moje pozajmice",
       "borrowsDescription": "Pregled izdatih knjiga, rokova i vraćanja."
+    }
+  },
+  "classes": {
+    "title": "Odeljenja",
+    "subtitle": "Pregled odeljenja u aktivnoj biblioteci i školskoj godini.",
+    "add": "Novo odeljenje",
+    "searchPlaceholder": "Pretražite po nazivu ili starešini...",
+    "activeLibraryRequired": "Izaberite aktivnu biblioteku da biste videli odeljenja.",
+    "activeSchoolYearRequired": "Aktivna školska godina mora biti podešena pre kreiranja odeljenja.",
+    "emptyTitle": "Nema odeljenja",
+    "emptyText": "Kreirajte odeljenje za izabranu školsku godinu i dodelite mu učenike.",
+    "created": "Odeljenje je kreirano.",
+    "updated": "Odeljenje je izmenjeno.",
+    "deleted": "Odeljenje je obrisano.",
+    "notFound": "Odeljenje nije pronađeno.",
+    "active": "Aktivno",
+    "inactive": "Neaktivno",
+    "teacherValue": "Starešina: {{name}}",
+    "noTeacher": "Bez starešine",
+    "deleteTitle": "Obriši odeljenje?",
+    "deleteText": "Da li ste sigurni da želite da obrišete odeljenje „{{name}}“?",
+    "deleteDisabledStudents": "Odeljenje sa učenicima ne može se obrisati.",
+    "formTitle": "Novo odeljenje",
+    "formSubtitle": "Kreirajte odeljenje u aktivnoj školskoj godini.",
+    "editTitle": "Izmeni odeljenje",
+    "editSubtitle": "Ažurirajte podatke odeljenja.",
+    "filters": {
+      "schoolYear": "Školska godina",
+      "allYears": "Sve godine",
+      "grade": "Razred",
+      "allGrades": "Svi razredi"
+    },
+    "fields": {
+      "schoolYear": "Školska godina",
+      "schoolYearPlaceholder": "Izaberite godinu",
+      "grade": "Razred",
+      "gradePlaceholder": "Izaberite razred",
+      "name": "Naziv odeljenja",
+      "teacher": "Starešina",
+      "teacherPlaceholder": "Ime i prezime starešine",
+      "active": "Aktivno odeljenje",
+      "activeHint": "Neaktivna odeljenja ne primaju nove učenike.",
+      "activeYear": "aktivna"
+    },
+    "columns": {
+      "name": "Odeljenje",
+      "grade": "Razred",
+      "schoolYear": "Školska godina",
+      "teacher": "Starešina",
+      "students": "Učenici",
+      "status": "Status"
+    },
+    "students": {
+      "title": "Učenici odeljenja",
+      "count": "{{count}} učenika",
+      "add": "Dodaj učenike",
+      "addTitle": "Dodaj učenike u odeljenje",
+      "addSubtitle": "Izaberite postojeće korisničke naloge koji su članovi ove biblioteke.",
+      "searchPlaceholder": "Pretražite učenike po imenu, email-u ili bar-kodu...",
+      "noCandidates": "Nema dostupnih učenika za dodavanje.",
+      "currentClass": "Trenutno u odeljenju {{name}} — dodela će ga premestiti.",
+      "selectedCount": "Izabrano: {{count}}",
+      "assign": "Dodeli učenike",
+      "assigned": "Učenici su dodeljeni.",
+      "assignedSummary": "Dodeljeno: {{assigned}}, premešteno: {{moved}}.",
+      "emptyTitle": "Nema učenika u odeljenju",
+      "emptyText": "Dodajte učenike iz postojećih korisničkih naloga biblioteke.",
+      "remove": "Ukloni iz odeljenja",
+      "removeTitle": "Ukloni učenika?",
+      "removeText": "Da li želite da uklonite učenika „{{name}}“ iz odeljenja?",
+      "removed": "Učenik je uklonjen iz odeljenja.",
+      "columns": {
+        "name": "Učenik",
+        "account": "Nalog",
+        "barcode": "Bar-kod",
+        "assignedAt": "Dodeljen"
+      }
     }
   },
   "users": {
