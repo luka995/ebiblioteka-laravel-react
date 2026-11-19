@@ -83,6 +83,14 @@ return [
         'related_records_exist' => 'Zapis se ne može izmeniti ili obrisati jer postoje povezani podaci.',
         'duplicate_record' => 'Zapis sa istim podacima već postoji.',
         'invalid_data' => 'Podaci ne zadovoljavaju pravila baze.',
+        'active_school_year_required' => 'Aktivna školska godina nije podešena.',
+        'school_year_start_mismatch' => 'Početak godine mora biti u naznačenoj početnoj godini.',
+        'school_year_end_mismatch' => 'Kraj godine mora biti u narednoj kalendarskoj godini.',
+        'school_year_overlap' => 'Izabrani period se preklapa sa postojećom školskom godinom.',
+        'school_year_year_locked' => 'Godina se ne može promeniti jer već ima odeljenja.',
+        'school_year_active_delete' => 'Aktivna školska godina se ne može obrisati.',
+        'school_year_has_classes' => 'Školska godina se ne može obrisati jer ima povezana odeljenja ili istoriju.',
+        'school_year_auto_activation_enabled' => 'Ručna aktivacija je onemogućena dok je uključena automatska aktivacija školskih godina.',
     ],
 
     'attributes' => [

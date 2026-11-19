@@ -24,13 +24,29 @@ class NotificationDeliveryService
         ?Model $related = null,
         array $meta = [],
     ): ?NotificationDelivery {
+        return $this->claimFor($type->value, $dedupeKey, $recipient, $library, $related, $meta);
+    }
+
+    /**
+     * Genericki claim za notifikacije van cirkulacije (npr. skolske godine).
+     *
+     * @param  array<string, mixed>  $meta
+     */
+    public function claimFor(
+        string $type,
+        string $dedupeKey,
+        ?User $recipient = null,
+        ?Library $library = null,
+        ?Model $related = null,
+        array $meta = [],
+    ): ?NotificationDelivery {
         $now = now();
 
         // insertOrIgnore koristi ON CONFLICT DO NOTHING na PostgreSQL-u, pa
         // duplikat ne prekida spoljnu transakciju (bitno za testove i za
         // slanje unutar DB::transaction).
         $inserted = NotificationDelivery::query()->insertOrIgnore([
-            'type' => $type->value,
+            'type' => $type,
             'channel' => 'email',
             'user_id' => $recipient?->id,
             'library_id' => $library?->id,

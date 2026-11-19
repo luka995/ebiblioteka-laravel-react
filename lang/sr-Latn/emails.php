@@ -140,6 +140,26 @@ return [
         ],
     ],
 
+    'school_year' => [
+        'upcoming' => [
+            'subject' => 'Nova školska godina :name počinje za :days dana',
+            'title' => 'Nova školska godina :name',
+            'intro' => 'Obaveštavamo vas da će nova školska godina :name biti automatski aktivirana za :days dana.',
+            'active_year' => 'Trenutno aktivna godina je :name.',
+            'starts_on' => 'Početak nove godine: :date.',
+            'prepare' => 'Pripremite odeljenja i raspored učenika na vreme.',
+            'action' => 'Otvori eBiblioteku',
+        ],
+        'activated' => [
+            'subject' => 'Školska godina :name je sada aktivna',
+            'title' => 'Školska godina :name je sada aktivna',
+            'intro' => 'Aktivna školska godina je promenjena na :name.',
+            'previous_year' => 'Prethodno aktivna školska godina bila je :name.',
+            'starts_on' => 'Ova školska godina počela je: :date.',
+            'action' => 'Otvori eBiblioteku',
+        ],
+    ],
+
     'brand' => [
         'name' => 'eBiblioteka',
         'tagline' => 'svaka knjiga je nova pustolovina',

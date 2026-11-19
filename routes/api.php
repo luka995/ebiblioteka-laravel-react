@@ -17,6 +17,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegionsController;
 use App\Http\Controllers\ReservationsController;
 use App\Http\Controllers\RolesController;
+use App\Http\Controllers\SchoolYearsController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TagsController;
 use App\Http\Controllers\UserMembershipsController;
@@ -38,6 +39,20 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::get('/settings', [SettingsController::class, 'index']);
     Route::put('/settings', [SettingsController::class, 'update']);
     Route::get('/settings/users', [SettingsController::class, 'users']);
+
+    // Skolske godine (samo superadmin).
+    Route::get('/system/school-years', [SchoolYearsController::class, 'index'])
+        ->middleware('can:viewAny,App\Models\SchoolYear');
+    Route::post('/system/school-years', [SchoolYearsController::class, 'store'])
+        ->middleware('can:create,App\Models\SchoolYear');
+    Route::put('/system/school-years/automatic-activation', [SchoolYearsController::class, 'updateAutomaticActivation'])
+        ->middleware('can:updateSettings,App\Models\SchoolYear');
+    Route::put('/system/school-years/{schoolYear}', [SchoolYearsController::class, 'update'])
+        ->middleware('can:update,schoolYear');
+    Route::delete('/system/school-years/{schoolYear}', [SchoolYearsController::class, 'destroy'])
+        ->middleware('can:delete,schoolYear');
+    Route::post('/system/school-years/{schoolYear}/activate', [SchoolYearsController::class, 'activate'])
+        ->middleware('can:activate,schoolYear');
 
     // Zahtevi za otvaranje biblioteka (samo superadmin).
     Route::get('/library-requests', [LibraryRequestsController::class, 'index'])

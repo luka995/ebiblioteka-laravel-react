@@ -14,6 +14,7 @@ use App\Models\News;
 use App\Models\Place;
 use App\Models\Region;
 use App\Models\Reservation;
+use App\Models\SchoolYear;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -79,6 +80,7 @@ class AuthorizationService
             'news' => $this->collectionPermissions($actor, News::class),
             'reservations' => $this->collectionPermissions($actor, Reservation::class),
             'borrows' => $this->collectionPermissions($actor, Borrow::class),
+            'school_years' => $this->collectionPermissions($actor, SchoolYear::class),
         ];
     }
 }

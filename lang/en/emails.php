@@ -140,6 +140,26 @@ return [
         ],
     ],
 
+    'school_year' => [
+        'upcoming' => [
+            'subject' => 'New school year :name starts in :days days',
+            'title' => 'New school year :name',
+            'intro' => 'Please note that the new school year :name will be activated automatically in :days days.',
+            'active_year' => 'The currently active year is :name.',
+            'starts_on' => 'The new year starts on: :date.',
+            'prepare' => 'Prepare classes and student assignments on time.',
+            'action' => 'Open eBiblioteka',
+        ],
+        'activated' => [
+            'subject' => 'School year :name is now active',
+            'title' => 'School year :name is now active',
+            'intro' => 'The active school year has been changed to :name.',
+            'previous_year' => 'The previously active school year was :name.',
+            'starts_on' => 'This school year started on: :date.',
+            'action' => 'Open eBiblioteka',
+        ],
+    ],
+
     'brand' => [
         'name' => 'eBiblioteka',
         'tagline' => 'every book is a new adventure',

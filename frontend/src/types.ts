@@ -11,6 +11,7 @@ export interface ResourceCan {
   manageMemberships?: boolean
   removeMemberships?: boolean
   returnBook?: boolean
+  activate?: boolean
 }
 
 export type CollectionPermissions = Record<string, boolean>
@@ -543,6 +544,27 @@ export interface ReservationConflict {
   scanned_book_copy_id: number
   scanned_barcode: string | null
   scanned_order_number: string | null
+}
+
+export interface SchoolYear {
+  id: number
+  year: number
+  name: string
+  starts_on: string
+  starts_on_formatted: string
+  ends_on: string
+  ends_on_formatted: string
+  is_active: boolean
+  classes_count?: number
+  created_by?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  can?: ResourceCan
+}
+
+export interface SchoolYearsMeta {
+  active_school_year_id: number | null
+  automatic_activation: boolean
 }
 
 export interface SuperAdminUser {

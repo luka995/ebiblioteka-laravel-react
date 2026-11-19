@@ -230,6 +230,14 @@ return [
         'related_records_exist' => 'The record cannot be changed or deleted because related records exist.',
         'duplicate_record' => 'A record with the same data already exists.',
         'invalid_data' => 'The data does not satisfy the database constraints.',
+        'active_school_year_required' => 'No active school year is configured.',
+        'school_year_start_mismatch' => 'The start date must belong to the selected starting year.',
+        'school_year_end_mismatch' => 'The end date must fall in the following calendar year.',
+        'school_year_overlap' => 'The selected period overlaps with an existing school year.',
+        'school_year_year_locked' => 'The year cannot be changed because it already has classes.',
+        'school_year_active_delete' => 'The active school year cannot be deleted.',
+        'school_year_has_classes' => 'The school year cannot be deleted because it has related classes or history.',
+        'school_year_auto_activation_enabled' => 'Manual activation is disabled while automatic school year activation is enabled.',
     ],
 
     /*

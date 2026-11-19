@@ -2,7 +2,7 @@
 
 ## [19.11.2026] Školske godine, odeljenja i centralni DB exception handler
 
-Postavljena je baza i modeli za školske godine i odeljenja, testovi su prebačeni na PostgreSQL, a neobrađene data-integrity greške sada vraćaju kontrolisan API odgovor.
+Postavljena je baza, modeli, CRUD i scheduler za školske godine i odeljenja, testovi su prebačeni na PostgreSQL, a neobrađene data-integrity greške sada vraćaju kontrolisan API odgovor.
 
 ### Added
 
@@ -20,9 +20,17 @@ Postavljena je baza i modeli za školske godine i odeljenja, testovi su prebače
 - **Brisanje korisnika** (`app/Http/Controllers/UsersController.php`) — `forceDestroy` je u `DB::transaction` (savepoint u testovima), a lokalni FK `try/catch` je uklonjen u korist centralnog handlera
 - **Validacija** (`lang/{sr-Cyrl,sr-Latn,en}/validation.php`) — generičke poruke za povezane zapise, duplikate i nevalidne podatke
 
+### Školske godine — CRUD, aktivacija i notifikacije
+
+- **CRUD API** (`app/Http/Controllers/SchoolYearsController.php`, `app/Http/Requests/StoreSchoolYearRequest.php`, `UpdateSchoolYearRequest.php`, `app/Http/Resources/SchoolYearResource.php`, `app/Policies/SchoolYearPolicy.php`, `routes/api.php`) — superadmin-only `GET/POST/PUT/DELETE /api/v1/system/school-years`, aktivacija i prekidač automatske aktivacije; `SchoolYearValidator` centralizuje proveru datuma, preklapanja i zaključavanja godine
+- **Servisi** (`app/Services/SchoolYearService.php`, `SchoolYearAutoCreationService.php`, `app/Providers/AppServiceProvider.php`) — aktivna godina iz settings tabele, ručna/automatska aktivacija, kreiranje predstojeće godine preko zasebnog servisa i obaveštenje o promeni aktivne godine
+- **Scheduler** (`routes/console.php`, `app/Console/Commands/ActivateSchoolYear.php`, `NotifySchoolYearUpcoming.php`) — `school-years:activate` 1. septembra u 00:00 UTC i `school-years:notify-upcoming` svakodnevno u 08:00 UTC; podsetnik se šalje u sedmodnevnom prozoru
+- **Notifikacije** (`app/Services/Notification/SchoolYearNotificationService.php`, `SchoolYearNotificationMail.php`, `SendSchoolYearNotification.php`, `app/Enums/SchoolYearNotificationType.php`, `resources/views/emails/school-year/*`, `lang/*/emails.php`) — „upcoming“ i „activated“ emailovi samo za bibliotekare, administratore biblioteka i superadministratore, uz `notification_deliveries` deduplikaciju i prevode
+- **Frontend** (`frontend/src/components/settings/school-year-settings-card.tsx`, `school-year-form-modal.tsx`, `frontend/src/pages/settings/system-settings-page.tsx`, `frontend/src/{types.ts,lib/api.ts}`, i18n) — lista godina, kreiranje/izmena/brisanje, aktivacija i prekidač automatske aktivacije u sistemskim podešavanjima
+
 ### Tests
 
-- Cela suite na PostgreSQL-u: 458 testa, 1648 assertiona
+- Cela suite na PostgreSQL-u: 476 testa, 1745 assertiona
 - `pint --test` prolazi
 
 ## [17.11.2026] Notifikacije: fallback jezika i tekst dnevnog pregleda

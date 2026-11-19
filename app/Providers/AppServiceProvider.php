@@ -9,6 +9,7 @@ use App\Services\Isbn\IsbnMetadataService;
 use App\Services\Isbn\IsbnNormalizer;
 use App\Services\Isbn\NbsCatalogProvider;
 use App\Services\Isbn\OpenLibraryProvider;
+use App\Services\SchoolYearService;
 use App\Services\Security\TurnstileService;
 use App\Services\UserAccessContext;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -27,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
         // queue workerima bi zadržali podatke izmedju requestova/jobova.
         $this->app->scoped(GlobalSettings::class);
         $this->app->scoped(UserAccessContext::class);
+        $this->app->scoped(SchoolYearService::class);
 
         $this->app->bind(TurnstileService::class, function (): TurnstileService {
             return new TurnstileService((string) config('services.turnstile.secret'));

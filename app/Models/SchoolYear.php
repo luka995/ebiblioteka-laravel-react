@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Services\GlobalSettings;
+use App\Services\SchoolYearService;
 use Database\Factories\SchoolYearFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -20,8 +20,6 @@ class SchoolYear extends Model
 {
     /** @use HasFactory<SchoolYearFactory> */
     use HasFactory;
-
-    private static ?self $activeSchoolYear = null;
 
     /**
      * Naziv se izvodi iz pocetne godine, npr. 2026/2027.
@@ -48,15 +46,7 @@ class SchoolYear extends Model
 
     public static function getActiveSchoolYear(): ?self
     {
-        if (self::$activeSchoolYear !== null) {
-            return self::$activeSchoolYear;
-        }
-
-        $activeSchoolYearId = app(GlobalSettings::class)->get(GlobalSettings::ACTIVE_SCHOOL_YEAR_ID);
-
-        return self::$activeSchoolYear = $activeSchoolYearId === null
-            ? null
-            : self::query()->find((int) $activeSchoolYearId);
+        return app(SchoolYearService::class)->active();
     }
 
     /**
