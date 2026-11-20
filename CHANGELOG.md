@@ -12,6 +12,10 @@ Dodata je stranica odeljenja na nivou biblioteke, sa karticama, detaljima odelje
 - **Frontend** (`frontend/src/pages/classes/{classes-page,class-detail-page}.tsx`, `frontend/src/components/classes/{school-class-form-modal,add-class-students-modal}.tsx`, `frontend/src/{App.tsx,components/layout/app-shell.tsx,types.ts,lib/api.ts}`, i18n) — `/classes` kao grid kartica sa filterima, `/classes/:id` sa detaljima i listom učenika, modal za kreiranje/izmenu odeljenja i modal za dodelu postojećih korisnika uz upozorenje o premeštanju
 - **Testovi** (`tests/Feature/Auth/SchoolClassApiTest.php`, `tests/Feature/Auth/SchoolClassStudentApiTest.php`) — CRUD, scope po aktivnoj biblioteci i godini, validacija, dozvole, dodela/premeštanje/uklanjanje i istorija
 
+### Changed
+
+- **Lista učenika** (`frontend/src/pages/classes/class-detail-page.tsx`) — klik na red učenika ili na njegovo ime otvara profil korisnika sa karticama, podacima, rezervacijama i pozajmicama; uklanjanje iz odeljenja ne pokreće navigaciju
+
 ### Tests
 
 - Cela suite na PostgreSQL-u: 500 testa, 1880 assertiona

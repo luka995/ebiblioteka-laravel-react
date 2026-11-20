@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, GraduationCap, Pencil, Trash2, UserPlus, Users } from 'lucide-react'
@@ -18,6 +18,7 @@ import type { ClassStudent, SchoolClass, SchoolClassOptions } from '@/types'
 
 export function ClassDetailPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { id } = useParams()
   const classId = Number(id)
   const queryClient = useQueryClient()
@@ -83,6 +84,10 @@ export function ClassDetailPage() {
   const classFormSuccess = async () => {
     await refreshClass()
     toast.success(t('classes.updated'))
+  }
+
+  const openStudent = (student: ClassStudent) => {
+    navigate(`/users/${student.user_id}`)
   }
 
   const confirmRemove = async () => {
@@ -185,8 +190,20 @@ export function ClassDetailPage() {
                 </TableHeader>
                 <TableBody>
                   {students.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-medium">{student.name ?? '—'}</TableCell>
+                    <TableRow
+                      key={student.id}
+                      className="cursor-pointer"
+                      onClick={() => openStudent(student)}
+                    >
+                      <TableCell className="font-medium">
+                        <Link
+                          to={`/users/${student.user_id}`}
+                          className="hover:underline"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          {student.name ?? '—'}
+                        </Link>
+                      </TableCell>
                       <TableCell>
                         <span className="block">{student.email ?? '—'}</span>
                         {student.username ? (
@@ -208,7 +225,10 @@ export function ClassDetailPage() {
                               variant="ghost"
                               size="icon-xs"
                               aria-label={t('classes.students.remove')}
-                              onClick={() => setRemovingStudent(student)}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setRemovingStudent(student)
+                              }}
                             >
                               <Trash2 />
                             </Button>
