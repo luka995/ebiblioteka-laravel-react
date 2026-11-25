@@ -4,7 +4,7 @@ namespace App\DTOs;
 
 use App\Enums\StudentAssignmentOutcomeEnum;
 
-final class StudentAssignmentResultCollection
+final class StudentAssignmentResultDTO
 {
     private int $assigned = 0;
 

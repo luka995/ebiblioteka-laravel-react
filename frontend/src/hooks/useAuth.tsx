@@ -90,6 +90,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await queryClient.invalidateQueries({ queryKey: ['users'] })
       await queryClient.invalidateQueries({ queryKey: ['tags'] })
       await queryClient.invalidateQueries({ queryKey: ['libraries'] })
+      await queryClient.invalidateQueries({ queryKey: ['school-class-options'] })
+      await queryClient.invalidateQueries({ queryKey: ['school-classes'] })
+      await queryClient.invalidateQueries({ queryKey: ['class-transfer-preview'] })
+      await queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
     },
   })
 

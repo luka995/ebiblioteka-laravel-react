@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Queries\RegionListQueryDTO;
+use App\DTOs\Queries\SortingDTO;
 use App\Http\Requests\StoreRegionRequest;
 use App\Http\Requests\UpdateRegionRequest;
 use App\Http\Resources\RegionResource;
 use App\Models\Region;
 use App\Services\AuthorizationService;
+use App\Services\Queries\RegionQueryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -16,16 +19,15 @@ class RegionsController extends Controller
     /**
      * @return AnonymousResourceCollection<int, RegionResource>|RegionResource[]
      */
-    public function index(Request $request, AuthorizationService $auth): AnonymousResourceCollection|array
+    public function index(Request $request, AuthorizationService $auth, RegionQueryService $regions): AnonymousResourceCollection|array
     {
-        $query = Region::query()
-            ->withCount('places')
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $term = trim((string) $request->string('search'));
-                $q->where('name', 'ilike', "%{$term}%");
-            })
-            ->orderBy('name')
-            ->orderBy('id');
+        $dto = new RegionListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->string('search')->toString() ?: null,
+            $request->integer('per_page', 25),
+        );
+
+        $query = $regions->build($dto);
 
         $permissions = $auth->collectionPermissions($request->user(), Region::class);
 
@@ -34,7 +36,7 @@ class RegionsController extends Controller
         }
 
         return RegionResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $query->paginate($dto->perPage)->withQueryString()
         )->additional(['permissions' => $permissions]);
     }
 

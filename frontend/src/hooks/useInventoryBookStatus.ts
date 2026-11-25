@@ -19,13 +19,13 @@ export function isInventoryBookPending(book: InventoryBook): boolean {
  * `processing`, i pauzira se kada je tab u pozadini. Kada zahtev pređe iz
  * nedovrsenog u `completed`/`failed`, prikazuje se toast notifikacija.
  */
-export function useInventoryBookStatus(libraryId: number | null) {
+export function useInventoryBookStatus(libraryId: number | null, sort = 'created_at', direction = 'desc') {
   const { t } = useTranslation()
 
   const query = useQuery({
-    queryKey: ['inventory-books', libraryId],
+    queryKey: ['inventory-books', libraryId, sort, direction],
     queryFn: () =>
-      api.get<PaginatedResponse<InventoryBook>>(`${apiPaths.inventoryBooks}?per_page=50`),
+      api.get<PaginatedResponse<InventoryBook>>(`${apiPaths.inventoryBooks}?per_page=50&sort=${sort}&direction=${direction}`),
     enabled: libraryId !== null,
     refetchInterval: (q) => {
       const items = q.state.data?.data ?? []

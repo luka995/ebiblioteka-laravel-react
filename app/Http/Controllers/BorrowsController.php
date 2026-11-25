@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Queries\BorrowListQueryDTO;
+use App\DTOs\Queries\SortingDTO;
 use App\Exceptions\ReservationExchangeRequiredException;
 use App\Http\Requests\StoreBorrowRequest;
 use App\Http\Resources\BorrowResource;
@@ -11,10 +13,11 @@ use App\Models\Library;
 use App\Models\LibrarySettings;
 use App\Models\Reservation;
 use App\Models\User;
-use App\Queries\BorrowFilters;
+use App\Queries\Concerns\AppliesTransliteratedSearch;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
 use App\Services\BorrowService;
+use App\Services\Queries\BorrowQueryService;
 use App\Support\BarCode;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -24,26 +27,21 @@ use Illuminate\Validation\ValidationException;
 
 class BorrowsController extends Controller
 {
+    use AppliesTransliteratedSearch;
+
     /**
      * Sopstvene pozajmice prijavljenog korisnika.
      *
      * @return AnonymousResourceCollection<int, BorrowResource>
      */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(Request $request, BorrowQueryService $borrows): AnonymousResourceCollection
     {
-        $query = Borrow::query()
-            ->with($this->relations())
-            ->where('user_id', $request->user()->id);
-
-        $filters = $request->only(['status', 'search', 'date_from', 'date_to']);
-        $filters['status'] ??= 'active';
-
-        $query = (new BorrowFilters)->apply($query, $filters);
-
-        $this->applyOrdering($query, (string) $filters['status']);
+        $dto = $this->queryDto($request);
 
         return BorrowResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $borrows->forUser($dto, $request->user())
+                ->paginate($dto->perPage)
+                ->withQueryString()
         );
     }
 
@@ -52,21 +50,14 @@ class BorrowsController extends Controller
      *
      * @return AnonymousResourceCollection<int, BorrowResource>
      */
-    public function forUser(Request $request, User $user): AnonymousResourceCollection
+    public function forUser(Request $request, User $user, BorrowQueryService $borrows): AnonymousResourceCollection
     {
-        $query = Borrow::query()
-            ->with($this->relations())
-            ->where('user_id', $user->id);
-
-        $filters = $request->only(['status', 'search', 'date_from', 'date_to']);
-        $filters['status'] ??= 'active';
-
-        $query = (new BorrowFilters)->apply($query, $filters);
-
-        $this->applyOrdering($query, (string) $filters['status']);
+        $dto = $this->queryDto($request);
 
         return BorrowResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $borrows->forUser($dto, $user)
+                ->paginate($dto->perPage)
+                ->withQueryString()
         );
     }
 
@@ -79,26 +70,19 @@ class BorrowsController extends Controller
         Request $request,
         ActiveLibraryService $activeLibrary,
         AuthorizationService $auth,
+        BorrowQueryService $borrows,
     ): AnonymousResourceCollection {
         $actor = $request->user();
         $library = $activeLibrary->requireActiveLibrary($actor);
         $this->ensureLibraryStaff($actor, $library);
 
-        $query = Borrow::query()
-            ->with($this->relations())
-            ->where('library_id', $library->id);
-
-        $filters = $request->only(['status', 'search', 'date_from', 'date_to', 'overdue']);
-        $filters['status'] ??= 'active';
-
-        $query = (new BorrowFilters)->apply($query, $filters);
-
-        $this->applyOrdering($query, (string) $filters['status']);
-
+        $dto = $this->queryDto($request);
         $permissions = $auth->collectionPermissions($actor, Borrow::class);
 
         return BorrowResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $borrows->forLibrary($dto, $library)
+                ->paginate($dto->perPage)
+                ->withQueryString()
         )->additional(['permissions' => $permissions]);
     }
 
@@ -294,13 +278,13 @@ class BorrowsController extends Controller
 
         return User::query()
             ->whereHas('libraries', fn ($query) => $query->whereKey($library->id))
-            ->where(function ($query) use ($term, $normalized): void {
-                $query->where('first_name', 'like', '%'.$term.'%')
-                    ->orWhere('last_name', 'like', '%'.$term.'%')
-                    ->orWhere('name', 'like', '%'.$term.'%')
-                    ->orWhere('username', 'like', '%'.$term.'%')
-                    ->orWhere('email', 'like', '%'.$term.'%')
-                    ->orWhere('bar_code', 'like', '%'.$normalized.'%');
+            ->where(function (Builder $query) use ($term, $normalized): void {
+                $this->whereTransliterated($query, 'first_name', $term);
+                $this->whereTransliterated($query, 'last_name', $term, 'or');
+                $this->whereTransliterated($query, 'name', $term, 'or');
+                $this->whereTransliterated($query, 'username', $term, 'or');
+                $this->whereTransliterated($query, 'email', $term, 'or');
+                $query->orWhere('bar_code', 'like', '%'.$normalized.'%');
             })
             ->orderBy('first_name')
             ->orderBy('last_name')
@@ -395,43 +379,22 @@ class BorrowsController extends Controller
         ];
     }
 
-    /**
-     * @param  Builder<Borrow>  $query
-     */
-    private function applyOrdering($query, string $status): void
-    {
-        if ($status === 'history') {
-            $query->orderByDesc('return_date')->orderByDesc('id');
-
-            return;
-        }
-
-        if ($status === 'active' || $status === 'overdue') {
-            $query->orderBy('valid_till')->orderBy('id');
-
-            return;
-        }
-
-        $query->orderByDesc('id');
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function relations(): array
-    {
-        return [
-            'library.settings',
-            'user',
-            'book.authors',
-            'bookCopy',
-            'createdBy',
-        ];
-    }
-
     private function settings(Library $library): LibrarySettings
     {
         return $library->settings()->firstOrCreate([], LibrarySettings::defaults());
+    }
+
+    private function queryDto(Request $request): BorrowListQueryDTO
+    {
+        return new BorrowListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->string('status')->toString() ?: null,
+            $request->string('search')->toString() ?: null,
+            $request->string('date_from')->toString() ?: null,
+            $request->string('date_to')->toString() ?: null,
+            $request->boolean('overdue'),
+            $request->integer('per_page', 25),
+        );
     }
 
     private function ensureLibraryStaff(User $actor, Library $library): void

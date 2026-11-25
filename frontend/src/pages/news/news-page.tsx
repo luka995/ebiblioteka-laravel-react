@@ -20,10 +20,12 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { PaginationBar } from '@/components/pagination-bar'
 import { NewsFormModal } from '@/components/news/news-form-modal'
 import { NewsMobileList } from '@/components/news/news-mobile-list'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { News, PaginatedResponse } from '@/types'
 
 const PAGE_SIZE = 10
@@ -32,11 +34,11 @@ function publicNewsUrl(slug: string): string {
   return `${laravelBaseUrl()}/novosti/${slug}`
 }
 
-function useNewsQuery(page: number, search: string) {
+function useNewsQuery(page: number, search: string, sort: string, direction: string) {
   return useQuery({
-    queryKey: ['news', { page, search }],
+    queryKey: ['news', { page, search, sort, direction }],
     queryFn: async () => {
-      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
+      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page), sort, direction })
       if (search) query.set('search', search)
       return api.get<PaginatedResponse<News>>(`${apiPaths.news}?${query.toString()}`)
     },
@@ -47,6 +49,7 @@ export function NewsPage() {
   const { t } = useTranslation()
   const { can } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { sort, direction, onSort } = useTableSort('date', 'desc')
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const search = searchParams.get('q') ?? ''
@@ -61,7 +64,7 @@ export function NewsPage() {
     setSearchInput(search)
   }, [search])
 
-  const newsQuery = useNewsQuery(page, search)
+  const newsQuery = useNewsQuery(page, search, sort, direction)
 
   if (!can('news.viewAny')) {
     return <p className="text-sm text-muted-foreground">{t('errors.forbidden')}</p>
@@ -153,8 +156,12 @@ export function NewsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="px-4">{t('news.columns.image')}</TableHead>
-                  <TableHead className="px-4">{t('news.columns.title')}</TableHead>
-                  <TableHead className="px-4">{t('news.columns.date')}</TableHead>
+                  <SortableTableHead column="title" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                    {t('news.columns.title')}
+                  </SortableTableHead>
+                  <SortableTableHead column="date" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                    {t('news.columns.date')}
+                  </SortableTableHead>
                   <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>

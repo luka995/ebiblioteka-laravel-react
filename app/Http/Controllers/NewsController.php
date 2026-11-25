@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Queries\NewsListQueryDTO;
+use App\DTOs\Queries\SortingDTO;
 use App\Http\Requests\StoreNewsRequest;
 use App\Http\Requests\UpdateNewsRequest;
 use App\Http\Resources\NewsResource;
 use App\Models\News;
 use App\Services\AuthorizationService;
+use App\Services\Queries\NewsQueryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -18,15 +21,15 @@ class NewsController extends Controller
     /**
      * @return AnonymousResourceCollection<int, NewsResource>|NewsResource[]
      */
-    public function index(Request $request, AuthorizationService $auth): AnonymousResourceCollection|array
+    public function index(Request $request, AuthorizationService $auth, NewsQueryService $news): AnonymousResourceCollection|array
     {
-        $query = News::query()
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $term = trim((string) $request->string('search'));
-                $q->where('title', 'ilike', "%{$term}%");
-            })
-            ->orderByDesc('date')
-            ->orderByDesc('id');
+        $dto = new NewsListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->string('search')->toString() ?: null,
+            $request->integer('per_page', 25),
+        );
+
+        $query = $news->build($dto);
 
         $permissions = $auth->collectionPermissions($request->user(), News::class);
 
@@ -35,7 +38,7 @@ class NewsController extends Controller
         }
 
         return NewsResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $query->paginate($dto->perPage)->withQueryString()
         )->additional(['permissions' => $permissions]);
     }
 
@@ -74,8 +77,6 @@ class NewsController extends Controller
 
     /**
      * Otpremanje sličice (thumbnail) na javni disk i vraćanje putanje/URL-a.
-     *
-     * @return JsonResponse
      */
     public function uploadImage(Request $request): JsonResponse
     {

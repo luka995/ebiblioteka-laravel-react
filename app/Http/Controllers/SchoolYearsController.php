@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Queries\SchoolYearListQueryDTO;
+use App\DTOs\Queries\SortingDTO;
 use App\Http\Requests\StoreSchoolYearRequest;
 use App\Http\Requests\UpdateSchoolYearRequest;
 use App\Http\Resources\SchoolYearResource;
 use App\Models\SchoolYear;
+use App\Services\Queries\SchoolYearQueryService;
 use App\Services\SchoolYearService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,13 +19,19 @@ class SchoolYearsController extends Controller
     /**
      * @return AnonymousResourceCollection<int, SchoolYearResource>
      */
-    public function index(SchoolYearService $years): AnonymousResourceCollection
-    {
-        $items = SchoolYear::query()
-            ->with('createdBy')
-            ->withCount('classes')
-            ->orderByDesc('year')
-            ->get();
+    public function index(
+        Request $request,
+        SchoolYearService $years,
+        SchoolYearQueryService $queryService,
+    ): AnonymousResourceCollection {
+        $dto = new SchoolYearListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->integer('per_page', 25),
+        );
+
+        $items = $queryService->build($dto)
+            ->paginate($dto->perPage)
+            ->withQueryString();
 
         return SchoolYearResource::collection($items)->additional([
             'meta' => [

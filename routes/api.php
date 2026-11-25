@@ -8,6 +8,7 @@ use App\Http\Controllers\BooksController;
 use App\Http\Controllers\BorrowsController;
 use App\Http\Controllers\CatalogController;
 use App\Http\Controllers\CategoriesController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InventoryBooksController;
 use App\Http\Controllers\LibrariesController;
 use App\Http\Controllers\LibraryRequestsController;
@@ -31,6 +32,8 @@ require __DIR__.'/auth.php';
 Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::get('/roles', [RolesController::class, 'index']);
     Route::get('/roles/assignable', [RolesController::class, 'assignable']);
+
+    Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
@@ -58,6 +61,10 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     // Odeljenja u aktivnoj biblioteci (staff).
     Route::get('/classes/options', [SchoolClassesController::class, 'options'])
         ->middleware('can:viewAny,App\Models\SchoolClass');
+    Route::get('/classes/transfer/preview', [SchoolClassesController::class, 'transferPreview'])
+        ->middleware('can:transferStudents,App\Models\SchoolClass');
+    Route::post('/classes/transfer', [SchoolClassesController::class, 'transferStudents'])
+        ->middleware('can:transferStudents,App\Models\SchoolClass');
     Route::get('/classes', [SchoolClassesController::class, 'index'])
         ->middleware('can:viewAny,App\Models\SchoolClass');
     Route::post('/classes', [SchoolClassesController::class, 'store'])

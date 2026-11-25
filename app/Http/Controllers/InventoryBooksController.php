@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Queries\InventoryBookListQueryDTO;
+use App\DTOs\Queries\SortingDTO;
 use App\Enums\InventoryBookStatus;
 use App\Http\Middleware\SetLocale;
 use App\Http\Resources\InventoryBookResource;
@@ -10,6 +12,7 @@ use App\Models\InventoryBook;
 use App\Models\Library;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
+use App\Services\Queries\InventoryBookQueryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -22,21 +25,26 @@ class InventoryBooksController extends Controller
     /**
      * @return AnonymousResourceCollection<int, InventoryBookResource>
      */
-    public function index(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection
-    {
+    public function index(
+        Request $request,
+        AuthorizationService $auth,
+        ActiveLibraryService $activeLibrary,
+        InventoryBookQueryService $queryService,
+    ): AnonymousResourceCollection {
         $user = $request->user();
         $library = $activeLibrary->requireActiveLibrary($user);
 
-        $query = InventoryBook::query()->with(['library', 'user']);
+        $dto = new InventoryBookListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->integer('per_page', 25),
+        );
 
-        $query->where('library_id', $library->id);
-
-        $query->orderByDesc('id');
+        $query = $queryService->build($dto, $library);
 
         $permissions = $auth->collectionPermissions($user, InventoryBook::class);
 
         return InventoryBookResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $query->paginate($dto->perPage)->withQueryString()
         )->additional(['permissions' => $permissions]);
     }
 

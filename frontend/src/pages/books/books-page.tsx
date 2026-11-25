@@ -19,10 +19,12 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { PaginationBar } from '@/components/pagination-bar'
 import { BookFormModal } from '@/components/books/book-form-modal'
 import { BooksMobileList } from '@/components/books/books-mobile-list'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { Book, PaginatedResponse } from '@/types'
 
 const PAGE_SIZE = 10
@@ -31,6 +33,7 @@ export function BooksPage() {
   const { t } = useTranslation()
   const { can, activeLibrary, isLoading } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { sort, direction, onSort } = useTableSort('name')
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const search = searchParams.get('q') ?? ''
@@ -45,9 +48,9 @@ export function BooksPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const booksQuery = useQuery({
-    queryKey: ['books', { page, search, isbn, libraryId }],
+    queryKey: ['books', { page, search, isbn, libraryId, sort, direction }],
     queryFn: async () => {
-      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
+      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page), sort, direction })
       if (search) query.set('search', search)
       if (isbn) query.set('isbn', isbn)
       if (libraryId !== null) query.set('library_id', String(libraryId))
@@ -157,10 +160,18 @@ export function BooksPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="px-4">{t('books.columns.name')}</TableHead>
-                <TableHead className="px-4">{t('books.columns.authors')}</TableHead>
-                <TableHead className="hidden px-4 lg:table-cell">{t('books.columns.categories')}</TableHead>
-                <TableHead className="px-4">{t('books.columns.copies')}</TableHead>
+                <SortableTableHead column="name" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('books.columns.name')}
+                </SortableTableHead>
+                <SortableTableHead column="authors" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('books.columns.authors')}
+                </SortableTableHead>
+                <SortableTableHead column="category" sort={sort} direction={direction} onSort={onSort} className="hidden px-4 lg:table-cell">
+                  {t('books.columns.categories')}
+                </SortableTableHead>
+                <SortableTableHead column="copies_count" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('books.columns.copies')}
+                </SortableTableHead>
                 <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>

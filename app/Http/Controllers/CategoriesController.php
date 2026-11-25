@@ -2,51 +2,44 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Queries\CategoryListQueryDTO;
+use App\DTOs\Queries\SortingDTO;
 use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
 use App\Http\Resources\CategoryResource;
+use App\Models\Book;
 use App\Models\Category;
-use App\Queries\Concerns\AppliesTransliteratedSearch;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
+use App\Services\CategoryResolverService;
+use App\Services\Queries\CategoryQueryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class CategoriesController extends Controller
 {
-    use AppliesTransliteratedSearch;
-
     /**
      * @return AnonymousResourceCollection<int, CategoryResource>|CategoryResource[]
      */
-    public function index(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection|array
-    {
+    public function index(
+        Request $request,
+        AuthorizationService $auth,
+        ActiveLibraryService $activeLibrary,
+        CategoryQueryService $categories,
+    ): AnonymousResourceCollection|array {
         $user = $request->user();
         $library = $activeLibrary->requireActiveLibrary($user);
 
-        $query = Category::query()
-            ->with('parent', 'library')
-            ->withCount('children');
+        $dto = new CategoryListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->string('search')->toString() ?: null,
+            $request->filled('library_id') ? $request->integer('library_id') : null,
+            $request->filled('parent_id') ? $request->integer('parent_id') : null,
+            $request->integer('per_page', 25),
+        );
 
-        if (! $user->isSuperAdmin()) {
-            $query->where('library_id', $library->id);
-        } else {
-            // Superadmin: eksplicitni filter ima prednost, inace aktivna biblioteka.
-            $libraryId = $request->filled('library_id')
-                ? $request->integer('library_id')
-                : $library->id;
-
-            $query->where('library_id', $libraryId);
-        }
-
-        $query
-            ->when($request->filled('parent_id'), fn ($q) => $q->where('parent_id', $request->integer('parent_id')))
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $this->whereTransliterated($q, 'name', trim((string) $request->string('search')));
-            })
-            ->orderBy('name')
-            ->orderBy('id');
+        $query = $categories->build($dto, $user, $library);
 
         $permissions = $auth->collectionPermissions($user, Category::class);
 
@@ -55,13 +48,13 @@ class CategoriesController extends Controller
         }
 
         return CategoryResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $query->paginate($dto->perPage)->withQueryString()
         )->additional(['permissions' => $permissions]);
     }
 
-    public function store(StoreCategoryRequest $request): CategoryResource
+    public function store(StoreCategoryRequest $request, CategoryResolverService $categories): CategoryResource
     {
-        $category = Category::create($request->validated());
+        $category = $categories->findOrCreate($request->validated());
 
         return new CategoryResource($category->load('parent', 'library')->loadCount('children'));
     }
@@ -79,6 +72,17 @@ class CategoriesController extends Controller
 
         if ($category->children()->exists()) {
             return response()->json(['message' => __('validation.custom.category_has_children')], 422);
+        }
+
+        $isUsedByBooks = Book::withTrashed()
+            ->where(function ($query) use ($category): void {
+                $query->where('category_primary_id', $category->id)
+                    ->orWhere('category_secondary_id', $category->id);
+            })
+            ->exists();
+
+        if ($isUsedByBooks) {
+            return response()->json(['message' => __('validation.custom.category_has_books')], 422);
         }
 
         $category->delete();

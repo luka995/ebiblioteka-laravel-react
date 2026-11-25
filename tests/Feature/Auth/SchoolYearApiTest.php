@@ -40,6 +40,19 @@ test('superadmin can list school years with metadata', function () {
         ->assertJsonPath('meta.automatic_activation', true);
 });
 
+test('school year list is paginated', function () {
+    $admin = User::factory()->superAdmin()->create();
+    SchoolYear::factory()->forYear(2026)->create();
+    SchoolYear::factory()->forYear(2027)->create();
+
+    $this->actingAs($admin)
+        ->getJson('/api/v1/system/school-years?per_page=1', schoolYearHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('meta.per_page', 1)
+        ->assertJsonPath('meta.total', 2);
+});
+
 test('superadmin can create update and delete a school year', function () {
     $admin = User::factory()->superAdmin()->create();
 

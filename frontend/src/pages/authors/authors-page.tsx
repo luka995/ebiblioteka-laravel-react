@@ -19,20 +19,22 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { PaginationBar } from '@/components/pagination-bar'
 import { LibrarySelect, type LibraryOption } from '@/components/libraries/library-select'
 import { AuthorFormModal } from '@/components/authors/author-form-modal'
 import { AuthorsMobileList } from '@/components/authors/authors-mobile-list'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { Author, PaginatedResponse } from '@/types'
 
 const PAGE_SIZE = 10
 
-function useAuthorsQuery(page: number, search: string, libraryId: string) {
+function useAuthorsQuery(page: number, search: string, libraryId: string, sort: string, direction: string) {
   return useQuery({
-    queryKey: ['authors', { page, search, libraryId }],
+    queryKey: ['authors', { page, search, libraryId, sort, direction }],
     queryFn: async () => {
-      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
+      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page), sort, direction })
       if (search) query.set('search', search)
       if (libraryId) query.set('library_id', libraryId)
       return api.get<PaginatedResponse<Author>>(`${apiPaths.authors}?${query.toString()}`)
@@ -45,6 +47,7 @@ export function AuthorsPage() {
   const { can, user } = useAuth()
   const isSuperAdmin = user?.is_super_admin
   const [searchParams, setSearchParams] = useSearchParams()
+  const { sort, direction, onSort } = useTableSort('name')
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const search = searchParams.get('q') ?? ''
@@ -66,7 +69,7 @@ export function AuthorsPage() {
     })
   }, [libraryId])
 
-  const authorsQuery = useAuthorsQuery(page, search, libraryId)
+  const authorsQuery = useAuthorsQuery(page, search, libraryId, sort, direction)
 
   if (!can('authors.viewAny')) {
     return <p className="text-sm text-muted-foreground">{t('errors.forbidden')}</p>
@@ -173,8 +176,12 @@ export function AuthorsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4">{t('authors.columns.name')}</TableHead>
-                  <TableHead className="px-4">{t('authors.columns.library')}</TableHead>
+                  <SortableTableHead column="name" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                    {t('authors.columns.name')}
+                  </SortableTableHead>
+                  <SortableTableHead column="library" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                    {t('authors.columns.library')}
+                  </SortableTableHead>
                   <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>

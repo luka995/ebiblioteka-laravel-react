@@ -280,7 +280,7 @@ test('nbs provider returns null when search has no hits', function () {
     expect(app(NbsCatalogProvider::class)->lookup('9788681131213'))->toBeNull();
 });
 
-test('isbn lookup prefers nbs over open library', function () {
+test('isbn lookup prefers nbs internally but exposes it as database', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = isbnLibrary();
 
@@ -302,14 +302,19 @@ test('isbn lookup prefers nbs over open library', function () {
         return Http::response('', 404);
     });
 
-    $this->actingAs($admin)->getJson(
+    $response = $this->actingAs($admin)->getJson(
         '/api/v1/books/isbn-lookup?isbn=978-86-81131-21-3&library_id='.$library->id,
         isbnLookupHeaders()
-    )
+    );
+
+    $response
         ->assertOk()
-        ->assertJsonPath('source', 'nbs')
+        ->assertJsonPath('source', 'database')
+        ->assertJsonPath('metadata.source', 'database')
         ->assertJsonPath('metadata.title', 'Приповетке : (1961-1975)')
         ->assertJsonPath('metadata.publisher', 'Задужбина Иве Андрића');
+
+    expect($response->getContent())->not->toContain('nbs');
 
     Http::assertNotSent(fn (Request $request) => str_contains($request->url(), 'openlibrary.org'));
 });

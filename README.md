@@ -182,6 +182,19 @@ Testovi koriste PostgreSQL bazu `ebiblioteka_testing` (podešeno u `phpunit.xml`
 Host, korisnik i lozinka se preuzimaju iz `.env`; baza se kreira jednom
 (`CREATE DATABASE ebiblioteka_testing OWNER <db_user>`).
 
+## Demo podaci za prebacivanje učenika
+
+Za lokalno testiranje transfera u biblioteci Akademija Filipovic:
+
+```bash
+php artisan db:seed --class=ClassTransferDemoSeeder
+```
+
+Seeder idempotentno kreira prethodnu školsku godinu, 16 odeljenja i 240
+učenika. Učenici koriste email obrazac
+`ucenik.<godina>.<razred>-<odeljenje>.<broj>@akademija-filipovic.test` i
+lozinku `password`.
+
 ## Struktura repozitorijuma
 
 ```text

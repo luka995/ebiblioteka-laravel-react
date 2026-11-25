@@ -7,8 +7,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PageLoader, Spinner } from '@/components/ui/loader'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { useInventoryBookStatus, isInventoryBookPending } from '@/hooks/useInventoryBookStatus'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { InventoryBook, InventoryBookStatus } from '@/types'
 
 const STATUS_VARIANTS: Record<InventoryBookStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -21,7 +23,8 @@ const STATUS_VARIANTS: Record<InventoryBookStatus, 'default' | 'secondary' | 'de
 export function BooksInventoryBooksPage() {
   const { t } = useTranslation()
   const { can, activeLibrary } = useAuth()
-  const query = useInventoryBookStatus(activeLibrary?.id ?? null)
+  const { sort, direction, onSort } = useTableSort('created_at', 'desc')
+  const query = useInventoryBookStatus(activeLibrary?.id ?? null, sort, direction)
   const [isGenerating, setIsGenerating] = useState(false)
   const [downloadingId, setDownloadingId] = useState<number | null>(null)
 
@@ -118,10 +121,10 @@ export function BooksInventoryBooksPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4">{t('books.inventory.columns.date')}</TableHead>
-                  <TableHead className="px-4">{t('books.inventory.columns.status')}</TableHead>
-                  <TableHead className="px-4 text-right">{t('books.inventory.columns.rows')}</TableHead>
-                  <TableHead className="px-4">{t('books.inventory.columns.requestedBy')}</TableHead>
+                  <SortableTableHead column="created_at" sort={sort} direction={direction} onSort={onSort} className="px-4">{t('books.inventory.columns.date')}</SortableTableHead>
+                  <SortableTableHead column="status" sort={sort} direction={direction} onSort={onSort} className="px-4">{t('books.inventory.columns.status')}</SortableTableHead>
+                  <SortableTableHead column="rows_count" sort={sort} direction={direction} onSort={onSort} className="px-4 text-right">{t('books.inventory.columns.rows')}</SortableTableHead>
+                  <SortableTableHead column="requested_by" sort={sort} direction={direction} onSort={onSort} className="px-4">{t('books.inventory.columns.requestedBy')}</SortableTableHead>
                   <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>

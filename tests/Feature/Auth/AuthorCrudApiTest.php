@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Author;
+use App\Models\Book;
 use App\Models\Library;
 use App\Models\User;
 
@@ -81,6 +82,46 @@ test('author name must be unique per library but can repeat across libraries', f
 
     $this->actingAs($admin)->postJson('/api/v1/authors', ['name' => 'Miloš Crnjanski', 'library_id' => $libraryB->id], authorCrudHeaders())
         ->assertCreated();
+});
+
+test('author creation rejects a canonical duplicate in the same library', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeAuthorLibrary();
+    Author::factory()->for($library)->create(['name' => 'Иво Андрић']);
+
+    $this->actingAs($admin)->postJson('/api/v1/authors', ['name' => 'Andric Ivo', 'library_id' => $library->id], authorCrudHeaders())
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('name');
+
+    expect(Author::where('library_id', $library->id)->count())->toBe(1);
+});
+
+test('author update rejects a canonical duplicate in the same library', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeAuthorLibrary();
+    Author::factory()->for($library)->create(['name' => 'Иво Андрић']);
+    $author = Author::factory()->for($library)->create(['name' => 'Милош Црњански']);
+
+    $this->actingAs($admin)->putJson("/api/v1/authors/{$author->id}", ['name' => 'Andric Ivo'], authorCrudHeaders())
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('name');
+
+    expect(Author::where('library_id', $library->id)->count())->toBe(2);
+});
+
+test('author linked to a book cannot be deleted', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeAuthorLibrary();
+    $author = Author::factory()->for($library)->create();
+    $book = Book::factory()->for($library)->create();
+    $book->authors()->attach($author->id);
+
+    $this->actingAs($admin)->deleteJson("/api/v1/authors/{$author->id}", [], authorCrudHeaders())
+        ->assertUnprocessable()
+        ->assertJsonPath('message', __('validation.custom.author_has_books'));
+
+    expect(Author::find($author->id))->not->toBeNull()
+        ->and($book->authors()->whereKey($author->id)->exists())->toBeTrue();
 });
 
 test('superadmin must provide a library when creating an author', function () {

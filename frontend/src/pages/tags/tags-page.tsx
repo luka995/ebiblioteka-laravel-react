@@ -19,20 +19,22 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { PaginationBar } from '@/components/pagination-bar'
 import { LibrarySelect, type LibraryOption } from '@/components/libraries/library-select'
 import { TagFormModal } from '@/components/tags/tag-form-modal'
 import { TagsMobileList } from '@/components/tags/tags-mobile-list'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { PaginatedResponse, Tag } from '@/types'
 
 const PAGE_SIZE = 10
 
-function useTagsQuery(page: number, search: string, libraryId: string, activeLibraryId: number | null) {
+function useTagsQuery(page: number, search: string, libraryId: string, activeLibraryId: number | null, sort: string, direction: string) {
   return useQuery({
-    queryKey: ['tags', { page, search, libraryId, activeLibraryId }],
+    queryKey: ['tags', { page, search, libraryId, activeLibraryId, sort, direction }],
     queryFn: async () => {
-      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
+      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page), sort, direction })
       if (search) query.set('search', search)
       if (libraryId) query.set('library_id', libraryId)
       return api.get<PaginatedResponse<Tag>>(`${apiPaths.tags}?${query.toString()}`)
@@ -46,6 +48,7 @@ export function TagsPage() {
   const { can, user, activeLibrary } = useAuth()
   const isSuperAdmin = user?.is_super_admin
   const [searchParams, setSearchParams] = useSearchParams()
+  const { sort, direction, onSort } = useTableSort('name')
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const search = searchParams.get('q') ?? ''
@@ -67,7 +70,7 @@ export function TagsPage() {
     })
   }, [libraryId])
 
-  const tagsQuery = useTagsQuery(page, search, libraryId, activeLibrary?.id ?? null)
+  const tagsQuery = useTagsQuery(page, search, libraryId, activeLibrary?.id ?? null, sort, direction)
 
   if (!can('tags.viewAny')) {
     return <p className="text-sm text-muted-foreground">{t('errors.forbidden')}</p>
@@ -178,9 +181,15 @@ export function TagsPage() {
             <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="px-4">{t('tags.columns.name')}</TableHead>
-                <TableHead className="px-4">{t('tags.columns.library')}</TableHead>
-                <TableHead className="px-4">{t('tags.columns.usersCount')}</TableHead>
+                <SortableTableHead column="name" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('tags.columns.name')}
+                </SortableTableHead>
+                <SortableTableHead column="library" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('tags.columns.library')}
+                </SortableTableHead>
+                <SortableTableHead column="users_count" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('tags.columns.usersCount')}
+                </SortableTableHead>
                 <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>

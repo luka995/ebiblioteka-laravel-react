@@ -25,6 +25,7 @@
     "libraryReservations": "Rezervacije biblioteke",
     "myBorrows": "Moje pozajmice",
     "libraryBorrows": "Izdavanje",
+    "administration": "Administracija",
     "reference": "Šifarnici",
     "systemSettings": "Sistemska podešavanja",
     "libraryRequests": "Zahtevi za biblioteke"
@@ -72,6 +73,12 @@
     "chooseLibraryHint": "Izaberite biblioteku u kojoj ćete raditi.",
     "emptyTitle": "Radni prostor je spreman",
     "emptyText": "Ovde će se pojaviti pregledi i widgeti u skladu sa tipom vašeg naloga. Uskoro.",
+    "stats": {
+      "members": "Korisnici",
+      "books": "Ukupno knjiga",
+      "activeBorrows": "Aktivne pozajmice",
+      "overdueBorrows": "Prekoračene pozajmice"
+    },
     "cards": {
       "reservationsTitle": "Moje rezervacije",
       "reservationsDescription": "Pregled rezervisanih primeraka i rokova preuzimanja.",
@@ -160,6 +167,72 @@
         "barcode": "Bar-kod",
         "assignedAt": "Dodeljen"
       }
+    },
+    "transfer": {
+      "open": "Prebaci učenike",
+      "title": "Prebacivanje učenika",
+      "subtitle": "Prebacite učenike iz odabrane godine u neposredno narednu školsku godinu.",
+      "backToClasses": "Nazad na odeljenja",
+      "sourceYear": "Izvorna školska godina",
+      "targetYear": "Ciljna školska godina",
+      "targetYearHint": "Prebacivanje je moguće samo u neposredno narednu školsku godinu.",
+      "targetYearMissing": "Naredna školska godina nije kreirana. Obratite se superadministratoru.",
+      "targetYearInactive": "Ciljna godina još nije aktivna, ali prebacivanje je dozvoljeno.",
+      "sourceEmpty": "Izabrana godina nema odeljenja u aktivnoj biblioteci.",
+      "activeLibraryRequired": "Izaberite aktivnu biblioteku da biste prebacili učenike.",
+      "createMissing": "Kreiraj nedostajuća odeljenja u narednoj godini",
+      "createMissingHint": "Odeljenja se kreiraju sa razredom uvećanim za jedan. Nastavnika možete urediti kasnije.",
+      "selectAll": "Izaberi sva odeljenja",
+      "selectClass": "Izaberi odeljenje {{name}}",
+      "noSelection": "Izaberite bar jedno odeljenje za prebacivanje.",
+      "willCreate": "Biće kreirano: {{name}}",
+      "created": "Kreirano",
+      "noTarget": "Nema ciljnog odeljenja",
+      "emptyClass": "Nema učenika",
+      "ineligibleClass": "Nema aktivnih učenika",
+      "graduating": "Završavaju školovanje",
+      "status": {
+        "ready": "Spremno",
+        "needs_selection": "Izaberite odeljenje",
+        "needs_target": "Nema ciljnog odeljenja",
+        "graduating": "Završavaju školovanje",
+        "empty": "Nema učenika",
+        "ineligible": "Nema podobnih učenika"
+      },
+      "columns": {
+        "sourceClass": "Izvorno odeljenje",
+        "grade": "Razred",
+        "students": "Učenici",
+        "status": "Status",
+        "targetClass": "Ciljno odeljenje"
+      },
+      "studentsCount": "{{count}} učenika",
+      "eligibleCount": "{{eligible}} od {{total}} podobno",
+      "alreadyEnrolled": "{{count}} već upisano u narednoj godini",
+      "summary": {
+        "classes": "Odeljenja",
+        "students": "Učenici",
+        "eligible": "Podobni za prebacivanje",
+        "graduating": "Završavaju školovanje"
+      },
+      "submit": "Prebaci učenike",
+      "confirmTitle": "Prebaciti učenike?",
+      "confirmText": "Prebacujete {{students}} učenika iz {{classes}} odeljenja iz {{source}} u {{target}}. Ova radnja upisuje nove redove u odeljenja i istoriju.",
+      "success": "Prebacivanje je završeno.",
+      "successSummary": "Prebačeno: {{transferred}}, već upisano: {{already}}, preskočeno: {{skipped}}, kreirano odeljenja: {{created}}.",
+      "resultTitle": "Rezultat prebacivanja",
+      "resultEmpty": "Nema učenika za prebacivanje.",
+      "result": {
+        "source": "Izvor",
+        "target": "Cilj",
+        "transferred": "Prebačeno",
+        "skipped": "Preskočeno"
+      },
+      "bannerTitle": "Aktivna godina još nema odeljenja",
+      "bannerText": "Prebacite učenike iz {{year}} u aktivnu godinu i po potrebi kreirajte odeljenja.",
+      "bannerAction": "Pokreni prebacivanje",
+      "noClasses": "Nema odeljenja za prikaz.",
+      "noMappings": "Izaberite ciljno odeljenje za sva odeljenja sa učenicima."
     }
   },
   "users": {
@@ -781,8 +854,7 @@
       "sources": {
         "database": "Interna baza",
         "open_library": "Open Library",
-        "google_books": "Google Books",
-        "nbs": "NBS katalog"
+        "google_books": "Google Books"
       },
       "existingCopies": "Postojeće kopije sa ovim ISBN-om: {{count}}",
       "existingCopiesHint": "Naslov već postoji u biblioteci; iskoristite ga umesto duplikata.",

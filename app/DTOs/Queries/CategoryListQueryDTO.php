@@ -1,0 +1,14 @@
+<?php
+
+namespace App\DTOs\Queries;
+
+final readonly class CategoryListQueryDTO
+{
+    public function __construct(
+        public SortingDTO $sorting,
+        public ?string $search = null,
+        public ?int $libraryId = null,
+        public ?int $parentId = null,
+        public int $perPage = 25,
+    ) {}
+}

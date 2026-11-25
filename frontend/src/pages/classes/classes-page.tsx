@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { GraduationCap, Pencil, Plus, Search, Trash2, Users } from 'lucide-react'
+import { GraduationCap, Pencil, Plus, Search, Trash2, Users, ArrowLeftRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
@@ -141,6 +141,16 @@ export function ClassesPage() {
   }
 
   const canCreate = can('classes.create') && Boolean(options?.active_school_year_id)
+  const activeYear = options?.school_years.find((year) => year.is_active)
+  const previousYear = activeYear?.previous_school_year_id
+    ? options?.school_years.find((year) => year.id === activeYear.previous_school_year_id)
+    : undefined
+  const showTransferSuggestion = Boolean(
+    activeYear
+    && activeYear.classes_count === 0
+    && previousYear
+    && previousYear.classes_count > 0,
+  )
 
   return (
     <div className="space-y-6">
@@ -152,12 +162,22 @@ export function ClassesPage() {
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">{t('classes.subtitle')}</p>
         </div>
-        {canCreate ? (
-          <Button type="button" variant="brand" onClick={openCreate}>
-            <Plus />
-            {t('classes.add')}
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {can('classes.transferStudents') ? (
+            <Button asChild variant="outline">
+              <Link to="/classes/transfer">
+                <ArrowLeftRight />
+                {t('classes.transfer.open')}
+              </Link>
+            </Button>
+          ) : null}
+          {canCreate ? (
+            <Button type="button" variant="brand" onClick={openCreate}>
+              <Plus />
+              {t('classes.add')}
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-center">
@@ -213,6 +233,25 @@ export function ClassesPage() {
           </Select>
         </div>
       </div>
+
+      {showTransferSuggestion && previousYear ? (
+        <div className="flex flex-col gap-3 rounded-lg border border-brand-accent/40 bg-brand-accent/25 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <ArrowLeftRight className="mt-0.5 size-5 shrink-0 text-brand" />
+            <div>
+              <p className="font-medium text-brand">{t('classes.transfer.bannerTitle')}</p>
+              <p className="text-sm text-brand/70">
+                {t('classes.transfer.bannerText', { year: previousYear.name })}
+              </p>
+            </div>
+          </div>
+          <Button asChild variant="brand">
+            <Link to={`/classes/transfer?source_school_year_id=${previousYear.id}`}>
+              {t('classes.transfer.bannerAction')}
+            </Link>
+          </Button>
+        </div>
+      ) : null}
 
       <div className="space-y-4">
         {classesQuery.isLoading ? (

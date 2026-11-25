@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Queries\SortingDTO;
+use App\DTOs\Queries\TagListQueryDTO;
 use App\Http\Requests\StoreTagRequest;
 use App\Http\Requests\UpdateTagRequest;
 use App\Http\Resources\TagResource;
 use App\Models\Tag;
-use App\Queries\TagFilters;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
+use App\Services\Queries\TagQueryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -18,27 +20,23 @@ class TagsController extends Controller
     /**
      * @return AnonymousResourceCollection<int, TagResource>|TagResource[]
      */
-    public function index(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection|array
-    {
+    public function index(
+        Request $request,
+        AuthorizationService $auth,
+        ActiveLibraryService $activeLibrary,
+        TagQueryService $tags,
+    ): AnonymousResourceCollection|array {
         $user = $request->user();
         $library = $activeLibrary->requireActiveLibrary($user);
 
-        $query = Tag::query()
-            ->with('library')
-            ->withCount('users');
+        $dto = new TagListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->string('search')->toString() ?: null,
+            $request->filled('library_id') ? $request->integer('library_id') : null,
+            $request->integer('per_page', 25),
+        );
 
-        $requestedLibrary = $request->filled('library_id') ? $request->integer('library_id') : null;
-
-        if ($user->isSuperAdmin()) {
-            // Eksplicitni filter ima prednost, inace aktivna biblioteka.
-            $query->where('library_id', $requestedLibrary ?? $library->id);
-        } else {
-            $query->where('library_id', $library->id);
-        }
-
-        (new TagFilters)->apply($query, $request->only(['search']));
-
-        $query->orderBy('name')->orderBy('id');
+        $query = $tags->build($dto, $user, $library);
 
         $permissions = $auth->collectionPermissions($user, Tag::class);
 
@@ -47,7 +45,7 @@ class TagsController extends Controller
         }
 
         return TagResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $query->paginate($dto->perPage)->withQueryString()
         )->additional(['permissions' => $permissions]);
     }
 

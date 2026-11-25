@@ -2,6 +2,7 @@
 
 namespace App\Queries;
 
+use App\DTOs\Queries\BorrowListQueryDTO;
 use App\Queries\Concerns\AppliesTransliteratedSearch;
 use App\Support\BarCode;
 use Illuminate\Database\Eloquent\Builder;
@@ -13,12 +14,9 @@ class BorrowFilters
 {
     use AppliesTransliteratedSearch;
 
-    /**
-     * @param  array<string, mixed>  $filters
-     */
-    public function apply(Builder $query, array $filters): Builder
+    public function apply(Builder $query, BorrowListQueryDTO $filters): Builder
     {
-        $status = trim((string) ($filters['status'] ?? ''));
+        $status = trim((string) ($filters->status ?? 'active'));
 
         if ($status === 'active') {
             $query->where('returned', false);
@@ -28,19 +26,19 @@ class BorrowFilters
             $query->where('returned', false)->where('valid_till', '<', now());
         }
 
-        if (! empty($filters['overdue'])) {
+        if ($filters->overdue) {
             $query->where('returned', false)->where('valid_till', '<', now());
         }
 
-        if (! empty($filters['date_from'])) {
-            $query->whereDate('from_date', '>=', $filters['date_from']);
+        if ($filters->dateFrom !== null && $filters->dateFrom !== '') {
+            $query->whereDate('from_date', '>=', $filters->dateFrom);
         }
 
-        if (! empty($filters['date_to'])) {
-            $query->whereDate('from_date', '<=', $filters['date_to']);
+        if ($filters->dateTo !== null && $filters->dateTo !== '') {
+            $query->whereDate('from_date', '<=', $filters->dateTo);
         }
 
-        $term = trim((string) ($filters['search'] ?? ''));
+        $term = trim((string) ($filters->search ?? ''));
 
         if ($term !== '') {
             $barcode = BarCode::normalizeSearchInput($term);
@@ -50,8 +48,8 @@ class BorrowFilters
                     $this->whereTransliterated($user, 'first_name', $term, 'or');
                     $this->whereTransliterated($user, 'last_name', $term, 'or');
                     $this->whereTransliterated($user, 'name', $term, 'or');
-                    $user->orWhere('username', 'like', '%'.$term.'%')
-                        ->orWhere('bar_code', 'like', '%'.$barcode.'%');
+                    $this->whereTransliterated($user, 'username', $term, 'or');
+                    $user->orWhere('bar_code', 'like', '%'.$barcode.'%');
                 })
                     ->orWhereHas('book', function (Builder $book) use ($term): void {
                         $this->whereTransliterated($book, 'name', $term, 'or');

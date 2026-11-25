@@ -19,20 +19,22 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { PaginationBar } from '@/components/pagination-bar'
 import { LibrarySelect, type LibraryOption } from '@/components/libraries/library-select'
 import { CategoryFormModal } from '@/components/categories/category-form-modal'
 import { CategoriesMobileList } from '@/components/categories/categories-mobile-list'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { Category, PaginatedResponse } from '@/types'
 
 const PAGE_SIZE = 10
 
-function useCategoriesQuery(page: number, search: string, libraryId: string, activeLibraryId: number | null) {
+function useCategoriesQuery(page: number, search: string, libraryId: string, activeLibraryId: number | null, sort: string, direction: string) {
   return useQuery({
-    queryKey: ['categories', { page, search, libraryId, activeLibraryId }],
+    queryKey: ['categories', { page, search, libraryId, activeLibraryId, sort, direction }],
     queryFn: async () => {
-      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
+      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page), sort, direction })
       if (search) query.set('search', search)
       if (libraryId) query.set('library_id', libraryId)
       return api.get<PaginatedResponse<Category>>(`${apiPaths.categories}?${query.toString()}`)
@@ -46,6 +48,7 @@ export function CategoriesPage() {
   const { can, user, activeLibrary } = useAuth()
   const isSuperAdmin = user?.is_super_admin
   const [searchParams, setSearchParams] = useSearchParams()
+  const { sort, direction, onSort } = useTableSort('name')
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const search = searchParams.get('q') ?? ''
@@ -67,7 +70,7 @@ export function CategoriesPage() {
     })
   }, [libraryId])
 
-  const categoriesQuery = useCategoriesQuery(page, search, libraryId, activeLibrary?.id ?? null)
+  const categoriesQuery = useCategoriesQuery(page, search, libraryId, activeLibrary?.id ?? null, sort, direction)
 
   if (!can('categories.viewAny')) {
     return <p className="text-sm text-muted-foreground">{t('errors.forbidden')}</p>
@@ -178,9 +181,15 @@ export function CategoriesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4">{t('categories.columns.name')}</TableHead>
-                  <TableHead className="px-4">{t('categories.columns.library')}</TableHead>
-                  <TableHead className="px-4">{t('categories.columns.children')}</TableHead>
+                  <SortableTableHead column="name" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                    {t('categories.columns.name')}
+                  </SortableTableHead>
+                  <SortableTableHead column="library" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                    {t('categories.columns.library')}
+                  </SortableTableHead>
+                  <SortableTableHead column="children_count" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                    {t('categories.columns.children')}
+                  </SortableTableHead>
                   <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>

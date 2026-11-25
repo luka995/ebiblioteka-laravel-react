@@ -10,10 +10,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AddClassStudentsModal } from '@/components/classes/add-class-students-modal'
 import { SchoolClassFormModal } from '@/components/classes/school-class-form-modal'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { ClassStudent, SchoolClass, SchoolClassOptions } from '@/types'
 
 export function ClassDetailPage() {
@@ -23,6 +25,7 @@ export function ClassDetailPage() {
   const classId = Number(id)
   const queryClient = useQueryClient()
   const { can, activeLibrary } = useAuth()
+  const { sort, direction, onSort } = useTableSort('name')
 
   const [editOpen, setEditOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
@@ -36,8 +39,10 @@ export function ClassDetailPage() {
   })
 
   const studentsQuery = useQuery({
-    queryKey: ['school-class-students', classId],
-    queryFn: () => api.get<{ data: ClassStudent[] }>(apiPaths.classStudents(classId)),
+    queryKey: ['school-class-students', classId, sort, direction],
+    queryFn: () => api.get<{ data: ClassStudent[] }>(
+      `${apiPaths.classStudents(classId)}?sort=${sort}&direction=${direction}`,
+    ),
     enabled: Number.isFinite(classId) && classId > 0,
   })
 
@@ -181,10 +186,10 @@ export function ClassDetailPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('classes.students.columns.name')}</TableHead>
-                    <TableHead>{t('classes.students.columns.account')}</TableHead>
-                    <TableHead>{t('classes.students.columns.barcode')}</TableHead>
-                    <TableHead>{t('classes.students.columns.assignedAt')}</TableHead>
+                    <SortableTableHead column="name" sort={sort} direction={direction} onSort={onSort}>{t('classes.students.columns.name')}</SortableTableHead>
+                    <SortableTableHead column="account" sort={sort} direction={direction} onSort={onSort}>{t('classes.students.columns.account')}</SortableTableHead>
+                    <SortableTableHead column="barcode" sort={sort} direction={direction} onSort={onSort}>{t('classes.students.columns.barcode')}</SortableTableHead>
+                    <SortableTableHead column="assigned_at" sort={sort} direction={direction} onSort={onSort}>{t('classes.students.columns.assignedAt')}</SortableTableHead>
                     <TableHead className="text-right">{t('common.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>

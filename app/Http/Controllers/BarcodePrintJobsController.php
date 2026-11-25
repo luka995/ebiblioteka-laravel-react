@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Queries\BarcodePrintJobListQueryDTO;
+use App\DTOs\Queries\SortingDTO;
 use App\Enums\BarcodePrintJobStatus;
 use App\Http\Requests\StoreBarcodePrintJobRequest;
 use App\Http\Resources\BarcodePrintJobResource;
@@ -9,6 +11,7 @@ use App\Jobs\GenerateBarcodePrintPdf;
 use App\Models\BarcodePrintJob;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
+use App\Services\Queries\BarcodePrintJobQueryService;
 use App\Support\Text;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,20 +25,26 @@ class BarcodePrintJobsController extends Controller
     /**
      * @return AnonymousResourceCollection<int, BarcodePrintJobResource>
      */
-    public function index(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection
-    {
+    public function index(
+        Request $request,
+        AuthorizationService $auth,
+        ActiveLibraryService $activeLibrary,
+        BarcodePrintJobQueryService $queryService,
+    ): AnonymousResourceCollection {
         $user = $request->user();
         $library = $activeLibrary->requireActiveLibrary($user);
 
-        $query = BarcodePrintJob::query()
-            ->with(['library', 'user'])
-            ->where('library_id', $library->id)
-            ->orderByDesc('id');
+        $dto = new BarcodePrintJobListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->integer('per_page', 25),
+        );
+
+        $query = $queryService->build($dto, $library);
 
         $permissions = $auth->collectionPermissions($user, BarcodePrintJob::class);
 
         return BarcodePrintJobResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $query->paginate($dto->perPage)->withQueryString()
         )->additional(['permissions' => $permissions]);
     }
 

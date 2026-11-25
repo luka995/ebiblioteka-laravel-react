@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { ImagePlus, Search, Trash2 } from 'lucide-react'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { storageUrl } from '@/lib/environment'
+import { normalizeIsbnSource } from '@/lib/isbn'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -320,8 +321,9 @@ export function BookFormModal({ open, onClose, onSuccess, book }: BookFormModalP
   const onSubmit = form.handleSubmit((values) => submit(values))
 
   const sourceLabel = useMemo(() => {
-    if (!lookup?.source) return null
-    return t(`books.isbn.sources.${lookup.source}`, { defaultValue: lookup.source })
+    const source = normalizeIsbnSource(lookup?.source)
+    if (!source) return null
+    return t(`books.isbn.sources.${source}`, { defaultValue: source })
   }, [lookup, t])
 
   const showCopySection = !editing && (Boolean(existingBook) || withCopies)

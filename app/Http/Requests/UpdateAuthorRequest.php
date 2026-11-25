@@ -4,8 +4,10 @@ namespace App\Http\Requests;
 
 use App\Models\Author;
 use App\Services\ActiveLibraryService;
+use App\Services\AuthorResolverService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateAuthorRequest extends FormRequest
 {
@@ -44,6 +46,27 @@ class UpdateAuthorRequest extends FormRequest
                     ->where('library_id', $author?->library_id)
                     ->ignore($author),
             ],
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                /** @var Author|null $author */
+                $author = $this->route('author');
+
+                if (! $author instanceof Author || $validator->errors()->has('name')) {
+                    return;
+                }
+
+                $existing = app(AuthorResolverService::class)
+                    ->findInLibrary($author->library_id, (string) $this->input('name'));
+
+                if ($existing !== null && $existing->id !== $author->id) {
+                    $validator->errors()->add('name', __('validation.custom.author_duplicate'));
+                }
+            },
         ];
     }
 

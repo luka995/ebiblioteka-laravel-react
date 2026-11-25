@@ -1,9 +1,21 @@
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { BookCheck, BookMarked, BookOpen, Building2, Users, type LucideIcon } from 'lucide-react'
+import {
+  BookCheck,
+  BookMarked,
+  BookOpen,
+  Building2,
+  CalendarClock,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
+import { api, apiPaths } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
 import { LibrarySwitcher } from '@/components/layout/library-switcher'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
+import type { DashboardStats } from '@/types'
 
 interface DashboardCard {
   to: string
@@ -13,9 +25,32 @@ interface DashboardCard {
   external?: boolean
 }
 
+interface DashboardStatCard {
+  key: string
+  to?: string
+  icon: LucideIcon
+  label: string
+  value: string
+}
+
 export function DashboardPage() {
-  const { t } = useTranslation()
-  const { user, can, publicUrl } = useAuth()
+  const { t, i18n } = useTranslation()
+  const { user, can, publicUrl, activeLibrary } = useAuth()
+
+  const canViewStats = activeLibrary !== null
+    && (user?.is_super_admin === true
+      || activeLibrary.role === 'librarian'
+      || activeLibrary.role === 'library_admin')
+
+  const statsQuery = useQuery({
+    queryKey: ['dashboard-stats', activeLibrary?.id ?? null],
+    queryFn: () => api.get<{ data: DashboardStats }>(apiPaths.dashboardStats),
+    enabled: canViewStats,
+  })
+
+  const stats = statsQuery.data?.data
+  const locale = i18n.resolvedLanguage ?? i18n.language
+  const numberFormat = new Intl.NumberFormat(locale)
 
   const booksUrl = can('books.viewAny')
     ? '/books'
@@ -61,6 +96,37 @@ export function DashboardPage() {
       : []),
   ]
 
+  const statCards: DashboardStatCard[] = [
+    {
+      key: 'members',
+      to: can('users.viewAny') ? '/users' : undefined,
+      icon: Users,
+      label: t('dashboard.stats.members'),
+      value: stats ? numberFormat.format(stats.members_count) : '—',
+    },
+    {
+      key: 'books',
+      to: can('book_copies.viewAny') ? '/books/copies' : can('books.viewAny') ? '/books' : undefined,
+      icon: BookOpen,
+      label: t('dashboard.stats.books'),
+      value: stats ? numberFormat.format(stats.books_count) : '—',
+    },
+    {
+      key: 'active-borrows',
+      to: can('borrows.viewAny') ? '/borrows/library' : undefined,
+      icon: BookCheck,
+      label: t('dashboard.stats.activeBorrows'),
+      value: stats ? numberFormat.format(stats.active_borrows_count) : '—',
+    },
+    {
+      key: 'overdue-borrows',
+      to: can('borrows.viewAny') ? '/borrows/library?status=overdue' : undefined,
+      icon: CalendarClock,
+      label: t('dashboard.stats.overdueBorrows'),
+      value: stats ? numberFormat.format(stats.overdue_borrows_count) : '—',
+    },
+  ]
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
@@ -71,6 +137,39 @@ export function DashboardPage() {
       </div>
 
       <LibrarySwitcher />
+
+      {canViewStats ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {statCards.map((card) => {
+            const content = (
+              <Card
+                className={cn(
+                  'h-full gap-1 py-4 transition-colors',
+                  card.to && 'group-hover:border-brand-accent',
+                )}
+              >
+                <CardHeader className="px-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <CardDescription>{card.label}</CardDescription>
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-accent/25 text-brand">
+                      <card.icon className="size-4" />
+                    </span>
+                  </div>
+                  <CardTitle className="mt-1 text-2xl tabular-nums">{card.value}</CardTitle>
+                </CardHeader>
+              </Card>
+            )
+
+            return card.to ? (
+              <Link key={card.key} to={card.to} className="group">
+                {content}
+              </Link>
+            ) : (
+              <div key={card.key}>{content}</div>
+            )
+          })}
+        </div>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         {cards.map((card) => (

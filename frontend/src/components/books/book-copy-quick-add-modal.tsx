@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Search } from 'lucide-react'
 import { api, apiPaths, ApiError } from '@/lib/api'
+import { normalizeIsbnSource } from '@/lib/isbn'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -74,6 +75,7 @@ export function BookCopyQuickAddModal({ open, onClose, onSuccess, initialIsbn }:
   const invNumberAuto = resolvedBook
     ? resolvedBook.inv_number_auto !== false
     : activeLibrary?.inv_number_auto !== false
+  const lookupSource = normalizeIsbnSource(lookup?.source)
 
   const updateCopy = (key: keyof CopyFormValues, value: string) =>
     setCopy((current) => ({ ...current, [key]: value }))
@@ -266,11 +268,11 @@ export function BookCopyQuickAddModal({ open, onClose, onSuccess, initialIsbn }:
                 </Button>
               </div>
 
-              {lookup?.source ? (
+              {lookupSource ? (
                 <p className="mt-2 text-xs text-muted-foreground">
                   {t('books.isbn.source')}:{' '}
                   <Badge variant="secondary">
-                    {t(`books.isbn.sources.${lookup.source}`, { defaultValue: lookup.source })}
+                    {t(`books.isbn.sources.${lookupSource}`, { defaultValue: lookupSource })}
                   </Badge>
                 </p>
               ) : null}

@@ -66,10 +66,17 @@ test('staff can assign existing library users to a class', function () {
         ->and(ClassroomHistory::query()->where('class_id', $class->id)->whereNull('previous_class_id')->count())->toBe(2);
 
     $this->actingAs($librarian)
-        ->getJson("/api/v1/classes/{$class->id}/students", classStudentHeaders())
+        ->getJson("/api/v1/classes/{$class->id}/students?per_page=1", classStudentHeaders())
         ->assertOk()
-        ->assertJsonCount(2, 'data')
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('meta.per_page', 1)
+        ->assertJsonPath('meta.total', 2)
         ->assertJsonPath('data.0.assigned_by', $librarian->displayName());
+
+    $this->actingAs($librarian)
+        ->getJson("/api/v1/classes/{$class->id}/students?per_page=1&page=2", classStudentHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data');
 
     $this->actingAs($librarian)
         ->getJson("/api/v1/classes/{$class->id}/available-students", classStudentHeaders())
@@ -171,8 +178,10 @@ test('moving a student between classes updates the current row and history', fun
 
     expect($history)->toHaveCount(2)
         ->and($history[0]->previous_class_id)->toBeNull()
+        ->and($history[0]->previous_school_year_id)->toBeNull()
         ->and($history[0]->class_id)->toBe($firstClass->id)
         ->and($history[1]->previous_class_id)->toBe($firstClass->id)
+        ->and($history[1]->previous_school_year_id)->toBe($year->id)
         ->and($history[1]->class_id)->toBe($secondClass->id);
 });
 
@@ -207,6 +216,7 @@ test('unassigning a student removes the current row and records history', functi
 
     expect($history)->not->toBeNull()
         ->and($history->previous_class_id)->toBe($class->id)
+        ->and($history->previous_school_year_id)->toBe($year->id)
         ->and($history->class_id)->toBeNull();
 });
 

@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { PaginationBar } from '@/components/pagination-bar'
 import { BookCopyBarcodePrintModal } from '@/components/books/book-copy-barcode-print-modal'
 import { BookCopiesMobileList } from '@/components/books/book-copies-mobile-list'
@@ -23,6 +24,7 @@ import {
   type BookCopyFilters,
 } from '@/components/books/book-copies-filters-panel'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { BookCopy, BookCopyStatus, PaginatedResponse } from '@/types'
 
 const PAGE_SIZE = 25
@@ -51,6 +53,7 @@ export function BookCopiesPage() {
   const { t } = useTranslation()
   const { can, activeLibrary, isLoading } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { sort, direction, onSort } = useTableSort('order_number')
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const barcode = searchParams.get('barcode') ?? ''
@@ -79,9 +82,9 @@ export function BookCopiesPage() {
   }, [barcode, orderNumber, isbn, search])
 
   const copiesQuery = useQuery({
-    queryKey: ['book-copies', { page, barcode, orderNumber, isbn, search, filters, libraryId }],
+    queryKey: ['book-copies', { page, barcode, orderNumber, isbn, search, filters, libraryId, sort, direction }],
     queryFn: async () => {
-      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
+      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page), sort, direction })
       if (barcode) query.set('barcode', barcode)
       if (orderNumber) query.set('order_number', orderNumber)
       if (isbn) query.set('isbn', isbn)
@@ -263,11 +266,21 @@ export function BookCopiesPage() {
                     aria-label={t('books.copies.selectAll')}
                   />
                 </TableHead>
-                <TableHead className="px-4">{t('books.copies.invNumber')}</TableHead>
-                <TableHead className="px-4">{t('books.copies.barcode')}</TableHead>
-                <TableHead className="px-4">{t('books.columns.name')}</TableHead>
-                <TableHead className="hidden px-4 lg:table-cell">{t('books.copies.isbn')}</TableHead>
-                <TableHead className="px-4">{t('books.copies.status')}</TableHead>
+                <SortableTableHead column="order_number" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('books.copies.invNumber')}
+                </SortableTableHead>
+                <SortableTableHead column="barcode" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('books.copies.barcode')}
+                </SortableTableHead>
+                <SortableTableHead column="book" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('books.columns.name')}
+                </SortableTableHead>
+                <SortableTableHead column="isbn" sort={sort} direction={direction} onSort={onSort} className="hidden px-4 lg:table-cell">
+                  {t('books.copies.isbn')}
+                </SortableTableHead>
+                <SortableTableHead column="status" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('books.copies.status')}
+                </SortableTableHead>
                 <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>

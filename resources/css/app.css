@@ -376,11 +376,11 @@ button, input { font: inherit; }
 .large-book-cover { display: flex; width: 278px; height: 375px; flex-direction: column; padding: 27px; border: 2px solid var(--ink); border-radius: 16px 16px 17px 7px; box-shadow: 9px 10px 0 var(--ink); color: var(--ink); transform: rotate(-3deg); }
 .large-book-cover > span { font-family: Georgia, serif; font-size: 38px; font-style: italic; }
 .large-book-cover small { margin-top: 72px; font-family: 'DM Sans', sans-serif; font-size: 11px; letter-spacing: .12em; }
-.large-book-cover strong { max-width: 220px; margin-top: 13px; font-family: 'Nunito', sans-serif; font-size: 32px; font-weight: 900; letter-spacing: -.06em; line-height: .98; }
+.large-book-cover strong { display: -webkit-box; max-width: 220px; margin-top: 13px; overflow: hidden; font-family: 'Nunito', sans-serif; font-size: 32px; font-weight: 900; letter-spacing: -.06em; line-height: .98; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .large-book-cover i { margin-top: auto; font-family: Georgia, serif; font-size: 21px; font-style: italic; }
 .book-detail-copy h1 { max-width: 570px; margin: 18px 0 6px; color: var(--ink); font-size: clamp(43px, 5vw, 70px); line-height: .96; }
 .book-author { color: var(--blue) !important; font-family: 'Nunito', sans-serif; font-size: 17px !important; font-weight: 700; }
-.book-description { max-width: 500px; margin-top: 26px; color: var(--muted); font-size: 15px; line-height: 1.7; }
+.book-description { display: -webkit-box; max-width: 500px; margin-top: 26px; overflow: hidden; color: var(--muted); font-size: 15px; line-height: 1.7; -webkit-box-orient: vertical; -webkit-line-clamp: 6; }
 .book-facts { display: flex; flex-wrap: wrap; gap: 29px; margin: 29px 0; }
 .book-facts div { display: flex; flex-direction: column; gap: 6px; }
 .book-facts dt { color: #7190a0; font-family: 'DM Sans', sans-serif; font-size: 11px; }
@@ -519,6 +519,7 @@ button, input { font: inherit; }
     .large-book-cover strong { font-size: 28px; }
     .book-detail-copy { margin-top: 69px; }
     .book-detail-copy h1 { font-size: clamp(42px, 12vw, 62px); }
+    .book-description { -webkit-line-clamp: 5; }
 
     .project-hero { display: block; min-height: 0; padding: 37px 0 71px; }
     .project-hero::before { top: 115px; right: -220px; width: 470px; height: 420px; }

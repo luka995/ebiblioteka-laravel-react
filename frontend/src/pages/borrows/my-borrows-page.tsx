@@ -4,6 +4,9 @@ import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { BookOpen, CalendarClock, LibraryBig } from 'lucide-react'
 import { api, apiPaths } from '@/lib/api'
+import { truncateBookTitle } from '@/lib/text'
+import { useTableSort } from '@/hooks/useTableSort'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageLoader } from '@/components/ui/loader'
@@ -20,11 +23,17 @@ const STATUS_VARIANTS: Record<BorrowStatus, 'default' | 'secondary' | 'destructi
 export function MyBorrowsPage() {
   const { t } = useTranslation()
   const [status, setStatus] = useState<'active' | 'history'>('active')
+  const { sort, direction, onSort } = useTableSort(
+    status === 'history' ? 'return_date' : 'valid_till',
+    status === 'history' ? 'desc' : 'asc',
+  )
 
   const borrowsQuery = useQuery({
-    queryKey: ['borrows', status],
+    queryKey: ['borrows', status, sort, direction],
     queryFn: () =>
-      api.get<PaginatedResponse<Borrow>>(`${apiPaths.borrows}?status=${status}&per_page=100`),
+      api.get<PaginatedResponse<Borrow>>(
+        `${apiPaths.borrows}?status=${status}&per_page=100&sort=${sort}&direction=${direction}`,
+      ),
   })
 
   if (borrowsQuery.isLoading) return <PageLoader />
@@ -66,19 +75,21 @@ export function MyBorrowsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('fields.title')}</TableHead>
-                      <TableHead>{t('fields.barcode')}</TableHead>
-                      <TableHead>{t('fields.library')}</TableHead>
-                      <TableHead>{t('borrows.fromDate')}</TableHead>
-                      <TableHead>{t('borrows.validTill')}</TableHead>
-                      <TableHead>{t('borrows.status')}</TableHead>
+                      <SortableTableHead column="title" sort={sort} direction={direction} onSort={onSort}>{t('fields.title')}</SortableTableHead>
+                      <SortableTableHead column="barcode" sort={sort} direction={direction} onSort={onSort}>{t('fields.barcode')}</SortableTableHead>
+                      <SortableTableHead column="library" sort={sort} direction={direction} onSort={onSort}>{t('fields.library')}</SortableTableHead>
+                      <SortableTableHead column="from_date" sort={sort} direction={direction} onSort={onSort}>{t('borrows.fromDate')}</SortableTableHead>
+                      <SortableTableHead column="valid_till" sort={sort} direction={direction} onSort={onSort}>{t('borrows.validTill')}</SortableTableHead>
+                      <SortableTableHead column="status" sort={sort} direction={direction} onSort={onSort}>{t('borrows.status')}</SortableTableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {borrows.map((borrow) => (
                       <TableRow key={borrow.id}>
                         <TableCell>
-                          <p className="font-medium">{borrow.book_name ?? '—'}</p>
+                          <p className="font-medium" title={borrow.book_name ?? undefined}>
+                            {truncateBookTitle(borrow.book_name)}
+                          </p>
                           <p className="text-xs text-muted-foreground">{borrow.book_authors ?? '—'}</p>
                         </TableCell>
                         <TableCell className="font-mono text-xs">{borrow.barcode ?? '—'}</TableCell>
@@ -101,7 +112,9 @@ export function MyBorrowsPage() {
                   <div key={borrow.id} className="rounded-lg border p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="font-medium">{borrow.book_name ?? '—'}</p>
+                        <p className="font-medium" title={borrow.book_name ?? undefined}>
+                          {truncateBookTitle(borrow.book_name)}
+                        </p>
                         <p className="text-xs text-muted-foreground">{borrow.book_authors ?? '—'}</p>
                       </div>
                       <Badge variant={STATUS_VARIANTS[borrow.status]}>

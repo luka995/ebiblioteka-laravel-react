@@ -1,8 +1,14 @@
 <?php
 
+use App\Enums\LibraryRole;
+use App\Models\Author;
 use App\Models\Library;
+use App\Models\LibraryRequest;
+use App\Models\News;
 use App\Models\Place;
 use App\Models\Region;
+use App\Models\SchoolClass;
+use App\Models\SchoolYear;
 use App\Models\Tag;
 use App\Models\User;
 use App\Services\ActiveLibraryService;
@@ -96,4 +102,97 @@ test('tag search matches both scripts and respects the library filter', function
         ->assertOk()
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.id', $cyrillic->id);
+});
+
+test('author place region news and library request searches match both scripts', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $author = Author::factory()->create(['name' => 'Иво Андрић']);
+    $region = Region::factory()->create(['name' => 'Војводина']);
+    $place = Place::factory()->for($region)->create(['name' => 'Београд']);
+    $news = News::factory()->create(['title' => 'Нова књига']);
+    $libraryRequest = LibraryRequest::create([
+        'school_name' => 'ОШ Вук Караџић',
+        'school_type' => 'osnovna',
+        'city' => 'Ниш',
+        'address' => 'Краља Милана 1',
+        'contact_name' => 'Ана Јовановић',
+        'contact_email' => 'ana@example.com',
+        'contact_phone' => '0638249999',
+        'student_count' => 620,
+        'employee_count' => 48,
+        'message' => 'Желимо библиотеку.',
+        'status' => 'pending',
+    ]);
+
+    $this->actingAs($admin)
+        ->getJson('/api/v1/authors?search='.urlencode('Ivo'), translitHeaders())
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $author->id);
+
+    $this->actingAs($admin)
+        ->getJson('/api/v1/regions?search='.urlencode('Vojvodina'), translitHeaders())
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $region->id);
+
+    $this->actingAs($admin)
+        ->getJson('/api/v1/places?search='.urlencode('Beograd'), translitHeaders())
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $place->id);
+
+    $this->actingAs($admin)
+        ->getJson('/api/v1/news?search='.urlencode('Nova knjiga'), translitHeaders())
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $news->id);
+
+    $this->actingAs($admin)
+        ->getJson('/api/v1/library-requests?search='.urlencode('Ana Jovanović'), translitHeaders())
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $libraryRequest->id);
+});
+
+test('user selection and available student searches match both scripts', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $target = User::factory()->create([
+        'first_name' => 'Филип',
+        'last_name' => 'Филиповић',
+    ]);
+
+    $this->actingAs($admin)
+        ->getJson('/api/v1/settings/users?search='.urlencode('Filipović'), translitHeaders())
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $target->id);
+
+    $library = Library::factory()->create();
+    $year = SchoolYear::factory()->forYear(2026)->create();
+    $schoolClass = SchoolClass::factory()
+        ->for($library)
+        ->for($year, 'schoolYear')
+        ->create();
+    $librarian = User::factory()->libraryRole($library, LibraryRole::Librarian)->create();
+    $student = User::factory()->libraryRole($library, LibraryRole::User)->create([
+        'first_name' => 'Филип',
+        'last_name' => 'Филиповић',
+    ]);
+    app(ActiveLibraryService::class)->set($librarian, $library->id);
+
+    $this->actingAs($librarian)
+        ->getJson("/api/v1/classes/{$schoolClass->id}/available-students?search=".urlencode('Filipović'), translitHeaders())
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $student->id);
+});
+
+test('borrow lookup user suggestions match both scripts', function () {
+    $library = Library::factory()->create();
+    $librarian = User::factory()->libraryRole($library, LibraryRole::Librarian)->create();
+    $student = User::factory()->libraryRole($library, LibraryRole::User)->create([
+        'first_name' => 'Филип',
+        'last_name' => 'Филиповић',
+    ]);
+    app(ActiveLibraryService::class)->set($librarian, $library->id);
+
+    $this->actingAs($librarian)
+        ->getJson('/api/v1/borrows/lookup?user='.urlencode('Filipović'), translitHeaders())
+        ->assertOk()
+        ->assertJsonPath('data.users.0.id', $student->id);
 });

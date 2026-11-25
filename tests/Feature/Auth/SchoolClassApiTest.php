@@ -355,6 +355,7 @@ test('a class year cannot change when it appears only as a previous class in his
         'school_year_id' => $year->id,
         'class_id' => null,
         'previous_class_id' => $class->id,
+        'previous_school_year_id' => $year->id,
         'changed_by_id' => $admin->id,
         'changed_at' => now(),
     ]);

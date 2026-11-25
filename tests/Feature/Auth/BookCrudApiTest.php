@@ -70,6 +70,26 @@ test('superadmin can create a book with authors and categories resolved', functi
     expect(Author::where('library_id', $library->id)->where('name', 'Branko Ćopić')->count())->toBe(1);
 });
 
+test('book creation reuses an existing author regardless of script name order and diacritics', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeBookLibrary();
+    $this->withSession(['active_library_id' => $library->id]);
+
+    $existing = Author::factory()->for($library)->create(['name' => 'Андрић, Иво']);
+
+    $this->actingAs($admin)->postJson('/api/v1/books', [
+        'name' => 'Na Drini ćuprija',
+        'library_id' => $library->id,
+        'authors' => ['Ivo Andric', 'Andrić, Ivo'],
+    ], bookHeaders())
+        ->assertCreated()
+        ->assertJsonCount(1, 'data.authors')
+        ->assertJsonPath('data.authors.0.id', $existing->id)
+        ->assertJsonPath('data.authors.0.name', 'Андрић, Иво');
+
+    expect(Author::where('library_id', $library->id)->count())->toBe(1);
+});
+
 test('book category must belong to the same library', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = makeBookLibrary();

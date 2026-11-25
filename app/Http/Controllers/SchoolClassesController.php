@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Queries\SchoolClassStudentListQueryDTO;
+use App\DTOs\Queries\SortingDTO;
 use App\Enums\SchoolGrade;
 use App\Http\Requests\AssignSchoolClassStudentsRequest;
+use App\Http\Requests\ClassTransferPreviewRequest;
+use App\Http\Requests\ClassTransferRequest;
 use App\Http\Requests\StoreSchoolClassRequest;
 use App\Http\Requests\UpdateSchoolClassRequest;
 use App\Http\Resources\ClassCandidateResource;
 use App\Http\Resources\ClassStudentResource;
 use App\Http\Resources\SchoolClassResource;
-use App\Models\ClassEnrollment;
 use App\Models\Library;
 use App\Models\SchoolClass;
 use App\Models\SchoolYear;
@@ -17,6 +20,8 @@ use App\Models\User;
 use App\Queries\SchoolClassesSearch;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
+use App\Services\ClassTransferService;
+use App\Services\Queries\SchoolClassQueryService;
 use App\Services\SchoolClassService;
 use App\Services\SchoolYearService;
 use Illuminate\Http\JsonResponse;
@@ -50,31 +55,89 @@ class SchoolClassesController extends Controller
         ]);
     }
 
-    public function options(SchoolYearService $years): JsonResponse
-    {
+    public function options(
+        Request $request,
+        ActiveLibraryService $activeLibraryService,
+        SchoolYearService $years,
+        ClassTransferService $transferService,
+    ): JsonResponse {
         $activeId = $years->activeId();
+        $library = $activeLibraryService->resolve($request->user());
 
         $schoolYears = SchoolYear::query()
             ->orderByDesc('year')
-            ->get(['id', 'year'])
+            ->get(['id', 'year']);
+
+        $yearsByNumber = $schoolYears->keyBy('year');
+        $classesCounts = $library === null
+            ? collect()
+            : SchoolClass::query()
+                ->where('library_id', $library->id)
+                ->selectRaw('school_year_id, count(*) as aggregate')
+                ->groupBy('school_year_id')
+                ->pluck('aggregate', 'school_year_id');
+
+        $schoolYearOptions = $schoolYears
             ->map(fn (SchoolYear $year): array => [
                 'id' => $year->id,
                 'year' => $year->year,
                 'name' => $year->name,
                 'is_active' => $year->id === $activeId,
+                'classes_count' => (int) $classesCounts->get($year->id, 0),
+                'next_school_year_id' => $yearsByNumber->get($year->year + 1)?->id,
+                'previous_school_year_id' => $yearsByNumber->get($year->year - 1)?->id,
             ])
             ->values();
 
         return response()->json([
             'data' => [
-                'school_years' => $schoolYears,
+                'school_years' => $schoolYearOptions,
                 'active_school_year_id' => $activeId,
+                'default_transfer_source_school_year_id' => $library === null
+                    ? $activeId
+                    : $transferService->defaultSourceYearId($library),
                 'grades' => array_map(fn (SchoolGrade $grade): array => [
                     'value' => $grade->value,
                     'label' => $grade->getLabel(),
                     'full_label' => $grade->getFullLabel(),
                 ], SchoolGrade::cases()),
             ],
+        ]);
+    }
+
+    public function transferPreview(
+        ClassTransferPreviewRequest $request,
+        ActiveLibraryService $activeLibrary,
+        ClassTransferService $transferService,
+    ): JsonResponse {
+        $library = $activeLibrary->requireActiveLibrary($request->user());
+        $source = SchoolYear::query()->findOrFail($request->integer('source_school_year_id'));
+
+        return response()->json([
+            'data' => $transferService->preview($library, $source)->toArray(),
+        ]);
+    }
+
+    public function transferStudents(
+        ClassTransferRequest $request,
+        ActiveLibraryService $activeLibrary,
+        ClassTransferService $transferService,
+    ): JsonResponse {
+        $library = $activeLibrary->requireActiveLibrary($request->user());
+        $source = SchoolYear::query()->findOrFail($request->integer('source_school_year_id'));
+        $target = SchoolYear::query()->findOrFail($request->integer('target_school_year_id'));
+
+        $result = $transferService->transfer(
+            $library,
+            $source,
+            $target,
+            $request->mappings(),
+            $request->boolean('create_missing_target_classes'),
+            $request->user(),
+        );
+
+        return response()->json([
+            'data' => $result->toArray(),
         ]);
     }
 
@@ -137,19 +200,20 @@ class SchoolClassesController extends Controller
         Request $request,
         SchoolClass $schoolClass,
         ActiveLibraryService $activeLibrary,
+        SchoolClassQueryService $queryService,
     ): AnonymousResourceCollection {
         $this->requireClassInActiveLibrary($schoolClass, $activeLibrary, $request->user());
 
-        $students = ClassEnrollment::query()
-            ->with(['user', 'assignedBy'])
-            ->where('class_id', $schoolClass->id)
-            ->where('library_id', $schoolClass->library_id)
-            ->where('school_year_id', $schoolClass->school_year_id)
-            ->get()
-            ->sortBy(fn (ClassEnrollment $enrollment): string => $enrollment->user?->displayName() ?? '')
-            ->values();
+        $dto = new SchoolClassStudentListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->integer('per_page', 25),
+        );
 
-        return ClassStudentResource::collection($students);
+        return ClassStudentResource::collection(
+            $queryService->students($dto, $schoolClass)
+                ->paginate($dto->perPage)
+                ->withQueryString()
+        );
     }
 
     /**

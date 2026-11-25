@@ -38,6 +38,13 @@ export interface LibraryOption {
 
 export type ActiveLibrary = LibraryOption | null
 
+export interface DashboardStats {
+  members_count: number
+  books_count: number
+  active_borrows_count: number
+  overdue_borrows_count: number
+}
+
 export interface User {
   id: number
   name: string
@@ -619,13 +626,124 @@ export interface SchoolClassOptions {
     year: number
     name: string
     is_active: boolean
+    classes_count: number
+    next_school_year_id: number | null
+    previous_school_year_id: number | null
   }>
   active_school_year_id: number | null
+  default_transfer_source_school_year_id: number | null
   grades: Array<{
     value: number
     label: string
     full_label: string
   }>
+}
+
+export type ClassTransferRowStatus =
+  | 'ready'
+  | 'needs_selection'
+  | 'needs_target'
+  | 'graduating'
+  | 'empty'
+  | 'ineligible'
+
+export interface ClassTransferYear {
+  id: number
+  year: number
+  name: string
+  is_active: boolean
+}
+
+export interface ClassTransferTargetOption {
+  id: number
+  name: string
+  grade: number | null
+  grade_label: string | null
+  grade_full_label: string | null
+  students_count: number
+  is_active: boolean
+}
+
+export interface ClassTransferRow {
+  id: number
+  name: string
+  grade: number | null
+  grade_label: string | null
+  grade_full_label: string | null
+  teacher_name: string | null
+  is_active: boolean
+  students_count: number
+  eligible_students_count: number
+  skipped_students_count: number
+  already_enrolled_count: number
+  status: ClassTransferRowStatus
+  suggested_target_class_id: number | null
+  proposed_target_class_name: string | null
+  can_create_target: boolean
+  target_options: ClassTransferTargetOption[]
+}
+
+export interface ClassTransferPreview {
+  source_year: ClassTransferYear
+  target_year: ClassTransferYear | null
+  target_year_exists: boolean
+  target_year_is_active: boolean
+  can_create_missing_classes: boolean
+  can_transfer: boolean
+  classes: ClassTransferRow[]
+  summary: {
+    classes_count: number
+    students_count: number
+    eligible_students_count: number
+    already_enrolled_count: number
+    graduating_students_count: number
+    needs_target_count: number
+  }
+}
+
+export interface ClassTransferCreatedClass {
+  id: number
+  name: string
+  grade: number | null
+  grade_label: string | null
+  grade_full_label: string | null
+}
+
+export interface ClassTransferClassResult {
+  source_class_id: number
+  source_class_name: string
+  source_grade_label: string | null
+  target_class_id: number | null
+  target_class_name: string | null
+  target_grade_label: string | null
+  students_total: number
+  eligible_total: number
+  transferred: number
+  moved: number
+  already_enrolled: number
+  skipped_ineligible: number
+  skipped_conflict: number
+  created_target_class: boolean
+}
+
+export interface ClassTransferResult {
+  source_year: ClassTransferYear
+  target_year: ClassTransferYear
+  classes: ClassTransferClassResult[]
+  created_classes: ClassTransferCreatedClass[]
+  totals: {
+    classes: number
+    students: number
+    eligible_students: number
+    transferred: number
+    moved: number
+    already_enrolled: number
+    skipped: number
+    skipped_ineligible: number
+    skipped_conflict: number
+    graduating: number
+    created_target_classes: number
+  }
 }
 
 export interface SuperAdminUser {

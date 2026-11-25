@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\DTOs\StudentAssignmentResultCollection;
+use App\DTOs\StudentAssignmentResultDTO;
 use App\Enums\LibraryRole;
 use App\Enums\SchoolGrade;
 use App\Enums\StudentAssignmentOutcomeEnum;
@@ -11,7 +11,7 @@ use App\Models\ClassroomHistory;
 use App\Models\Library;
 use App\Models\SchoolClass;
 use App\Models\User;
-use App\Support\Text;
+use App\Queries\Concerns\AppliesTransliteratedSearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +21,8 @@ use Illuminate\Validation\ValidationException;
 
 class SchoolClassService
 {
+    use AppliesTransliteratedSearch;
+
     public function __construct(private readonly SchoolYearService $yearsService) {}
 
     /**
@@ -116,19 +118,83 @@ class SchoolClassService
     /**
      * @param  array<int, int>  $userIds
      */
-    public function assignStudents(SchoolClass $class, array $userIds, User $actor): StudentAssignmentResultCollection
+    public function assignStudents(SchoolClass $class, array $userIds, User $actor): StudentAssignmentResultDTO
+    {
+        $this->ensureClassIsActive($class);
+
+        $userIds = $this->normalizeUserIds($userIds);
+        $users = $this->eligibleStudents($class, $userIds);
+        $this->validateStudentCount($users, $userIds);
+
+        return $this->assignStudentsInTransaction($class, $users, $actor);
+    }
+
+    /**
+     * Prebacuje ucenike iz izvornog u ciljno odeljenje naredne skolske godine.
+     *
+     * @param  array<int, int>  $userIds
+     */
+    public function transferStudentsToClass(
+        SchoolClass $sourceClass,
+        SchoolClass $targetClass,
+        array $userIds,
+        User $actor,
+    ): StudentAssignmentResultDTO {
+        $this->validateTransferPair($sourceClass, $targetClass);
+
+        $userIds = $this->normalizeUserIds($userIds);
+        $users = $this->eligibleStudents($targetClass, $userIds);
+        $this->validateStudentCount($users, $userIds);
+
+        return $this->assignStudentsInTransaction($targetClass, $users, $actor, $sourceClass);
+    }
+
+    private function ensureClassIsActive(SchoolClass $class): void
     {
         if (! $class->is_active) {
             throw ValidationException::withMessages([
                 'class' => __('validation.custom.class_inactive'),
             ]);
         }
+    }
 
-        $userIds = array_values(array_unique(array_map('intval', $userIds)));
-        $users = $this->eligibleStudents($class, $userIds);
-        $this->validateStudentCount($users, $userIds);
+    private function validateTransferPair(SchoolClass $sourceClass, SchoolClass $targetClass): void
+    {
+        if ((int) $sourceClass->library_id !== (int) $targetClass->library_id) {
+            throw ValidationException::withMessages([
+                'target_class_id' => __('validation.custom.class_transfer_same_library'),
+            ]);
+        }
 
-        return $this->assignStudentsInTransaction($class, $users, $actor);
+        $sourceYear = $sourceClass->schoolYear;
+        $targetYear = $targetClass->schoolYear;
+
+        if (
+            $sourceYear === null
+            || $targetYear === null
+            || (int) $targetYear->year !== (int) $sourceYear->year + 1
+        ) {
+            throw ValidationException::withMessages([
+                'target_class_id' => __('validation.custom.class_transfer_target_year'),
+            ]);
+        }
+
+        if ((int) $targetClass->grade->value !== (int) $sourceClass->grade->value + 1) {
+            throw ValidationException::withMessages([
+                'target_class_id' => __('validation.custom.class_transfer_target_grade'),
+            ]);
+        }
+
+        $this->ensureClassIsActive($targetClass);
+    }
+
+    /**
+     * @param  array<int, int>  $userIds
+     * @return array<int, int>
+     */
+    private function normalizeUserIds(array $userIds): array
+    {
+        return array_values(array_unique(array_map('intval', $userIds)));
     }
 
     /**
@@ -162,64 +228,97 @@ class SchoolClassService
     /**
      * @param  Collection<int, User>  $users
      */
-    private function assignStudentsInTransaction(SchoolClass $class, Collection $users, User $actor): StudentAssignmentResultCollection
-    {
-        return DB::transaction(function () use ($class, $users, $actor): StudentAssignmentResultCollection {
-            $result = new StudentAssignmentResultCollection;
+    private function assignStudentsInTransaction(
+        SchoolClass $class,
+        Collection $users,
+        User $actor,
+        ?SchoolClass $previousSchoolClass = null,
+    ): StudentAssignmentResultDTO {
+        return DB::transaction(function () use ($class, $users, $actor, $previousSchoolClass): StudentAssignmentResultDTO {
+            $result = new StudentAssignmentResultDTO;
 
             foreach ($users as $user) {
-                $result->record($this->assignStudent($class, $user, $actor));
+                $result->record($this->assignStudent($class, $user, $actor, $previousSchoolClass));
             }
 
             return $result;
         });
     }
 
-    private function assignStudent(SchoolClass $class, User $user, User $actor): StudentAssignmentOutcomeEnum
-    {
-        $enrollment = ClassEnrollment::query()
-            ->where('user_id', $user->id)
-            ->where('library_id', $class->library_id)
-            ->where('school_year_id', $class->school_year_id)
-            ->lockForUpdate()
-            ->first();
+    private function assignStudent(
+        SchoolClass $class,
+        User $user,
+        User $actor,
+        ?SchoolClass $previousSchoolClass = null,
+    ): StudentAssignmentOutcomeEnum {
+        $enrollment = $this->findEnrollmentForUpdate($class, $user);
 
         if ($enrollment !== null && (int) $enrollment->class_id === (int) $class->id) {
             return StudentAssignmentOutcomeEnum::AlreadyAssigned;
         }
 
-        $previousClassId = $enrollment?->class_id;
+        $previousClassId = $enrollment?->class_id ?? $previousSchoolClass?->id;
+        $previousSchoolYearId = $enrollment === null ? $previousSchoolClass?->school_year_id : null;
+        $outcome = $enrollment === null
+            ? StudentAssignmentOutcomeEnum::Assigned
+            : StudentAssignmentOutcomeEnum::Moved;
 
-        if ($enrollment !== null) {
-            $enrollment->update([
-                'class_id' => $class->id,
-                'assigned_by_id' => $actor->id,
-            ]);
-            $result = StudentAssignmentOutcomeEnum::Moved;
+        if ($enrollment === null) {
+            $this->createEnrollment($class, $user, $actor);
         } else {
-            ClassEnrollment::query()->create([
-                'user_id' => $user->id,
-                'library_id' => $class->library_id,
-                'school_year_id' => $class->school_year_id,
-                'class_id' => $class->id,
-                'assigned_by_id' => $actor->id,
-            ]);
-            $result = StudentAssignmentOutcomeEnum::Assigned;
+            $this->moveEnrollment($enrollment, $class, $actor);
         }
 
-        $this->recordAssignmentHistory($class, $user, $actor, $previousClassId);
+        $this->recordAssignmentHistory($class, $user, $actor, $previousClassId, $previousSchoolYearId);
 
-        return $result;
+        return $outcome;
     }
 
-    private function recordAssignmentHistory(SchoolClass $class, User $user, User $actor, ?int $previousClassId): void
+    private function findEnrollmentForUpdate(SchoolClass $class, User $user): ?ClassEnrollment
     {
+        return ClassEnrollment::query()
+            ->where('user_id', $user->id)
+            ->where('library_id', $class->library_id)
+            ->where('school_year_id', $class->school_year_id)
+            ->lockForUpdate()
+            ->first();
+    }
+
+    private function createEnrollment(SchoolClass $class, User $user, User $actor): ClassEnrollment
+    {
+        return ClassEnrollment::query()->create([
+            'user_id' => $user->id,
+            'library_id' => $class->library_id,
+            'school_year_id' => $class->school_year_id,
+            'class_id' => $class->id,
+            'assigned_by_id' => $actor->id,
+        ]);
+    }
+
+    private function moveEnrollment(ClassEnrollment $enrollment, SchoolClass $class, User $actor): void
+    {
+        $enrollment->update([
+            'class_id' => $class->id,
+            'assigned_by_id' => $actor->id,
+        ]);
+    }
+
+    private function recordAssignmentHistory(
+        SchoolClass $class,
+        User $user,
+        User $actor,
+        ?int $previousClassId,
+        ?int $previousSchoolYearId = null,
+    ): void {
         ClassroomHistory::query()->create([
             'user_id' => $user->id,
             'library_id' => $class->library_id,
             'school_year_id' => $class->school_year_id,
             'class_id' => $class->id,
             'previous_class_id' => $previousClassId,
+            'previous_school_year_id' => $previousClassId === null
+                ? null
+                : ($previousSchoolYearId ?? $class->school_year_id),
             'changed_by_id' => $actor->id,
             'changed_at' => now(),
         ]);
@@ -230,7 +329,7 @@ class SchoolClassService
      */
     public function unassignStudents(SchoolClass $class, array $userIds, User $actor): int
     {
-        $userIds = array_values(array_unique(array_map('intval', $userIds)));
+        $userIds = $this->normalizeUserIds($userIds);
 
         return DB::transaction(function () use ($class, $userIds, $actor): int {
             $enrollments = ClassEnrollment::query()
@@ -240,21 +339,31 @@ class SchoolClassService
                 ->get();
 
             foreach ($enrollments as $enrollment) {
-                $enrollment->delete();
-
-                ClassroomHistory::query()->create([
-                    'user_id' => $enrollment->user_id,
-                    'library_id' => $class->library_id,
-                    'school_year_id' => $class->school_year_id,
-                    'class_id' => null,
-                    'previous_class_id' => $class->id,
-                    'changed_by_id' => $actor->id,
-                    'changed_at' => now(),
-                ]);
+                $this->deleteEnrollment($enrollment);
+                $this->recordUnassignmentHistory($class, $enrollment, $actor);
             }
 
             return $enrollments->count();
         });
+    }
+
+    private function deleteEnrollment(ClassEnrollment $enrollment): void
+    {
+        $enrollment->delete();
+    }
+
+    private function recordUnassignmentHistory(SchoolClass $class, ClassEnrollment $enrollment, User $actor): void
+    {
+        ClassroomHistory::query()->create([
+            'user_id' => $enrollment->user_id,
+            'library_id' => $class->library_id,
+            'school_year_id' => $class->school_year_id,
+            'class_id' => null,
+            'previous_class_id' => $class->id,
+            'previous_school_year_id' => $class->school_year_id,
+            'changed_by_id' => $actor->id,
+            'changed_at' => now(),
+        ]);
     }
 
     /**
@@ -280,16 +389,12 @@ class SchoolClassService
 
         if ($search !== '') {
             $query->where(function (Builder $group) use ($search): void {
-                foreach (Text::searchVariants($search) as $variant) {
-                    $like = '%'.$variant.'%';
-
-                    $group->orWhere('first_name', 'ilike', $like)
-                        ->orWhere('last_name', 'ilike', $like)
-                        ->orWhere('name', 'ilike', $like)
-                        ->orWhere('email', 'ilike', $like)
-                        ->orWhere('username', 'ilike', $like)
-                        ->orWhere('bar_code', 'like', $like);
-                }
+                $this->whereTransliterated($group, 'first_name', $search);
+                $this->whereTransliterated($group, 'last_name', $search, 'or');
+                $this->whereTransliterated($group, 'name', $search, 'or');
+                $this->whereTransliterated($group, 'email', $search, 'or');
+                $this->whereTransliterated($group, 'username', $search, 'or');
+                $group->orWhere('bar_code', 'like', '%'.$search.'%');
             });
         }
 

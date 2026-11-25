@@ -1,12 +1,198 @@
 # Changelog
 
+## [23.11.2026] Prebacivanje učenika: izbor odeljenja i obračun dostupnih učenika
+
+### Added
+
+- **Izbor odeljenja** (`frontend/src/pages/classes/class-transfer-page.tsx`, i18n) — checkbox po redu tabele i „izaberi sve“ u zaglavlju; sva prenosiva odeljenja su podrazumevano čekirana, a neizabrana se preskaču bez validacije ciljnog odeljenja
+- **Potvrda i poruke** — potvrda prikazuje broj izabranih odeljenja i učenika; ako nijedno odeljenje nije izabrano, prikazuje se upozorenje i dugme je onemogućeno
+- **Dokumentacija** (`README.md`) — uputstvo za pokretanje `ClassTransferDemoSeeder`-a i podaci za prijavu demo učenika
+
+### Fixed
+
+- **Preview obračun** (`app/Services/ClassTransferService.php`) — „Dostupni za prebacivanje“ više ne uključuje osmi razred; osmaoci se broje samo u „Završavaju školovanje“
+
+### Changed
+
+- **Query service refaktor** (`app/Services/Queries/*QueryService.php`, `app/DTOs/Queries/*ListQueryDTO.php`, `app/DTOs/Queries/SortingDTO.php`) — list endpointi sada koriste DTO i query servise; filtriranje, pretraga, relacije i sortiranje su izdvojeni iz kontrolera. Refaktorovani su `AuthorsController`, `BarcodePrintJobsController`, `BookCopiesController`, `BooksController`, `BorrowsController`, `CategoriesController`, `InventoryBooksController`, `LibrariesController`, `LibraryRequestsController`, `NewsController`, `PlacesController`, `RegionsController`, `ReservationsController`, `SchoolClassesController`, `SchoolYearsController`, `SettingsController`, `TagsController` i `UsersController`
+- **Sort parser i builder** (`app/Services/Sorting/SortParser.php`, `app/Services/Sorting/SortRule.php`, `app/Services/Sorting/QuerySortBuilder.php`) — centralizovano parsiranje `sort`/`direction` parametara, whitelist kolona, fallback na podrazumevani sort i stabilan tie-breaker; uklonjeni su stari `LibraryFilters` i `TagFilters`, a `BorrowFilters` i `Text` su prilagođeni zajedničkoj pretrazi
+- **Frontend sortiranje** (`frontend/src/components/ui/sortable-table-head.tsx`, `frontend/src/hooks/useTableSort.ts`, list stranice) — sortiranje kroz URL parametre, `aria-sort` i reset paginacije, primenjeno na glavne tabele
+- **Keševi aktivne biblioteke** (`frontend/src/hooks/useAuth.tsx`) — promena aktivne biblioteke invalidira dashboard statistiku, opcije odeljenja, listu odeljenja i preview prebacivanja učenika
+- **Konvencije** (`AGENTS.md`) — dokumentovana pravila za DTO/query servise, sort parser/builder i transliterovanu pretragu
+- **Test infrastruktura** (`phpunit.xml`) — podignut `memory_limit` na 512M zbog rasta test suite
+
+### Tests
+
+- `tests/Feature/Auth/ClassTransferApiTest.php` — izbor podskupa odeljenja, preskakanje neizabranih odeljenja i obračun dostupnih učenika
+- Cela suite na PostgreSQL-u prolazi; `npm run build` prolazi
+
+## [22.11.2026] Sortiranje tabela na frontendu i backendu
+
+Sve glavne tabele u dashboardu sada podržavaju sortiranje klikom na naziv kolone, sa `ASC`/`DESC` smerom i podrškom na API nivou.
+
+### Added
+
+- **Sorting sloj** (`app/Services/Sorting/SortParser.php`, `SortRule.php`, `QuerySortBuilder.php`) — zajednički `?sort=<kolona>&direction=asc|desc`, whitelist kolona, fallback na podrazumevani sort i stabilan tie-breaker
+- **DTO sloj** (`app/DTOs/Queries/*ListQueryDTO.php`, `SortingDTO`) — kontroleri prevode request u tipizovane DTO objekte; query servisi više ne zavise od `Illuminate\Http\Request`
+- **Domenski query servisi** (`app/Services/Queries/*QueryService.php`) — filteri, pretraga, relacije i sort mape izdvojeni iz kontrolera; kontroleri sada samo kreiraju DTO, pozivaju servis, paginiraju i vraćaju resource
+- **Sortiranje endpointa** — autori, kategorije, tagovi, regije, mesta, biblioteke, novosti, korisnici, knjige, fizičke jedinice i arhiva, pozajmice, rezervacije, zahtevi za biblioteke, inventarne knjige, štampa barkodova, školske godine i učenici odeljenja
+- **Frontend komponente** (`frontend/src/components/ui/sortable-table-head.tsx`, `frontend/src/hooks/useTableSort.ts`) — klikabilno zaglavlje sa strelicama, `aria-sort`, čuvanje `sort`/`direction` u URL-u i reset paginacije
+- **Primena na tabele** — sve glavne list tabele, detalj knjige, arhiva, izdavanje, pozajmice, rezervacije, korisnici, školske godine, inventar, štampa barkodova i pregled prebacivanja učenika; tabele bez server paginacije sortiraju se lokalno
+
+### Browser test
+
+- Provereni su autori, kategorije, tagovi, regije, mesta, biblioteke, novosti, korisnici, knjige, fizičke jedinice, izdavanje, moje pozajmice, rezervacije, zahtevi, školske godine, inventar, štampa barkodova, detalj knjige, učenici odeljenja i prebacivanje učenika
+- Za svaku sortabilnu kolonu provereni su `asc`, `desc`, URL parametri i vidljiv redosled
+
+### Tests
+
+- `tests/Feature/QueryServiceDtoTest.php` — direktno korišćenje query servisa sa ručno kreiranim DTO-om, bez HTTP sloja
+- `tests/Unit/SortParserTest.php` — parsiranje dozvoljenih, praznih i nevažećih sort vrednosti i pravila za podrazumevani sort
+- Cela suite na PostgreSQL-u: 541 test, 2052 assertiona
+- React i javni Blade asseti build prolaze
+
+## [22.11.2026] Zaštita brisanja autora i kategorija
+
+Brisanje autora ili kategorije koji su povezani sa knjigama više nije dozvoljeno, na nivou baze i uz jasnu poruku korisniku.
+
+### Changed
+
+- **Migracija** (`database/migrations/2026_11_22_000001_add_restrict_constraints_to_book_authors_and_categories.php`) — `book_authors.author_id`, `books.category_primary_id` i `books.category_secondary_id` prelaze na `ON DELETE RESTRICT`; brisanje knjige i dalje cascade-uje veze u `book_authors`
+- **Autori** (`app/Http/Controllers/AuthorsController.php`, lang) — brisanje autora sa povezanom knjigom vraća `422` i poruku `author_has_books`
+- **Kategorije** (`app/Http/Controllers/CategoriesController.php`, lang) — brisanje kategorije koja je primarna ili sekundarna na knjizi vraća `422` i poruku `category_has_books`; provera uključuje i soft-obrisane knjige
+- **Frontend** — bez izmena; postojeći toast prikazuje poruku greške
+
+### Tests
+
+- `tests/Feature/Auth/AuthorCrudApiTest.php` — autor sa knjigom se ne može obrisati
+- `tests/Feature/Auth/CategoryCrudApiTest.php` — kategorija u primarnoj, sekundarnoj i soft-obrisanoj knjizi se ne može obrisati
+- `tests/Feature/CatalogForeignKeyConstraintTest.php` — direktna DB provera `RESTRICT` i cascade ponašanja
+- Cela suite na PostgreSQL-u: 540 testa, 2050 assertiona
+- React i javni Blade asseti build prolaze
+
+## [22.11.2026] Kanonizacija autora i kategorija
+
+Dodata je zaštita od dupliranja autora i kategorija pri ručnom unosu i uvozu knjiga preko ISBN-a.
+
+### Added
+
+- **Autor servis** (`app/Services/AuthorResolverService.php`, `app/Support/Text.php`) — kanonski ključ autora neosetljiv na pismo, dijakritike, interpunkciju i redosled imena/prezimena; pronalaženje i reuse postojećeg autora u istoj biblioteci
+- **Kategorija servis** (`app/Services/CategoryResolverService.php`) — kanonski ključ naziva bez promene redosleda reči; pronalaženje i reuse kategorije u istoj biblioteci i pod istim roditeljem
+- **Primena** (`app/Services/BookService.php`, `app/Http/Controllers/CategoriesController.php`, `app/Http/Requests/StoreAuthorRequest.php`, `app/Http/Requests/UpdateAuthorRequest.php`) — ISBN i ručni unos knjiga reuse-uju postojeće autore, kreiranje kategorije vraća postojeći zapis, a ručno kreiranje/izmena autora odbija kanonski duplikat
+
+### Pravila
+
+- autori se porede samo unutar iste biblioteci
+- kategorije se porede unutar iste biblioteke i istog roditelja
+- ne postoji automatski merge postojećih duplikata
+
+### Tests
+
+- `tests/Unit/TextTest.php` — kanonski ključevi autora i naziva
+- `tests/Feature/Auth/BookCrudApiTest.php` — reuse autora pri kreiranju knjige
+- `tests/Feature/Auth/AuthorCrudApiTest.php` — zabrana kanonskog duplikata pri kreiranju i izmeni
+- `tests/Feature/Auth/LibraryAdminCategoryAuthorTest.php` — reuse kategorije i razdvajanje po roditelju
+- Cela suite na PostgreSQL-u: 534 testa, 2033 assertiona
+- React i javni Blade asseti build prolaze
+
+## [22.11.2026] Prikaz dugih naziva i opisa knjiga
+
+Dugi opisi knjiga na javnom katalogu i dugi nazivi u izdavanju i pozajmicama više ne razvlače layout.
+
+### Changed
+
+- **Blade katalog** (`resources/css/app.css`) — opis knjige na stranici detalja ograničen je na 6 redova na desktopu i 5 redova na mobilnom, a naziv na koricama na 3 reda; svi prelasci preko limita dobijaju automatski `...` preko line-clamp-a
+- **React** (`frontend/src/lib/text.ts`, strane izdavanja i pozajmica, modal za izdavanje i dijalog za vraćanje) — naziv knjige se skraćuje na 80 karaktera uz `...`, a pun naziv ostaje dostupan kroz hover (`title`); modal za izdavanje više ne razvlači dijalog zbog dugog naziva i status kopije ostaje vidljiv
+
+### Tests
+
+- `npm run build` za React i javne Blade assete prolazi
+
+## [22.11.2026] ISBN pretraga: NBS izvor bez oznake u prikazu
+
+Rezultat pronađen preko NBS/COBISS kataloga se korisnicima prikazuje kao rezultat iz baze, bez ikakve NBS oznake ili ikone.
+
+### Changed
+
+- **API** (`app/Http/Controllers/BooksController.php`) — `source` i `metadata.source` se za NBS rezultat mapiraju na `database`; interni naziv provajdera ostaje `nbs` samo za logove i dijagnostiku
+- **Frontend** (`frontend/src/lib/isbn.ts`, `book-form-modal.tsx`, `book-copy-add-modal.tsx`, `book-copy-quick-add-modal.tsx`) — zajednička normalizacija izvora; NBS se u sva tri ISBN modala prikazuje kao „Interna baza“, a prevodi sa NBS oznakom su uklonjeni
+- **Redosled pretrage** — nepromenjen: prvo interna baza, pa eksterni provajderi
+
+### Tests
+
+- `tests/Feature/Auth/IsbnLookupTest.php` — NBS rezultat se kroz API prikazuje kao `database`, a odgovor ne sadrži `nbs`
+- Cela suite na PostgreSQL-u: 527 testa, 2005 assertiona
+- `npm run build` prolazi
+
+## [22.11.2026] Navigacija: podkategorija Administracija
+
+Korisnici, odeljenja, tagovi, kategorije i autori su grupisani u novu sklopivu podkategoriju **Administracija** u glavnoj navigaciji, po istom obrascu kao šifarnici.
+
+### Changed
+
+- **Sidebar** (`frontend/src/components/layout/app-shell.tsx`, i18n) — izdvojena reusable `NavGroup` komponenta za sklopive grupe; `Administracija` se automatski otvara kada je aktivna neka od njenih stranica, a grupa se prikazuje samo ako korisnik ima dozvolu za bar jednu stavku
+- **Navigacija** — top-level ostaju Početna, Biblioteke, Knjige i Izdavanje; u Administraciji su Korisnici, Odeljenja, Tagovi, Kategorije i Autori
+
+### Tests
+
+- `npm run build` prolazi
+
+## [20.11.2026] Dashboard: pregled aktivne biblioteke
+
+Dodat je red sažetih widgeta na dashboard za osoblje aktivne biblioteke: broj korisnika, ukupan fond knjiga, aktivne i prekoračene pozajmice.
+
+### Added
+
+- **API** (`app/Http/Controllers/DashboardController.php`, `app/Services/DashboardStatsService.php`, `routes/api.php`) — `GET /api/v1/dashboard/stats` vraća agregate za aktivnu biblioteku
+- **Frontend** (`frontend/src/pages/dashboard-page.tsx`, `frontend/src/pages/borrows/library-borrows-page.tsx`, `frontend/src/types.ts`, `frontend/src/lib/api.ts`, i18n) — red widgeta sa ikonama i linkovima ka korisnicima, fondu i pozajmicama; widget prekoračenih pozajmica vodi na `/borrows/library?status=overdue`, a stranica pozajmica čita filter statusa iz URL-a; prikaz samo za administratora biblioteke, bibliotekara i superadmina kada je izabrana aktivna biblioteka
+
+### Pravila
+
+- widgeti se prikazuju samo za uloge `library_admin` i `librarian` u aktivnoj biblioteci, kao i za superadmina nad izabranom aktivnom bibliotekom
+- bez aktivne biblioteke nema prikaza ni API poziva (superadmin mora izabrati biblioteku)
+- korisnici se broje iz aktivnih članstava, knjige iz aktivnih fizičkih jedinica bez otpisa, a prekoračene pozajmice su aktivne pozajmice kojima je prošao rok vraćanja
+
+### Tests
+
+- `tests/Feature/Auth/DashboardStatsApiTest.php` — scope aktivne biblioteke, obavezna aktivna biblioteka, superadmin pristup i zabrana za članove i osoblje van svoje biblioteke
+- Cela suite na PostgreSQL-u: 527 testa, 1998 assertiona
+- `npm run build` prolazi
+
+## [20.11.2026] Odeljenja: automatsko prebacivanje učenika u narednu školsku godinu
+
+Dodato je prebacivanje učenika iz izabrane školske godine u neposredno narednu, sa pregledom mapiranja odeljenja, opcijom kreiranja nedostajućih ciljnih odeljenja i cross-year istorijom.
+
+### Added
+
+- **Servis i DTO** (`app/Services/ClassTransferService.php`, `app/DTOs/ClassTransferPreviewDTO.php`, `app/DTOs/ClassTransferResultDTO.php`, `app/Enums/ClassTransferRowStatusEnum.php`) — preview predloga prebacivanja, automatsko uparivanje odeljenja po razredu i nazivu, kreiranje nedostajućih ciljnih odeljenja, transakciono izvršavanje i rezultat po odeljenju
+- **API** (`app/Http/Controllers/SchoolClassesController.php`, `app/Http/Requests/ClassTransferPreviewRequest.php`, `app/Http/Requests/ClassTransferRequest.php`, `routes/api.php`, `app/Policies/SchoolClassPolicy.php`, `app/Services/AuthorizationService.php`) — `GET /api/v1/classes/transfer/preview`, `POST /api/v1/classes/transfer`, `transferStudents` permisija i proširene opcije sa brojem odeljenja i podrazumevanom izvornom godinom
+- **Istorija** (`database/migrations/2026_11_20_000001_add_previous_school_year_to_classroom_history_table.php`, `app/Models/ClassroomHistory.php`, `database/factories/ClassroomHistoryFactory.php`, `app/Services/SchoolClassService.php`) — `previous_school_year_id`, composite FK za prethodno odeljenje i check da su prethodna godina i odeljenje popunjeni zajedno; same-year promene i cross-year transfer sada koriste istu istoriju
+- **Refaktor dodele** (`app/Services/SchoolClassService.php`) — izdvojene privatne metode za pronalaženje, kreiranje i premeštanje upisa, upis historyja i `transferStudentsToClass()`; ponašanje postojeće dodele učenika je nepromenjeno
+- **Frontend** (`frontend/src/pages/classes/class-transfer-page.tsx`, `frontend/src/pages/classes/classes-page.tsx`, `frontend/src/App.tsx`, `frontend/src/types.ts`, `frontend/src/lib/api.ts`, `frontend/src/components/ui/alert-dialog.tsx`, i18n) — stranica `/classes/transfer` sa padajućim listama godina, tabelom mapiranja, čekiranjem odeljenja po redu (sva prenosiva odeljenja su podrazumevano izabrana), statusima, checkboxom za kreiranje odeljenja, potvrdom i rezultatom; dugme i baner na stranici odeljenja
+- **Seeder** (`database/seeders/ClassTransferDemoSeeder.php`, `database/seeders/DatabaseSeeder.php`) — idempotentni podaci u biblioteci Akademija Filipovic: prethodna školska godina, 16 odeljenja i 240 učenika za testiranje transfera i automatskog kreiranja ciljnih odeljenja
+
+### Pravila
+
+- prebacivanje je moguće samo u neposredno narednu školsku godinu
+- izvorno i ciljno odeljenje moraju biti iz iste biblioteke
+- ciljno odeljenje mora biti aktivno i za jedan razred više
+- razred 8 završava školovanje i ne dobija ciljno odeljenje
+- učenici bez aktivnog članstva i učenici sa postojećim upisom u drugom odeljenju ciljne godine se preskaču i prijavljuju
+- ponovno pokretanje transfera ne pravi duplikate
+
+### Tests
+
+- Cela suite na PostgreSQL-u prolazi (541 test, 2058 assertiona u trenutnom radnom stablu)
+- `pint --test` za izmenjene fajlove prolazi
+- `npm run build` prolazi
+
 ## [20.11.2026] Odeljenja: pregled, kreiranje i dodela učenika
 
 Dodata je stranica odeljenja na nivou biblioteke, sa karticama, detaljima odeljenja i dodelom postojećih korisničkih naloga.
 
 ### Added
 
-- **API i servisi** (`app/Http/Controllers/SchoolClassesController.php`, `app/Services/SchoolClassService.php`, `app/Policies/SchoolClassPolicy.php`, `app/Http/Requests/{StoreSchoolClassRequest,UpdateSchoolClassRequest,AssignSchoolClassStudentsRequest}.php`, `app/Http/Resources/{SchoolClassResource,ClassStudentResource,ClassCandidateResource}.php`, `app/Queries/SchoolClassesSearch.php`, `app/DTOs/StudentAssignmentResultCollection.php`, `app/Enums/StudentAssignmentOutcomeEnum.php`, `routes/api.php`) — `GET/POST/PUT/DELETE /api/v1/classes`, opcije za filtere, lista učenika, dostupni učenici, dodela i uklanjanje
+- **API i servisi** (`app/Http/Controllers/SchoolClassesController.php`, `app/Services/SchoolClassService.php`, `app/Policies/SchoolClassPolicy.php`, `app/Http/Requests/{StoreSchoolClassRequest,UpdateSchoolClassRequest,AssignSchoolClassStudentsRequest}.php`, `app/Http/Resources/{SchoolClassResource,ClassStudentResource,ClassCandidateResource}.php`, `app/Queries/SchoolClassesSearch.php`, `app/DTOs/StudentAssignmentResultDTO.php`, `app/Enums/StudentAssignmentOutcomeEnum.php`, `routes/api.php`) — `GET/POST/PUT/DELETE /api/v1/classes`, opcije za filtere, lista učenika, dostupni učenici, dodela i uklanjanje
 - **Pravila** — bibliotekar, administrator biblioteke i superadmin vide odeljenja i učenike aktivne biblioteke; kreiranje/izmena/brisanje odeljenja je dostupno administratoru biblioteke i superadminu; odeljenja se kreiraju samo u aktivnoj školskoj godini; superadmin može promeniti godinu odeljenja samo ako ono nema učenike ni istoriju
 - **Dodela učenika** — dodeljuju se samo postojeći aktivni članovi biblioteke sa rolom `user`; premeštanje između odeljenja menja current zapis i upisuje `classroom_history`; uklanjanje takođe upisuje istoriju; neaktivno odeljenje ne prima nove učenike
 - **Frontend** (`frontend/src/pages/classes/{classes-page,class-detail-page}.tsx`, `frontend/src/components/classes/{school-class-form-modal,add-class-students-modal}.tsx`, `frontend/src/{App.tsx,components/layout/app-shell.tsx,types.ts,lib/api.ts}`, i18n) — `/classes` kao grid kartica sa filterima, `/classes/:id` sa detaljima i listom učenika, modal za kreiranje/izmenu odeljenja i modal za dodelu postojećih korisnika uz upozorenje o premeštanju

@@ -286,7 +286,7 @@ export function IssueLoanModal({ open, onClose, onSuccess, user, copy, reservati
             </div>
           ) : null}
 
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <div className="space-y-2">
               <Label htmlFor="borrow-user">{t('borrows.modal.userLabel')}</Label>
               {selectedUser ? (
@@ -376,7 +376,9 @@ export function IssueLoanModal({ open, onClose, onSuccess, user, copy, reservati
                 <div className="rounded-md border p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{selectedCopy.book_name ?? '—'}</p>
+                      <p className="truncate font-medium" title={selectedCopy.book_name ?? undefined}>
+                        {selectedCopy.book_name ?? '—'}
+                      </p>
                       <p className="truncate text-xs text-muted-foreground">
                         {selectedCopy.book_authors ?? '—'}
                       </p>

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Queries\BookCopyListQueryDTO;
+use App\DTOs\Queries\SortingDTO;
 use App\Enums\BarcodePrintFormat;
 use App\Enums\BookCopyWriteOffReason;
 use App\Http\Requests\PrintBookCopiesRequest;
@@ -13,13 +15,13 @@ use App\Http\Resources\BookCopyResource;
 use App\Models\Book;
 use App\Models\BookCopy;
 use App\Models\Library;
-use App\Queries\BookCopyFilters;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
 use App\Services\BarcodePdfService;
 use App\Services\BookCopyService;
 use App\Services\BookCopyWriteOffService;
 use App\Services\InventoryNumberService;
+use App\Services\Queries\BookCopyQueryService;
 use App\Support\BarCode;
 use App\Support\BarcodeLabel;
 use Illuminate\Http\JsonResponse;
@@ -33,53 +35,35 @@ class BookCopiesController extends Controller
     /**
      * @return AnonymousResourceCollection<int, BookCopyResource>
      */
-    public function index(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection
-    {
+    public function index(
+        Request $request,
+        AuthorizationService $auth,
+        ActiveLibraryService $activeLibrary,
+        BookCopyQueryService $copies,
+    ): AnonymousResourceCollection {
         $user = $request->user();
         $library = $activeLibrary->requireActiveLibrary($user);
 
-        $query = BookCopy::query()->with(['book', 'activeWriteOff']);
+        $dto = new BookCopyListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->only([
+                'book_id', 'barcode', 'order_number', 'isbn', 'search', 'seq_number',
+                'publisher', 'publish_place', 'publish_year', 'issue_number', 'dimension',
+                'part', 'udk', 'binding', 'origin', 'book_number', 'place_on_shelf',
+                'price_from', 'price_to', 'num_of_pages_from', 'num_of_pages_to',
+                'date_add_from', 'date_add_to', 'notice', 'rec_error_notice',
+                'borrowed', 'reserved', 'rec_error', 'status',
+            ]),
+            $request->filled('book_id') ? $request->integer('book_id') : null,
+            $request->integer('per_page', 25),
+        );
 
-        $query->where('library_id', $library->id);
-
-        $query = (new BookCopyFilters)->apply($query, $request->only([
-            'book_id',
-            'barcode',
-            'order_number',
-            'isbn',
-            'search',
-            'seq_number',
-            'publisher',
-            'publish_place',
-            'publish_year',
-            'issue_number',
-            'dimension',
-            'part',
-            'udk',
-            'binding',
-            'origin',
-            'book_number',
-            'place_on_shelf',
-            'price_from',
-            'price_to',
-            'num_of_pages_from',
-            'num_of_pages_to',
-            'date_add_from',
-            'date_add_to',
-            'notice',
-            'rec_error_notice',
-            'borrowed',
-            'reserved',
-            'rec_error',
-            'status',
-        ]));
-
-        $query->orderByRaw('CAST(order_number AS BIGINT)')->orderBy('id');
+        $query = $copies->index($dto, $library);
 
         $permissions = $auth->collectionPermissions($user, BookCopy::class);
 
         return BookCopyResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $query->paginate($dto->perPage)->withQueryString()
         )->additional(['permissions' => $permissions]);
     }
 
@@ -130,25 +114,27 @@ class BookCopiesController extends Controller
     /**
      * @return AnonymousResourceCollection<int, BookCopyResource>
      */
-    public function archive(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection
-    {
+    public function archive(
+        Request $request,
+        AuthorizationService $auth,
+        ActiveLibraryService $activeLibrary,
+        BookCopyQueryService $copies,
+    ): AnonymousResourceCollection {
         $user = $request->user();
         $library = $activeLibrary->requireActiveLibrary($user);
 
-        $query = BookCopy::onlyTrashed()->with(['book', 'activeWriteOff']);
+        $dto = new BookCopyListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            bookId: $request->filled('book_id') ? $request->integer('book_id') : null,
+            perPage: $request->integer('per_page', 25),
+        );
 
-        $query->where('library_id', $library->id);
-
-        if ($request->filled('book_id')) {
-            $query->where('book_id', $request->integer('book_id'));
-        }
-
-        $query->orderByDesc('deleted_at')->orderByDesc('id');
+        $query = $copies->archive($dto, $library);
 
         $permissions = $auth->collectionPermissions($user, BookCopy::class);
 
         return BookCopyResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $query->paginate($dto->perPage)->withQueryString()
         )->additional(['permissions' => $permissions]);
     }
 

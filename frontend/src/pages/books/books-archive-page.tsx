@@ -8,11 +8,13 @@ import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import {
   ArchivedBooksMobileList,
   ArchivedCopiesMobileList,
 } from '@/components/books/books-archive-mobile-lists'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { Book, BookCopy, PaginatedResponse } from '@/types'
 
 export function BooksArchivePage() {
@@ -20,16 +22,17 @@ export function BooksArchivePage() {
   const { can, activeLibrary } = useAuth()
   const queryClient = useQueryClient()
   const [isSyncing, setIsSyncing] = useState(false)
+  const { sort, direction, onSort } = useTableSort('deleted_at', 'desc')
 
   const booksQuery = useQuery({
-    queryKey: ['books', 'archive', activeLibrary?.id ?? null],
-    queryFn: () => api.get<PaginatedResponse<Book>>(`${apiPaths.bookArchive}?per_page=50`),
+    queryKey: ['books', 'archive', activeLibrary?.id ?? null, sort, direction],
+    queryFn: () => api.get<PaginatedResponse<Book>>(`${apiPaths.bookArchive}?per_page=50&sort=${sort}&direction=${direction}`),
     enabled: activeLibrary !== null,
   })
 
   const copiesQuery = useQuery({
-    queryKey: ['book-copies', 'archive', activeLibrary?.id ?? null],
-    queryFn: () => api.get<PaginatedResponse<BookCopy>>(`${apiPaths.bookCopiesArchive}?per_page=50`),
+    queryKey: ['book-copies', 'archive', activeLibrary?.id ?? null, sort, direction],
+    queryFn: () => api.get<PaginatedResponse<BookCopy>>(`${apiPaths.bookCopiesArchive}?per_page=50&sort=${sort}&direction=${direction}`),
     enabled: activeLibrary !== null,
   })
 
@@ -126,8 +129,8 @@ export function BooksArchivePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="px-4">{t('books.columns.name')}</TableHead>
-                    <TableHead className="px-4">{t('books.columns.authors')}</TableHead>
+                    <SortableTableHead column="name" sort={sort} direction={direction} onSort={onSort} className="px-4">{t('books.columns.name')}</SortableTableHead>
+                    <SortableTableHead column="authors" sort={sort} direction={direction} onSort={onSort} className="px-4">{t('books.columns.authors')}</SortableTableHead>
                     <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -185,9 +188,9 @@ export function BooksArchivePage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="px-4">{t('books.copies.invNumber')}</TableHead>
-                    <TableHead className="px-4">{t('books.columns.name')}</TableHead>
-                    <TableHead className="px-4">{t('books.copies.barcode')}</TableHead>
+                    <SortableTableHead column="order_number" sort={sort} direction={direction} onSort={onSort} className="px-4">{t('books.copies.invNumber')}</SortableTableHead>
+                    <SortableTableHead column="book" sort={sort} direction={direction} onSort={onSort} className="px-4">{t('books.columns.name')}</SortableTableHead>
+                    <SortableTableHead column="barcode" sort={sort} direction={direction} onSort={onSort} className="px-4">{t('books.copies.barcode')}</SortableTableHead>
                     <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>

@@ -11,10 +11,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { PaginationBar } from '@/components/pagination-bar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { Library, LibraryRequest, LibraryRequestStatus, PaginatedResponse, Place, Region } from '@/types'
 
 const PAGE_SIZE = 15
@@ -43,6 +45,12 @@ export function LibraryRequestsPage() {
   const [status, setStatus] = useState<'all' | LibraryRequestStatus>('all')
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
+  const { sort, direction, onSort } = useTableSort('created_at', 'desc')
+
+  const handleSort = (column: string) => {
+    setPage(1)
+    onSort(column)
+  }
 
   const [selected, setSelected] = useState<LibraryRequest | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -57,10 +65,10 @@ export function LibraryRequestsPage() {
   const isSuperAdmin = user?.is_super_admin === true
 
   const requestsQuery = useQuery({
-    queryKey: ['library-requests', { page, status, search }],
+    queryKey: ['library-requests', { page, status, search, sort, direction }],
     enabled: isSuperAdmin,
     queryFn: async () => {
-      const params = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
+      const params = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page), sort, direction })
       if (status !== 'all') params.set('status', status)
       if (search) params.set('search', search)
       return api.get<PaginatedResponse<LibraryRequest>>(`${apiPaths.libraryRequests}?${params.toString()}`)
@@ -237,11 +245,21 @@ export function LibraryRequestsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4">{t('libraryRequests.columns.school')}</TableHead>
-                  <TableHead className="px-4">{t('libraryRequests.columns.city')}</TableHead>
-                  <TableHead className="px-4">{t('libraryRequests.columns.contact')}</TableHead>
-                  <TableHead className="px-4">{t('libraryRequests.columns.created')}</TableHead>
-                  <TableHead className="px-4">{t('libraryRequests.columns.status')}</TableHead>
+                  <SortableTableHead column="school" sort={sort} direction={direction} onSort={handleSort} className="px-4">
+                    {t('libraryRequests.columns.school')}
+                  </SortableTableHead>
+                  <SortableTableHead column="city" sort={sort} direction={direction} onSort={handleSort} className="px-4">
+                    {t('libraryRequests.columns.city')}
+                  </SortableTableHead>
+                  <SortableTableHead column="contact" sort={sort} direction={direction} onSort={handleSort} className="px-4">
+                    {t('libraryRequests.columns.contact')}
+                  </SortableTableHead>
+                  <SortableTableHead column="created_at" sort={sort} direction={direction} onSort={handleSort} className="px-4">
+                    {t('libraryRequests.columns.created')}
+                  </SortableTableHead>
+                  <SortableTableHead column="status" sort={sort} direction={direction} onSort={handleSort} className="px-4">
+                    {t('libraryRequests.columns.status')}
+                  </SortableTableHead>
                   <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>

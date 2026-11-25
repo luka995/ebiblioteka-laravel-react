@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\LibraryRole;
+use App\Models\Book;
 use App\Models\Category;
 use App\Models\Library;
 use App\Models\User;
@@ -108,6 +109,28 @@ test('category with children cannot be deleted', function () {
         ->assertUnprocessable();
 
     expect(Category::find($parent->id))->not->toBeNull();
+});
+
+test('category linked to a book cannot be deleted', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $library = makeCategoryLibrary();
+    $primary = Category::factory()->for($library)->create();
+    $secondary = Category::factory()->for($library)->create();
+    $softDeleted = Category::factory()->for($library)->create();
+
+    Book::factory()->for($library)->create(['category_primary_id' => $primary->id]);
+    Book::factory()->for($library)->create(['category_secondary_id' => $secondary->id]);
+
+    $deletedBook = Book::factory()->for($library)->create(['category_primary_id' => $softDeleted->id]);
+    $deletedBook->delete();
+
+    foreach ([$primary, $secondary, $softDeleted] as $category) {
+        $this->actingAs($admin)->deleteJson("/api/v1/categories/{$category->id}", [], categoryCrudHeaders())
+            ->assertUnprocessable()
+            ->assertJsonPath('message', __('validation.custom.category_has_books'));
+
+        expect(Category::find($category->id))->not->toBeNull();
+    }
 });
 
 test('superadmin must provide a library when creating a category', function () {

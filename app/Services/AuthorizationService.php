@@ -62,7 +62,7 @@ class AuthorizationService
     /**
      * Globalne permisije po sekcijama (koristi se za sidebar navigaciju).
      *
-     * @return array<string, array{viewAny: bool, create: bool}>
+     * @return array<string, array<string, bool>>
      */
     public function globalPermissions(User $actor): array
     {
@@ -82,7 +82,10 @@ class AuthorizationService
             'reservations' => $this->collectionPermissions($actor, Reservation::class),
             'borrows' => $this->collectionPermissions($actor, Borrow::class),
             'school_years' => $this->collectionPermissions($actor, SchoolYear::class),
-            'classes' => $this->collectionPermissions($actor, SchoolClass::class),
+            'classes' => [
+                ...$this->collectionPermissions($actor, SchoolClass::class),
+                'transferStudents' => $actor->can('transferStudents', SchoolClass::class),
+            ],
         ];
     }
 }

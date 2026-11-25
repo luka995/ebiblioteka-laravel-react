@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { UserFormModal } from '@/components/users/user-form-modal'
 import { UserBarcode } from '@/components/users/user-barcode'
 import { UserBarcodePrintModal } from '@/components/users/user-barcode-print-modal'
@@ -22,6 +23,7 @@ import { UserTagModal } from '@/components/users/user-tag-modal'
 import { IssueLoanModal } from '@/components/borrows/issue-loan-modal'
 import { ReturnLoanDialog } from '@/components/borrows/return-loan-dialog'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { Borrow, BorrowStatus, PaginatedResponse, Reservation, User } from '@/types'
 
 function initialsOf(name: string): string {
@@ -54,6 +56,14 @@ export function UserDetailPage() {
   const [printOpen, setPrintOpen] = useState(false)
   const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null)
   const [borrowsStatus, setBorrowsStatus] = useState<'active' | 'history'>('active')
+  const { sort: borrowSort, direction: borrowDirection, onSort: onBorrowSort } = useTableSort(
+    borrowsStatus === 'history' ? 'return_date' : 'valid_till',
+    borrowsStatus === 'history' ? 'desc' : 'asc',
+  )
+  const [reservationSort, setReservationSort] = useState<{ sort: string; direction: 'asc' | 'desc' }>({
+    sort: 'valid_till',
+    direction: 'asc',
+  })
   const [issueOpen, setIssueOpen] = useState(false)
   const [returnTarget, setReturnTarget] = useState<Borrow | null>(null)
   const [issueReservation, setIssueReservation] = useState<Reservation | null>(null)
@@ -68,11 +78,11 @@ export function UserDetailPage() {
   })
 
   const borrowsQuery = useQuery({
-    queryKey: ['user-borrows', userId, borrowsStatus],
+    queryKey: ['user-borrows', userId, borrowsStatus, borrowSort, borrowDirection],
     enabled: Number.isFinite(userId) && userId > 0,
     queryFn: () =>
       api.get<PaginatedResponse<Borrow>>(
-        `${apiPaths.userBorrows(userId)}?status=${borrowsStatus}&per_page=100`,
+        `${apiPaths.userBorrows(userId)}?status=${borrowsStatus}&per_page=100&sort=${borrowSort}&direction=${borrowDirection}`,
       ),
   })
 
@@ -124,6 +134,24 @@ export function UserDetailPage() {
 
   const memberLibraries = (target.libraries ?? []).map((library) => library.name)
   const reservations = target.reservations ?? []
+  const reservationKey = (reservation: Reservation): string => {
+    switch (reservationSort.sort) {
+      case 'title': return reservation.book_name ?? ''
+      case 'barcode': return reservation.barcode ?? ''
+      case 'library': return reservation.library_name ?? ''
+      default: return reservation.valid_till ?? ''
+    }
+  }
+  const sortedReservations = [...reservations].sort((a, b) => {
+    const result = reservationKey(a).localeCompare(reservationKey(b), 'sr')
+    return reservationSort.direction === 'asc' ? result : -result
+  })
+  const toggleReservationSort = (column: string) => {
+    setReservationSort((current) => ({
+      sort: column,
+      direction: current.sort === column && current.direction === 'asc' ? 'desc' : 'asc',
+    }))
+  }
   const tagsByLibrary = (target.libraries ?? []).map((library) => ({
     library,
     tags: (target.tags ?? []).filter((tag) => tag.library_id === library.id),
@@ -288,15 +316,15 @@ export function UserDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('fields.title')}</TableHead>
-                      <TableHead>{t('fields.barcode')}</TableHead>
-                      <TableHead>{t('fields.library')}</TableHead>
-                      <TableHead>{t('reservations.validTill')}</TableHead>
+                      <SortableTableHead column="title" sort={reservationSort.sort} direction={reservationSort.direction} onSort={toggleReservationSort}>{t('fields.title')}</SortableTableHead>
+                      <SortableTableHead column="barcode" sort={reservationSort.sort} direction={reservationSort.direction} onSort={toggleReservationSort}>{t('fields.barcode')}</SortableTableHead>
+                      <SortableTableHead column="library" sort={reservationSort.sort} direction={reservationSort.direction} onSort={toggleReservationSort}>{t('fields.library')}</SortableTableHead>
+                      <SortableTableHead column="valid_till" sort={reservationSort.sort} direction={reservationSort.direction} onSort={toggleReservationSort}>{t('reservations.validTill')}</SortableTableHead>
                       <TableHead />
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {reservations.map((reservation) => (
+                    {sortedReservations.map((reservation) => (
                       <TableRow key={reservation.id}>
                         <TableCell>
                           <p className="font-medium">{reservation.book_name ?? '—'}</p>
@@ -366,11 +394,11 @@ export function UserDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('fields.title')}</TableHead>
-                      <TableHead>{t('fields.barcode')}</TableHead>
-                      <TableHead>{t('borrows.validTill')}</TableHead>
-                      <TableHead>{t('borrows.returnDate')}</TableHead>
-                      <TableHead>{t('borrows.status')}</TableHead>
+                      <SortableTableHead column="title" sort={borrowSort} direction={borrowDirection} onSort={onBorrowSort}>{t('fields.title')}</SortableTableHead>
+                      <SortableTableHead column="barcode" sort={borrowSort} direction={borrowDirection} onSort={onBorrowSort}>{t('fields.barcode')}</SortableTableHead>
+                      <SortableTableHead column="valid_till" sort={borrowSort} direction={borrowDirection} onSort={onBorrowSort}>{t('borrows.validTill')}</SortableTableHead>
+                      <SortableTableHead column="return_date" sort={borrowSort} direction={borrowDirection} onSort={onBorrowSort}>{t('borrows.returnDate')}</SortableTableHead>
+                      <SortableTableHead column="status" sort={borrowSort} direction={borrowDirection} onSort={onBorrowSort}>{t('borrows.status')}</SortableTableHead>
                       <TableHead />
                     </TableRow>
                   </TableHeader>

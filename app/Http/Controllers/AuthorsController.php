@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Queries\AuthorListQueryDTO;
+use App\DTOs\Queries\SortingDTO;
 use App\Http\Requests\StoreAuthorRequest;
 use App\Http\Requests\UpdateAuthorRequest;
 use App\Http\Resources\AuthorResource;
 use App\Models\Author;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
+use App\Services\Queries\AuthorQueryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -17,30 +20,23 @@ class AuthorsController extends Controller
     /**
      * @return AnonymousResourceCollection<int, AuthorResource>|AuthorResource[]
      */
-    public function index(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection|array
-    {
+    public function index(
+        Request $request,
+        AuthorizationService $auth,
+        ActiveLibraryService $activeLibrary,
+        AuthorQueryService $authors,
+    ): AnonymousResourceCollection|array {
         $user = $request->user();
         $active = $activeLibrary->resolve($user);
 
-        $query = Author::query()->with('library');
+        $dto = new AuthorListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->string('search')->toString() ?: null,
+            $request->filled('library_id') ? $request->integer('library_id') : null,
+            $request->integer('per_page', 25),
+        );
 
-        if (! $user->isSuperAdmin()) {
-            if (! $active) {
-                $query->whereRaw('1 = 0');
-            } else {
-                $query->where('library_id', $active->id);
-            }
-        } elseif ($request->filled('library_id')) {
-            $query->where('library_id', $request->integer('library_id'));
-        }
-
-        $query
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $term = trim((string) $request->string('search'));
-                $q->where('name', 'ilike', "%{$term}%");
-            })
-            ->orderBy('name')
-            ->orderBy('id');
+        $query = $authors->build($dto, $user, $active);
 
         $permissions = $auth->collectionPermissions($user, Author::class);
 
@@ -49,7 +45,7 @@ class AuthorsController extends Controller
         }
 
         return AuthorResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $query->paginate($dto->perPage)->withQueryString()
         )->additional(['permissions' => $permissions]);
     }
 
@@ -70,6 +66,10 @@ class AuthorsController extends Controller
     public function destroy(Request $request, Author $author, ActiveLibraryService $activeLibrary): JsonResponse
     {
         $this->authorizeLibraryScope($request, $author, $activeLibrary);
+
+        if ($author->books()->withTrashed()->exists()) {
+            return response()->json(['message' => __('validation.custom.author_has_books')], 422);
+        }
 
         $author->delete();
 

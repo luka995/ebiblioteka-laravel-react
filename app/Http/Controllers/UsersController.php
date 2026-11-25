@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Queries\SortingDTO;
+use App\DTOs\Queries\UserListQueryDTO;
 use App\Enums\BarcodePrintFormat;
 use App\Enums\LibraryRole;
 use App\Enums\ReservationStatus;
@@ -14,18 +16,17 @@ use App\Http\Resources\UserDetailResource;
 use App\Http\Resources\UserResource;
 use App\Models\Library;
 use App\Models\User;
-use App\Queries\UserFilters;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
 use App\Services\BarcodePdfService;
 use App\Services\LibraryMembershipService;
 use App\Services\Mail\UserMailService;
+use App\Services\Queries\UserQueryService;
 use App\Services\ReservationService;
 use App\Services\UserAccessContext;
 use App\Support\BarCode;
 use App\Support\BarCodeImage;
 use App\Support\BarcodeLabel;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -39,59 +40,29 @@ class UsersController extends Controller
     /**
      * @return AnonymousResourceCollection<int, UserResource>
      */
-    public function index(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection
+    public function index(Request $request, AuthorizationService $auth, UserQueryService $users): AnonymousResourceCollection
     {
-        $actor = $request->user();
-        $filters = $request->only([
-            'email',
-            'username',
-            'first_name',
-            'last_name',
-            'bar_code',
-            'jmbg',
-            'city',
-            'role',
-            'library_id',
-        ]);
-
-        if (! $actor->isSuperAdmin()) {
-            unset($filters['library_id']);
-        }
-
-        if (! empty($filters['role'])) {
-            $active = $activeLibrary->resolve($actor);
-            $roleLibraryId = ! empty($filters['library_id'])
-                ? (int) $filters['library_id']
-                : $active?->id;
-
-            if ($roleLibraryId !== null) {
-                $filters['role_library_id'] = $roleLibraryId;
-            }
-        }
-
-        $query = (new UserFilters)->apply(
-            User::query()->with(['libraries', 'librariesWithTrashed']),
-            $filters
+        $dto = new UserListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->string('email')->toString() ?: null,
+            $request->string('username')->toString() ?: null,
+            $request->string('first_name')->toString() ?: null,
+            $request->string('last_name')->toString() ?: null,
+            $request->string('bar_code')->toString() ?: null,
+            $request->string('jmbg')->toString() ?: null,
+            $request->string('city')->toString() ?: null,
+            $request->string('role')->toString() ?: null,
+            $request->filled('library_id') ? $request->integer('library_id') : null,
+            $request->integer('per_page', 25),
         );
-        if ($actor->isSuperAdmin()) {
-            // Superadmin vidi sve, ili aktivnu biblioteku ako je izabrao.
-            if (empty($filters['library_id'])) {
-                $query = $activeLibrary->scopeUsers($query, $actor);
-            }
-        } else {
-            // Ostali korisnici uvek rade u kontekstu aktivne biblioteke.
-            $library = $activeLibrary->requireActiveLibrary($actor);
 
-            $query->whereHas('libraries', fn (Builder $membership) => $membership->whereKey($library->id));
-        }
+        $query = $users->build($dto, $request->user());
 
-        $users = $query
-            ->latest()
-            ->orderByDesc('id')
-            ->paginate($request->integer('per_page', 25))
+        $paginator = $query
+            ->paginate($dto->perPage)
             ->withQueryString();
 
-        return UserResource::collection($users)->additional([
+        return UserResource::collection($paginator)->additional([
             'permissions' => $auth->collectionPermissions($request->user(), User::class),
         ]);
     }

@@ -10,11 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DateInput } from '@/components/ui/date-input'
 import { Input } from '@/components/ui/input'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { PaginationBar } from '@/components/pagination-bar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { IssueLoanModal } from '@/components/borrows/issue-loan-modal'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { PaginatedResponse, Reservation } from '@/types'
 
 const PAGE_SIZE = 25
@@ -24,6 +26,15 @@ export function LibraryReservationsPage() {
   const { activeLibrary, isLoading } = useAuth()
   const queryClient = useQueryClient()
   const [status, setStatus] = useState<'active' | 'history' | 'all'>('active')
+  const { sort, direction, onSort } = useTableSort(
+    status === 'active' ? 'valid_till' : 'created_at',
+    status === 'active' ? 'asc' : 'desc',
+  )
+
+  const handleSort = (column: string) => {
+    setPage(1)
+    onSort(column)
+  }
   const [search, setSearch] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -32,13 +43,15 @@ export function LibraryReservationsPage() {
   const libraryId = activeLibrary?.id ?? null
 
   const reservationsQuery = useQuery({
-    queryKey: ['library-reservations', { libraryId, status, search, dateFrom, dateTo, page }],
+    queryKey: ['library-reservations', { libraryId, status, search, dateFrom, dateTo, page, sort, direction }],
     enabled: libraryId !== null,
     queryFn: async () => {
       const params = new URLSearchParams({
         status,
         page: String(page),
         per_page: String(PAGE_SIZE),
+        sort,
+        direction,
       })
 
       if (search.trim() !== '') {
@@ -170,11 +183,11 @@ export function LibraryReservationsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('reservations.user')}</TableHead>
-                      <TableHead>{t('fields.title')}</TableHead>
-                      <TableHead>{t('fields.barcode')}</TableHead>
-                      <TableHead>{t('reservations.validTill')}</TableHead>
-                      <TableHead>{t('reservations.statusColumn')}</TableHead>
+                      <SortableTableHead column="user" sort={sort} direction={direction} onSort={handleSort}>{t('reservations.user')}</SortableTableHead>
+                      <SortableTableHead column="title" sort={sort} direction={direction} onSort={handleSort}>{t('fields.title')}</SortableTableHead>
+                      <SortableTableHead column="barcode" sort={sort} direction={direction} onSort={handleSort}>{t('fields.barcode')}</SortableTableHead>
+                      <SortableTableHead column="valid_till" sort={sort} direction={direction} onSort={handleSort}>{t('reservations.validTill')}</SortableTableHead>
+                      <SortableTableHead column="status" sort={sort} direction={direction} onSort={handleSort}>{t('reservations.statusColumn')}</SortableTableHead>
                       <TableHead />
                     </TableRow>
                   </TableHeader>

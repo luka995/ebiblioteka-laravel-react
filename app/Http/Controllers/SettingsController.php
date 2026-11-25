@@ -4,14 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\SettingLog;
 use App\Models\User;
+use App\Queries\Concerns\AppliesTransliteratedSearch;
 use App\Services\GlobalSettings;
 use App\Services\UserAccessContext;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class SettingsController extends Controller
 {
+    use AppliesTransliteratedSearch;
+
     /**
      * Globalna podesavanja — dostupno samo superadminima.
      */
@@ -90,11 +94,11 @@ class SettingsController extends Controller
 
         $users = User::query()
             ->when($term !== '', function ($query) use ($term): void {
-                $query->where(function ($group) use ($term): void {
-                    $group->where('first_name', 'like', '%'.$term.'%')
-                        ->orWhere('last_name', 'like', '%'.$term.'%')
-                        ->orWhere('name', 'like', '%'.$term.'%')
-                        ->orWhere('email', 'like', '%'.$term.'%');
+                $query->where(function (Builder $group) use ($term): void {
+                    $this->whereTransliterated($group, 'first_name', $term);
+                    $this->whereTransliterated($group, 'last_name', $term, 'or');
+                    $this->whereTransliterated($group, 'name', $term, 'or');
+                    $this->whereTransliterated($group, 'email', $term, 'or');
                 });
             })
             ->orderBy('first_name')

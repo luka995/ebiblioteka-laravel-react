@@ -1,11 +1,11 @@
 <?php
 
 use App\Enums\BookCopyWriteOffReason;
-use App\Enums\ReservationStatus;
 use App\Enums\LibraryRole;
+use App\Enums\ReservationStatus;
 use App\Models\Book;
-use App\Models\BookHistory;
 use App\Models\BookCopy;
+use App\Models\BookHistory;
 use App\Models\Library;
 use App\Models\Reservation;
 use App\Models\User;
@@ -359,6 +359,47 @@ test('library staff can list all reservations in the active library', function (
         ->getJson('/api/v1/reservations/library?status=history')
         ->assertOk()
         ->assertJsonCount(0, 'data');
+});
+
+test('my reservations are paginated', function () {
+    $library = Library::factory()->create();
+    $member = reservationMember($library);
+
+    foreach (['Prva knjiga', 'Druga knjiga'] as $title) {
+        $book = reservationBook($library);
+        $book->update(['name' => $title]);
+        $copy = reservationCopy($book, ['reserved' => true]);
+        Reservation::factory()->forCopy($copy, $member)->create([
+            'valid_till' => now()->addHours(10),
+        ]);
+    }
+
+    $this->actingAs($member)
+        ->getJson('/api/v1/reservations?per_page=1')
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('meta.per_page', 1)
+        ->assertJsonPath('meta.total', 2);
+});
+
+test('library reservation search matches book titles in both scripts', function () {
+    $library = Library::factory()->create();
+    $member = reservationMember($library);
+    $librarian = User::factory()->create();
+    $librarian->libraries()->attach($library->id, ['role' => LibraryRole::Librarian->value]);
+    $book = reservationBook($library);
+    $book->update(['name' => 'Ћирилични наслов']);
+    $copy = reservationCopy($book, ['reserved' => true]);
+    $reservation = Reservation::factory()->forCopy($copy, $member)->create([
+        'valid_till' => now()->addHours(10),
+    ]);
+
+    $this->withSession(['active_library_id' => $library->id])
+        ->actingAs($librarian)
+        ->getJson('/api/v1/reservations/library?search='.urlencode('Ćirilični naslov'))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $reservation->id);
 });
 
 test('a regular user cannot list library reservations', function () {

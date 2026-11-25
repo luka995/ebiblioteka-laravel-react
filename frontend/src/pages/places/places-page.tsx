@@ -19,20 +19,22 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { PaginationBar } from '@/components/pagination-bar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PlaceFormModal } from '@/components/places/place-form-modal'
 import { PlacesMobileList } from '@/components/places/places-mobile-list'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { PaginatedResponse, Place, Region } from '@/types'
 
 const PAGE_SIZE = 10
 
-function usePlacesQuery(page: number, search: string, regionId: string) {
+function usePlacesQuery(page: number, search: string, regionId: string, sort: string, direction: string) {
   return useQuery({
-    queryKey: ['places', { page, search, regionId }],
+    queryKey: ['places', { page, search, regionId, sort, direction }],
     queryFn: async () => {
-      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
+      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page), sort, direction })
       if (search) query.set('search', search)
       if (regionId) query.set('region_id', regionId)
       return api.get<PaginatedResponse<Place>>(`${apiPaths.places}?${query.toString()}`)
@@ -44,6 +46,7 @@ export function PlacesPage() {
   const { t } = useTranslation()
   const { can } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { sort, direction, onSort } = useTableSort('name')
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const search = searchParams.get('q') ?? ''
@@ -55,7 +58,7 @@ export function PlacesPage() {
   const [deletingPlace, setDeletingPlace] = useState<Place | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const placesQuery = usePlacesQuery(page, search, regionId)
+  const placesQuery = usePlacesQuery(page, search, regionId, sort, direction)
 
   const regionsQuery = useQuery({
     queryKey: ['regions', 'options'],
@@ -171,8 +174,12 @@ export function PlacesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="px-4">{t('places.columns.name')}</TableHead>
-                <TableHead className="px-4">{t('places.columns.region')}</TableHead>
+                <SortableTableHead column="name" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('places.columns.name')}
+                </SortableTableHead>
+                <SortableTableHead column="region" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('places.columns.region')}
+                </SortableTableHead>
                 <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>

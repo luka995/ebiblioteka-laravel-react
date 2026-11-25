@@ -110,4 +110,51 @@ class Text
 
         return array_values(array_unique([$term, self::cyr($term), self::lat($term)]));
     }
+
+    /**
+     * Kanonski kljuc autora: transliteracija na latinicu, mala slova, bez
+     * dijakritika i interpunkcije, tokeni sortirani (neosetljivo na redosled).
+     */
+    public static function authorKey(?string $name): string
+    {
+        $tokens = self::canonicalTokens((string) $name, false);
+        sort($tokens);
+
+        return implode(' ', $tokens);
+    }
+
+    /**
+     * Kanonski kljuc naziva (kategorija, naslova): transliteracija na
+     * latinicu, mala slova, bez dijakritika i interpunkcije, redosled reci
+     * ostaje nepromenjen.
+     */
+    public static function labelKey(?string $name): string
+    {
+        return implode(' ', self::canonicalTokens((string) $name));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function canonicalTokens(string $text, bool $includeNumbers = true): array
+    {
+        $latin = self::lat(trim($text));
+        $folded = strtr(mb_strtolower($latin, 'UTF-8'), [
+            'č' => 'c', 'ć' => 'c', 'š' => 's', 'ž' => 'z', 'đ' => 'd',
+            'à' => 'a', 'á' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a', 'å' => 'a',
+            'ç' => 'c',
+            'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
+            'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
+            'ñ' => 'n',
+            'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'õ' => 'o', 'ö' => 'o',
+            'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u',
+            'ý' => 'y', 'ÿ' => 'y',
+            'ß' => 'ss', 'æ' => 'ae', 'œ' => 'oe',
+        ]);
+
+        $pattern = $includeNumbers ? '/[^\p{L}\p{N}]+/u' : '/[^\p{L}]+/u';
+        $tokens = preg_split($pattern, $folded) ?: [];
+
+        return array_values(array_filter($tokens, fn (string $token): bool => $token !== ''));
+    }
 }

@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { BookFormModal } from '@/components/books/book-form-modal'
 import { BookCopiesMobileList } from '@/components/books/book-copies-mobile-list'
 import { BookCopyAddModal } from '@/components/books/book-copy-add-modal'
@@ -27,6 +28,7 @@ import { BookCopyRecErrorDialog, BookCopyWriteOffDialog } from '@/components/boo
 import { BookCopyBarcodePrintModal } from '@/components/books/book-copy-barcode-print-modal'
 import { IssueLoanModal } from '@/components/borrows/issue-loan-modal'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { Book, BookCopy, BookCopyStatus, PaginatedResponse } from '@/types'
 
 const STATUS_VARIANTS: Record<BookCopyStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -45,6 +47,7 @@ export function BookDetailPage() {
   const bookId = Number(params.id)
   const queryClient = useQueryClient()
   const { activeLibrary, can } = useAuth()
+  const { sort, direction, onSort } = useTableSort('order_number')
 
   const [bookModalOpen, setBookModalOpen] = useState(false)
   const [addModalOpen, setAddModalOpen] = useState(false)
@@ -62,9 +65,9 @@ export function BookDetailPage() {
   })
 
   const copiesQuery = useQuery({
-    queryKey: ['book-copies', { bookId, libraryId: activeLibrary?.id ?? null }],
+    queryKey: ['book-copies', { bookId, libraryId: activeLibrary?.id ?? null, sort, direction }],
     queryFn: () =>
-      api.get<PaginatedResponse<BookCopy>>(`${apiPaths.bookCopiesList}?book_id=${bookId}&per_page=100`),
+      api.get<PaginatedResponse<BookCopy>>(`${apiPaths.bookCopiesList}?book_id=${bookId}&per_page=100&sort=${sort}&direction=${direction}`),
     enabled: Number.isFinite(bookId) && activeLibrary !== null,
   })
 
@@ -264,10 +267,18 @@ export function BookDetailPage() {
                     aria-label={t('books.copies.selectAll')}
                   />
                 </TableHead>
-                <TableHead className="px-4">{t('books.copies.invNumber')}</TableHead>
-                <TableHead className="px-4">{t('books.copies.barcode')}</TableHead>
-                <TableHead className="px-4">{t('books.copies.status')}</TableHead>
-                <TableHead className="hidden px-4 lg:table-cell">{t('books.copies.isbn')}</TableHead>
+                <SortableTableHead column="order_number" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('books.copies.invNumber')}
+                </SortableTableHead>
+                <SortableTableHead column="barcode" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('books.copies.barcode')}
+                </SortableTableHead>
+                <SortableTableHead column="status" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('books.copies.status')}
+                </SortableTableHead>
+                <SortableTableHead column="isbn" sort={sort} direction={direction} onSort={onSort} className="hidden px-4 lg:table-cell">
+                  {t('books.copies.isbn')}
+                </SortableTableHead>
                 <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>

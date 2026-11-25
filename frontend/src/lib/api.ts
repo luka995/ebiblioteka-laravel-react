@@ -227,6 +227,7 @@ export const api = {
 export const apiPaths = {
   me: '/api/v1/auth/me',
   activeLibrary: '/api/v1/auth/active-library',
+  dashboardStats: '/api/v1/dashboard/stats',
   profile: '/api/v1/profile',
   profilePassword: '/api/v1/profile/password',
   login: '/api/v1/auth/login',
@@ -265,6 +266,9 @@ export const apiPaths = {
   schoolYearAutomaticActivation: '/api/v1/system/school-years/automatic-activation',
   schoolClasses: '/api/v1/classes',
   schoolClassOptions: '/api/v1/classes/options',
+  classTransferPreview: (sourceSchoolYearId: number) =>
+    `/api/v1/classes/transfer/preview?source_school_year_id=${sourceSchoolYearId}`,
+  classTransfer: '/api/v1/classes/transfer',
   schoolClass: (id: number) => `/api/v1/classes/${id}`,
   classStudents: (id: number) => `/api/v1/classes/${id}/students`,
   classAvailableStudents: (id: number, search: string) =>

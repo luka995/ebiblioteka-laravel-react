@@ -48,6 +48,19 @@ class SchoolYearService
         return $this->active()?->is($year) ?? false;
     }
 
+    /**
+     * Checks whether a year is at or after the active year, allowing a
+     * specified number of years before it. With no active year, no lower
+     * boundary can be applied.
+     */
+    public function isWithinActiveYearWindow(SchoolYear $year, int $yearsBeforeActiveAllowed = 0): bool
+    {
+        $active = $this->active();
+
+        return $active === null
+            || (int) $year->year >= (int) $active->year - $yearsBeforeActiveAllowed;
+    }
+
     public function requireActive(): SchoolYear
     {
         $active = $this->active();
@@ -181,6 +194,19 @@ class SchoolYearService
 
         return SchoolYear::query()
             ->where('year', $year->year + 1)
+            ->first();
+    }
+
+    public function previousYear(?SchoolYear $year = null): ?SchoolYear
+    {
+        $year ??= $this->active();
+
+        if ($year === null) {
+            return null;
+        }
+
+        return SchoolYear::query()
+            ->where('year', $year->year - 1)
             ->first();
     }
 

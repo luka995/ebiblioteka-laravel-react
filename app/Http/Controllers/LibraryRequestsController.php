@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Queries\LibraryRequestListQueryDTO;
+use App\DTOs\Queries\SortingDTO;
 use App\Enums\LibraryRequestStatus;
 use App\Http\Requests\ApproveLibraryRequestRequest;
 use App\Http\Resources\LibraryRequestResource;
@@ -9,7 +11,7 @@ use App\Http\Resources\LibraryResource;
 use App\Models\Library;
 use App\Models\LibraryRequest;
 use App\Services\AuthorizationService;
-use Illuminate\Http\JsonResponse;
+use App\Services\Queries\LibraryRequestQueryService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
@@ -20,31 +22,20 @@ class LibraryRequestsController extends Controller
     /**
      * @return AnonymousResourceCollection<int, LibraryRequestResource>
      */
-    public function index(Request $request, AuthorizationService $auth): AnonymousResourceCollection
-    {
-        $status = (string) $request->string('status');
-
-        $requests = LibraryRequest::query()
-            ->with('handledBy')
-            ->when(
-                in_array($status, LibraryRequestStatus::values(), true),
-                fn ($query) => $query->where('status', $status)
-            )
-            ->when($request->filled('search'), function ($query) use ($request): void {
-                $term = trim((string) $request->string('search'));
-
-                $query->where(function ($query) use ($term): void {
-                    $query->where('school_name', 'ilike', "%{$term}%")
-                        ->orWhere('city', 'ilike', "%{$term}%")
-                        ->orWhere('contact_name', 'ilike', "%{$term}%")
-                        ->orWhere('contact_email', 'ilike', "%{$term}%");
-                });
-            })
-            ->orderByDesc('created_at')
-            ->orderByDesc('id');
+    public function index(
+        Request $request,
+        AuthorizationService $auth,
+        LibraryRequestQueryService $requests,
+    ): AnonymousResourceCollection {
+        $dto = new LibraryRequestListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->string('status')->toString() ?: null,
+            $request->string('search')->toString() ?: null,
+            $request->integer('per_page', 25),
+        );
 
         return LibraryRequestResource::collection(
-            $requests->paginate($request->integer('per_page', 25))->withQueryString()
+            $requests->build($dto)->paginate($dto->perPage)->withQueryString()
         )->additional([
             'permissions' => $auth->collectionPermissions($request->user(), LibraryRequest::class),
         ]);

@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Author;
 use App\Models\Book;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -11,10 +10,12 @@ use Illuminate\Support\Facades\DB;
  * Upis naslova (books) i povezivanje autora.
  *
  * Autori se zadaju imenima (kao u legacy formi i ISBN toku): postojeci autor u
- * istoj biblioteci se koristi, a novi se kreira.
+ * istoj biblioteci se koristi bez obzira na format unosa, a novi se kreira.
  */
 class BookService
 {
+    public function __construct(private readonly AuthorResolverService $authors) {}
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -53,11 +54,8 @@ class BookService
         $ids = collect($names)
             ->map(fn ($name): string => trim((string) $name))
             ->filter()
-            ->unique()
-            ->map(fn (string $name): int => Author::firstOrCreate([
-                'library_id' => $book->library_id,
-                'name' => $name,
-            ])->id)
+            ->unique(fn (string $name): string => $this->authors->key($name))
+            ->map(fn (string $name): int => $this->authors->findOrCreate($book->library_id, $name)->id)
             ->all();
 
         $book->authors()->sync($ids);

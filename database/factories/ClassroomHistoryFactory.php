@@ -20,6 +20,11 @@ class ClassroomHistoryFactory extends Factory
         return [
             'class_id' => SchoolClass::factory(),
             'previous_class_id' => null,
+            'previous_school_year_id' => fn (array $attributes): ?int => $attributes['previous_class_id'] === null
+                ? null
+                : SchoolClass::query()
+                    ->findOrFail($attributes['previous_class_id'])
+                    ->school_year_id,
             'user_id' => User::factory(),
             'library_id' => fn (array $attributes): int => SchoolClass::query()
                 ->findOrFail($attributes['class_id'])

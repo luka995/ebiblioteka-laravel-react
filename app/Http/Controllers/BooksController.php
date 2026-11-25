@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\DTOs\Queries\BookListQueryDTO;
+use App\DTOs\Queries\SortingDTO;
 use App\Http\Requests\StoreBookRequest;
 use App\Http\Requests\UpdateBookRequest;
 use App\Http\Resources\BookCopyResource;
 use App\Http\Resources\BookResource;
 use App\Models\Book;
 use App\Models\Library;
-use App\Queries\Concerns\AppliesTransliteratedSearch;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
 use App\Services\BookCopyService;
 use App\Services\BookService;
 use App\Services\Isbn\BookMatcher;
 use App\Services\Isbn\IsbnLookupService;
-use Illuminate\Database\Eloquent\Builder;
+use App\Services\Queries\BookQueryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -25,41 +26,27 @@ use Illuminate\Support\Facades\Storage;
 
 class BooksController extends Controller
 {
-    use AppliesTransliteratedSearch;
-
     /**
      * @return AnonymousResourceCollection<int, BookResource>
      */
-    public function index(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection
-    {
+    public function index(
+        Request $request,
+        AuthorizationService $auth,
+        ActiveLibraryService $activeLibrary,
+        BookQueryService $books,
+    ): AnonymousResourceCollection {
         $user = $request->user();
         $library = $activeLibrary->requireActiveLibrary($user);
 
-        $query = Book::query()
-            ->with(['library', 'categoryPrimary', 'categorySecondary', 'authors']);
-        $this->withAvailabilityCounts($query);
+        $dto = new BookListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->string('search')->toString() ?: null,
+            $request->string('isbn')->toString() ?: null,
+            $request->filled('category_id') ? $request->integer('category_id') : null,
+            $request->integer('per_page', 25),
+        );
 
-        $query->where('library_id', $library->id);
-
-        if ($request->filled('search')) {
-            $term = trim((string) $request->string('search'));
-            $this->whereTransliterated($query, 'name', $term);
-        }
-
-        if ($request->filled('isbn')) {
-            $term = trim((string) $request->string('isbn'));
-            $query->whereHas('activeCopies', fn ($copy) => $copy->where('isbn', 'like', '%'.$term.'%'));
-        }
-
-        if ($request->filled('category_id')) {
-            $categoryId = $request->integer('category_id');
-            $query->where(function ($group) use ($categoryId): void {
-                $group->where('category_primary_id', $categoryId)
-                    ->orWhere('category_secondary_id', $categoryId);
-            });
-        }
-
-        $query->orderBy('name')->orderBy('id');
+        $query = $books->build($dto, $library);
 
         $permissions = $auth->collectionPermissions($user, Book::class);
 
@@ -68,7 +55,7 @@ class BooksController extends Controller
         }
 
         return BookResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $query->paginate($dto->perPage)->withQueryString()
         )->additional(['permissions' => $permissions]);
     }
 
@@ -96,15 +83,27 @@ class BooksController extends Controller
         }
 
         $book = $result['book'] === null ? null : $this->loadForResource($result['book']);
+        $metadata = $result['metadata']?->toArray();
+
+        if ($metadata !== null) {
+            // NBS katalog se prema korisnicima prikazuje kao interna baza;
+            // provajder i dalje interno koristi oznaku "nbs" za logove.
+            $metadata['source'] = $this->publicIsbnSource($metadata['source'] ?? null);
+        }
 
         return response()->json([
-            'source' => $result['source'],
+            'source' => $this->publicIsbnSource($result['source']),
             'isbn' => $result['isbn'],
-            'metadata' => $result['metadata']?->toArray(),
+            'metadata' => $metadata,
             'book' => $book === null ? null : (new BookResource($book))->resolve($request),
             'existing_copies' => BookCopyResource::collection($result['existing_copies'])->resolve($request),
             'matches' => BookResource::collection($result['matches'])->resolve($request),
         ]);
+    }
+
+    private function publicIsbnSource(?string $source): ?string
+    {
+        return $source === 'nbs' ? 'database' : $source;
     }
 
     public function duplicateCheck(Request $request, BookMatcher $matcher, ActiveLibraryService $activeLibrary): JsonResponse
@@ -214,23 +213,26 @@ class BooksController extends Controller
     /**
      * @return AnonymousResourceCollection<int, BookResource>
      */
-    public function archive(Request $request, AuthorizationService $auth, ActiveLibraryService $activeLibrary): AnonymousResourceCollection
-    {
+    public function archive(
+        Request $request,
+        AuthorizationService $auth,
+        ActiveLibraryService $activeLibrary,
+        BookQueryService $books,
+    ): AnonymousResourceCollection {
         $user = $request->user();
         $library = $activeLibrary->requireActiveLibrary($user);
 
-        $query = Book::onlyTrashed()
-            ->with(['library', 'categoryPrimary', 'categorySecondary', 'authors']);
-        $this->withAvailabilityCounts($query);
+        $dto = new BookListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            perPage: $request->integer('per_page', 25),
+        );
 
-        $query->where('library_id', $library->id);
-
-        $query->orderByDesc('deleted_at')->orderByDesc('id');
+        $query = $books->archive($dto, $library);
 
         $permissions = $auth->collectionPermissions($user, Book::class);
 
         return BookResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $query->paginate($dto->perPage)->withQueryString()
         )->additional(['permissions' => $permissions]);
     }
 
@@ -261,23 +263,5 @@ class BooksController extends Controller
                     ->where('rec_error', false)
                     ->whereDoesntHave('writeOffs', fn ($writeOff) => $writeOff->whereNull('cancelled_at')),
             ]);
-    }
-
-    /**
-     * Dodaje brojace koji iskljucuju otpisane fizicke jedinice.
-     *
-     * @param  Builder<Book>  $query
-     */
-    private function withAvailabilityCounts(Builder $query): void
-    {
-        $query->withCount([
-            'activeCopies as copies_count' => fn ($sub) => $sub
-                ->whereDoesntHave('writeOffs', fn ($writeOff) => $writeOff->whereNull('cancelled_at')),
-            'activeCopies as available_count' => fn ($sub) => $sub
-                ->where('borrowed', false)
-                ->where('reserved', false)
-                ->where('rec_error', false)
-                ->whereDoesntHave('writeOffs', fn ($writeOff) => $writeOff->whereNull('cancelled_at')),
-        ]);
     }
 }

@@ -25,6 +25,7 @@
     "libraryReservations": "Library reservations",
     "myBorrows": "My loans",
     "libraryBorrows": "Lending",
+    "administration": "Administration",
     "reference": "Reference data",
     "systemSettings": "System settings",
     "libraryRequests": "Library requests"
@@ -72,6 +73,12 @@
     "chooseLibraryHint": "Choose the library you want to work in.",
     "emptyTitle": "Your workspace is ready",
     "emptyText": "Overview widgets will appear here depending on your account type. Soon.",
+    "stats": {
+      "members": "Users",
+      "books": "Total books",
+      "activeBorrows": "Active loans",
+      "overdueBorrows": "Overdue loans"
+    },
     "cards": {
       "reservationsTitle": "My reservations",
       "reservationsDescription": "Reserved copies and pickup deadlines.",
@@ -160,6 +167,72 @@
         "barcode": "Barcode",
         "assignedAt": "Assigned"
       }
+    },
+    "transfer": {
+      "open": "Transfer students",
+      "title": "Student transfer",
+      "subtitle": "Move students from the selected year to the immediately following school year.",
+      "backToClasses": "Back to classes",
+      "sourceYear": "Source school year",
+      "targetYear": "Target school year",
+      "targetYearHint": "Students can only be transferred to the immediately following school year.",
+      "targetYearMissing": "The next school year has not been created. Contact a superadmin.",
+      "targetYearInactive": "The target year is not active yet, but the transfer is allowed.",
+      "sourceEmpty": "The selected year has no classes in the active library.",
+      "activeLibraryRequired": "Select an active library to transfer students.",
+      "createMissing": "Create missing classes in the next year",
+      "createMissingHint": "Classes are created one grade higher. You can edit the teacher later.",
+      "selectAll": "Select all classes",
+      "selectClass": "Select class {{name}}",
+      "noSelection": "Select at least one class to transfer.",
+      "willCreate": "Will be created: {{name}}",
+      "created": "Created",
+      "noTarget": "No target class",
+      "emptyClass": "No students",
+      "ineligibleClass": "No eligible students",
+      "graduating": "Graduating",
+      "status": {
+        "ready": "Ready",
+        "needs_selection": "Select a class",
+        "needs_target": "No target class",
+        "graduating": "Graduating",
+        "empty": "No students",
+        "ineligible": "No eligible students"
+      },
+      "columns": {
+        "sourceClass": "Source class",
+        "grade": "Grade",
+        "students": "Students",
+        "status": "Status",
+        "targetClass": "Target class"
+      },
+      "studentsCount": "{{count}} students",
+      "eligibleCount": "{{eligible}} of {{total}} eligible",
+      "alreadyEnrolled": "{{count}} already enrolled in the next year",
+      "summary": {
+        "classes": "Classes",
+        "students": "Students",
+        "eligible": "Eligible for transfer",
+        "graduating": "Graduating"
+      },
+      "submit": "Transfer students",
+      "confirmTitle": "Transfer students?",
+      "confirmText": "You are transferring {{students}} students from {{classes}} classes from {{source}} to {{target}}. This action creates new class enrollment and history rows.",
+      "success": "Transfer completed.",
+      "successSummary": "Transferred: {{transferred}}, already enrolled: {{already}}, skipped: {{skipped}}, classes created: {{created}}.",
+      "resultTitle": "Transfer result",
+      "resultEmpty": "No students to transfer.",
+      "result": {
+        "source": "Source",
+        "target": "Target",
+        "transferred": "Transferred",
+        "skipped": "Skipped"
+      },
+      "bannerTitle": "The active year has no classes yet",
+      "bannerText": "Transfer students from {{year}} to the active year and create classes if needed.",
+      "bannerAction": "Start transfer",
+      "noClasses": "No classes to display.",
+      "noMappings": "Select a target class for every class with students."
     }
   },
   "users": {
@@ -781,8 +854,7 @@
       "sources": {
         "database": "Internal database",
         "open_library": "Open Library",
-        "google_books": "Google Books",
-        "nbs": "NBS catalog"
+        "google_books": "Google Books"
       },
       "existingCopies": "Existing copies with this ISBN: {{count}}",
       "existingCopiesHint": "The title already exists in the library; reuse it instead of creating a duplicate.",

@@ -19,13 +19,13 @@ export function isBarcodePrintJobPending(job: BarcodePrintJob): boolean {
  * `processing`, i pauzira se kada je tab u pozadini. Kada posao pređe iz
  * nedovrsenog u `completed`/`failed`, prikazuje se toast notifikacija.
  */
-export function useBarcodePrintJobStatus(libraryId: number | null) {
+export function useBarcodePrintJobStatus(libraryId: number | null, sort = 'created_at', direction = 'desc') {
   const { t } = useTranslation()
 
   const query = useQuery({
-    queryKey: ['barcode-print-jobs', libraryId],
+    queryKey: ['barcode-print-jobs', libraryId, sort, direction],
     queryFn: () =>
-      api.get<PaginatedResponse<BarcodePrintJob>>(`${apiPaths.barcodePrintJobs}?per_page=50`),
+      api.get<PaginatedResponse<BarcodePrintJob>>(`${apiPaths.barcodePrintJobs}?per_page=50&sort=${sort}&direction=${direction}`),
     enabled: libraryId !== null,
     refetchInterval: (q) => {
       const items = q.state.data?.data ?? []

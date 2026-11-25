@@ -1,21 +1,24 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { BookMarked, CalendarClock, Plus, RotateCcw, Search } from 'lucide-react'
 import { api, apiPaths } from '@/lib/api'
+import { truncateBookTitle } from '@/lib/text'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DateInput } from '@/components/ui/date-input'
 import { Input } from '@/components/ui/input'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { PaginationBar } from '@/components/pagination-bar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { IssueLoanModal } from '@/components/borrows/issue-loan-modal'
 import { ReturnLoanDialog } from '@/components/borrows/return-loan-dialog'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { Borrow, BorrowStatus, PaginatedResponse } from '@/types'
 
 const PAGE_SIZE = 25
@@ -26,11 +29,19 @@ const STATUS_VARIANTS: Record<BorrowStatus, 'default' | 'secondary' | 'destructi
   returned: 'secondary',
 }
 
+type BorrowStatusFilter = 'active' | 'history' | 'overdue' | 'all'
+
+const STATUS_FILTERS: BorrowStatusFilter[] = ['active', 'history', 'overdue', 'all']
+
+function isBorrowStatusFilter(value: string | null): value is BorrowStatusFilter {
+  return value !== null && STATUS_FILTERS.includes(value as BorrowStatusFilter)
+}
+
 export function LibraryBorrowsPage() {
   const { t } = useTranslation()
   const { activeLibrary, isLoading, can } = useAuth()
   const queryClient = useQueryClient()
-  const [status, setStatus] = useState<'active' | 'history' | 'overdue' | 'all'>('active')
+  const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -39,14 +50,41 @@ export function LibraryBorrowsPage() {
   const [returnTarget, setReturnTarget] = useState<Borrow | null>(null)
   const libraryId = activeLibrary?.id ?? null
 
+  const statusParam = searchParams.get('status')
+  const status: BorrowStatusFilter = isBorrowStatusFilter(statusParam) ? statusParam : 'active'
+  const { sort, direction, onSort } = useTableSort(
+    status === 'history' ? 'return_date' : 'valid_till',
+    status === 'history' ? 'desc' : 'asc',
+  )
+
+  const changeStatus = (next: BorrowStatusFilter) => {
+    setPage(1)
+    setSearchParams(
+      (previous) => {
+        const params = new URLSearchParams(previous)
+        params.set('status', next)
+
+        return params
+      },
+      { replace: true },
+    )
+  }
+
+  const handleSort = (column: string) => {
+    setPage(1)
+    onSort(column)
+  }
+
   const borrowsQuery = useQuery({
-    queryKey: ['library-borrows', { libraryId, status, search, dateFrom, dateTo, page }],
+    queryKey: ['library-borrows', { libraryId, status, search, dateFrom, dateTo, page, sort, direction }],
     enabled: libraryId !== null,
     queryFn: async () => {
       const params = new URLSearchParams({
         status,
         page: String(page),
         per_page: String(PAGE_SIZE),
+        sort,
+        direction,
       })
 
       if (search.trim() !== '') params.set('search', search.trim())
@@ -152,10 +190,7 @@ export function LibraryBorrowsPage() {
 
             <Select
               value={status}
-              onValueChange={(value) => {
-                setStatus(value as 'active' | 'history' | 'overdue' | 'all')
-                setPage(1)
-              }}
+              onValueChange={(value) => changeStatus(value as BorrowStatusFilter)}
             >
               <SelectTrigger className="sm:w-40">
                 <SelectValue />
@@ -187,13 +222,13 @@ export function LibraryBorrowsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('borrows.user')}</TableHead>
-                      <TableHead>{t('fields.title')}</TableHead>
-                      <TableHead>{t('fields.barcode')}</TableHead>
-                      <TableHead>{t('borrows.fromDate')}</TableHead>
-                      <TableHead>{t('borrows.validTill')}</TableHead>
-                      <TableHead>{t('borrows.returnDate')}</TableHead>
-                      <TableHead>{t('borrows.status')}</TableHead>
+                      <SortableTableHead column="user" sort={sort} direction={direction} onSort={handleSort}>{t('borrows.user')}</SortableTableHead>
+                      <SortableTableHead column="title" sort={sort} direction={direction} onSort={handleSort}>{t('fields.title')}</SortableTableHead>
+                      <SortableTableHead column="barcode" sort={sort} direction={direction} onSort={handleSort}>{t('fields.barcode')}</SortableTableHead>
+                      <SortableTableHead column="from_date" sort={sort} direction={direction} onSort={handleSort}>{t('borrows.fromDate')}</SortableTableHead>
+                      <SortableTableHead column="valid_till" sort={sort} direction={direction} onSort={handleSort}>{t('borrows.validTill')}</SortableTableHead>
+                      <SortableTableHead column="return_date" sort={sort} direction={direction} onSort={handleSort}>{t('borrows.returnDate')}</SortableTableHead>
+                      <SortableTableHead column="status" sort={sort} direction={direction} onSort={handleSort}>{t('borrows.status')}</SortableTableHead>
                       <TableHead />
                     </TableRow>
                   </TableHeader>
@@ -205,7 +240,9 @@ export function LibraryBorrowsPage() {
                           <p className="font-mono text-xs text-muted-foreground">{borrow.user_barcode ?? '—'}</p>
                         </TableCell>
                         <TableCell>
-                          <p className="font-medium">{borrow.book_name ?? '—'}</p>
+                          <p className="font-medium" title={borrow.book_name ?? undefined}>
+                            {truncateBookTitle(borrow.book_name)}
+                          </p>
                           <p className="text-xs text-muted-foreground">{borrow.book_authors ?? '—'}</p>
                         </TableCell>
                         <TableCell className="font-mono text-xs">{borrow.barcode ?? '—'}</TableCell>
@@ -236,7 +273,9 @@ export function LibraryBorrowsPage() {
                   <div key={borrow.id} className="rounded-lg border p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="font-medium">{borrow.book_name ?? '—'}</p>
+                        <p className="font-medium" title={borrow.book_name ?? undefined}>
+                          {truncateBookTitle(borrow.book_name)}
+                        </p>
                         <p className="text-xs text-muted-foreground">{borrow.user_name ?? '—'}</p>
                       </div>
                       <Badge variant={STATUS_VARIANTS[borrow.status]}>

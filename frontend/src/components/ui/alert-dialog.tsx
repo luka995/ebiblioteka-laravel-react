@@ -11,6 +11,7 @@ const alertDialogActionVariants = cva("", {
       default: buttonVariants(),
       destructive: buttonVariants({ variant: "destructive" }),
       outline: buttonVariants({ variant: "outline" }),
+      brand: buttonVariants({ variant: "brand" }),
     },
   },
   defaultVariants: {

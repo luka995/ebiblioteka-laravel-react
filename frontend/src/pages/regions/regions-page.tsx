@@ -19,19 +19,21 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { PaginationBar } from '@/components/pagination-bar'
 import { RegionFormModal } from '@/components/regions/region-form-modal'
 import { RegionsMobileList } from '@/components/regions/regions-mobile-list'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { PaginatedResponse, Region } from '@/types'
 
 const PAGE_SIZE = 10
 
-function useRegionsQuery(page: number, search: string) {
+function useRegionsQuery(page: number, search: string, sort: string, direction: string) {
   return useQuery({
-    queryKey: ['regions', { page, search }],
+    queryKey: ['regions', { page, search, sort, direction }],
     queryFn: async () => {
-      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
+      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page), sort, direction })
       if (search) query.set('search', search)
       return api.get<PaginatedResponse<Region>>(`${apiPaths.regions}?${query.toString()}`)
     },
@@ -42,6 +44,7 @@ export function RegionsPage() {
   const { t } = useTranslation()
   const { can } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
+  const { sort, direction, onSort } = useTableSort('name')
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const search = searchParams.get('q') ?? ''
@@ -52,7 +55,7 @@ export function RegionsPage() {
   const [deletingRegion, setDeletingRegion] = useState<Region | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const regionsQuery = useRegionsQuery(page, search)
+  const regionsQuery = useRegionsQuery(page, search, sort, direction)
 
   if (!can('regions.viewAny')) {
     return <p className="text-sm text-muted-foreground">{t('errors.forbidden')}</p>
@@ -141,8 +144,12 @@ export function RegionsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="px-4">{t('regions.columns.name')}</TableHead>
-                <TableHead className="px-4">{t('regions.columns.placesCount')}</TableHead>
+                <SortableTableHead column="name" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('regions.columns.name')}
+                </SortableTableHead>
+                <SortableTableHead column="places_count" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('regions.columns.placesCount')}
+                </SortableTableHead>
                 <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>

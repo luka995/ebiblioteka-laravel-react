@@ -47,6 +47,11 @@ class SchoolClassPolicy
         return $this->inScope($actor, $class);
     }
 
+    public function transferStudents(User $actor): bool
+    {
+        return $actor->isStaff();
+    }
+
     private function inScope(User $actor, SchoolClass $class): bool
     {
         return $actor->isSuperAdmin() || $actor->isStaffIn($class->library_id);

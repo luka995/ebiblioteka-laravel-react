@@ -4,20 +4,25 @@ import { useTranslation } from 'react-i18next'
 import { CalendarClock, LibraryBig } from 'lucide-react'
 import { toast } from 'sonner'
 import { api, apiPaths, ApiError } from '@/lib/api'
+import { useTableSort } from '@/hooks/useTableSort'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type { Reservation } from '@/types'
 
 export function MyReservationsPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const { sort, direction, onSort } = useTableSort('valid_till')
 
   const reservationsQuery = useQuery({
-    queryKey: ['reservations'],
-    queryFn: () => api.get<{ data: Reservation[] }>(apiPaths.reservations),
+    queryKey: ['reservations', sort, direction],
+    queryFn: () => api.get<{ data: Reservation[] }>(
+      `${apiPaths.reservations}?sort=${sort}&direction=${direction}`,
+    ),
   })
 
   const cancelMutation = useMutation({
@@ -63,10 +68,10 @@ export function MyReservationsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('fields.title')}</TableHead>
-                      <TableHead>{t('fields.barcode')}</TableHead>
-                      <TableHead>{t('fields.library')}</TableHead>
-                      <TableHead>{t('reservations.validTill')}</TableHead>
+                      <SortableTableHead column="title" sort={sort} direction={direction} onSort={onSort}>{t('fields.title')}</SortableTableHead>
+                      <SortableTableHead column="barcode" sort={sort} direction={direction} onSort={onSort}>{t('fields.barcode')}</SortableTableHead>
+                      <SortableTableHead column="library" sort={sort} direction={direction} onSort={onSort}>{t('fields.library')}</SortableTableHead>
+                      <SortableTableHead column="valid_till" sort={sort} direction={direction} onSort={onSort}>{t('reservations.validTill')}</SortableTableHead>
                       <TableHead />
                     </TableRow>
                   </TableHeader>

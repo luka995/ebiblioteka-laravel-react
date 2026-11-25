@@ -13,8 +13,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * `class_id` je novo odeljenje (null = ucenik je uklonjen), a
  * `previous_class_id` je staro odeljenje (null = prvo dodeljivanje).
+ * `previous_school_year_id` je godina starog odeljenja i moze biti
+ * razlicita od `school_year_id` kada je ucenik prebacen u narednu godinu.
  */
-#[Fillable(['user_id', 'library_id', 'school_year_id', 'class_id', 'previous_class_id', 'changed_by_id', 'changed_at'])]
+#[Fillable(['user_id', 'library_id', 'school_year_id', 'class_id', 'previous_school_year_id', 'previous_class_id', 'changed_by_id', 'changed_at'])]
 class ClassroomHistory extends Model
 {
     /** @use HasFactory<ClassroomHistoryFactory> */
@@ -63,6 +65,16 @@ class ClassroomHistory extends Model
     public function schoolClass(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
+
+    /**
+     * Skolska godina starog odeljenja.
+     *
+     * @return BelongsTo<SchoolYear, $this>
+     */
+    public function previousSchoolYear(): BelongsTo
+    {
+        return $this->belongsTo(SchoolYear::class, 'previous_school_year_id');
     }
 
     /**

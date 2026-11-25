@@ -17,12 +17,14 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { PageLoader, Spinner } from '@/components/ui/loader'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import {
   BarcodePrintFormatPicker,
   type BarcodePrintFormat,
 } from '@/components/barcode/barcode-print-format-picker'
 import { useBarcodePrintJobStatus, isBarcodePrintJobPending } from '@/hooks/useBarcodePrintJobStatus'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { BarcodePrintJob, BarcodePrintJobStatus } from '@/types'
 
 const STATUS_VARIANTS: Record<BarcodePrintJobStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -35,7 +37,8 @@ const STATUS_VARIANTS: Record<BarcodePrintJobStatus, 'default' | 'secondary' | '
 export function BooksBarcodePrintPage() {
   const { t } = useTranslation()
   const { can, activeLibrary } = useAuth()
-  const query = useBarcodePrintJobStatus(activeLibrary?.id ?? null)
+  const { sort, direction, onSort } = useTableSort('created_at', 'desc')
+  const query = useBarcodePrintJobStatus(activeLibrary?.id ?? null, sort, direction)
   const [format, setFormat] = useState<BarcodePrintFormat>('a4')
   const [isGenerating, setIsGenerating] = useState(false)
   const [downloadingId, setDownloadingId] = useState<number | null>(null)
@@ -164,12 +167,12 @@ export function BooksBarcodePrintPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="px-4">{t('books.barcodePrint.columns.date')}</TableHead>
-                  <TableHead className="px-4">{t('books.barcodePrint.columns.format')}</TableHead>
-                  <TableHead className="px-4 text-right">{t('books.barcodePrint.columns.items')}</TableHead>
-                  <TableHead className="px-4 text-right">{t('books.barcodePrint.columns.invalid')}</TableHead>
-                  <TableHead className="px-4">{t('books.barcodePrint.columns.status')}</TableHead>
-                  <TableHead className="px-4">{t('books.barcodePrint.columns.requestedBy')}</TableHead>
+                  <SortableTableHead column="created_at" sort={sort} direction={direction} onSort={onSort} className="px-4">{t('books.barcodePrint.columns.date')}</SortableTableHead>
+                  <SortableTableHead column="format" sort={sort} direction={direction} onSort={onSort} className="px-4">{t('books.barcodePrint.columns.format')}</SortableTableHead>
+                  <SortableTableHead column="items_count" sort={sort} direction={direction} onSort={onSort} className="px-4 text-right">{t('books.barcodePrint.columns.items')}</SortableTableHead>
+                  <SortableTableHead column="invalid_count" sort={sort} direction={direction} onSort={onSort} className="px-4 text-right">{t('books.barcodePrint.columns.invalid')}</SortableTableHead>
+                  <SortableTableHead column="status" sort={sort} direction={direction} onSort={onSort} className="px-4">{t('books.barcodePrint.columns.status')}</SortableTableHead>
+                  <SortableTableHead column="requested_by" sort={sort} direction={direction} onSort={onSort} className="px-4">{t('books.barcodePrint.columns.requestedBy')}</SortableTableHead>
                   <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>

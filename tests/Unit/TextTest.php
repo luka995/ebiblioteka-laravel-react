@@ -25,3 +25,16 @@ test('builds unique search variants covering both scripts', function () {
         ->and(Text::searchVariants('Beograd'))->toBe(['Beograd', 'Београд'])
         ->and(Text::searchVariants(''))->toBe([]);
 });
+
+test('builds author keys insensitive to script punctuation diacritics and name order', function () {
+    expect(Text::authorKey('Иво Андрић'))->toBe('andric ivo')
+        ->and(Text::authorKey('Andrić, Ivo'))->toBe('andric ivo')
+        ->and(Text::authorKey('Ivo Andric'))->toBe('andric ivo')
+        ->and(Text::authorKey('Јовановић-Змај, Јован'))->toBe('jovan jovanovic zmaj');
+});
+
+test('builds label keys without reordering words', function () {
+    expect(Text::labelKey('Научна фантастика'))->toBe('naucna fantastika')
+        ->and(Text::labelKey('Naučna fantastika'))->toBe('naucna fantastika')
+        ->and(Text::labelKey('fantastika naučna'))->toBe('fantastika naucna');
+});

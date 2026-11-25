@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Services\ActiveLibraryService;
+use App\Services\AuthorResolverService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -48,8 +49,23 @@ class StoreAuthorRequest extends FormRequest
     {
         return [
             function (Validator $validator) {
-                if (! $this->user()->isSuperAdmin() && ! $this->input('library_id')) {
+                $libraryId = (int) $this->input('library_id');
+
+                if (! $this->user()->isSuperAdmin() && ! $libraryId) {
                     $validator->errors()->add('library_id', __('validation.custom.active_library_required'));
+
+                    return;
+                }
+
+                if ($validator->errors()->has('name') || $libraryId <= 0) {
+                    return;
+                }
+
+                $existing = app(AuthorResolverService::class)
+                    ->findInLibrary($libraryId, (string) $this->input('name'));
+
+                if ($existing !== null) {
+                    $validator->errors()->add('name', __('validation.custom.author_duplicate'));
                 }
             },
         ];

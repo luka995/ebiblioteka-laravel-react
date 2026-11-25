@@ -40,6 +40,37 @@ test('library admin can create a category and an author in their active library'
         ->assertJsonPath('data.library_id', $library->id);
 });
 
+test('category creation reuses an existing category with the same canonical name', function () {
+    $library = makeCatAuthorLibrary();
+    $admin = makeCatAuthorAdmin($library);
+    $existing = Category::factory()->for($library)->create(['name' => 'Роман']);
+
+    $this->actingAs($admin)->postJson('/api/v1/categories', ['name' => 'Roman'], catAuthorHeaders())
+        ->assertOk()
+        ->assertJsonPath('data.id', $existing->id)
+        ->assertJsonPath('data.name', 'Роман');
+
+    expect(Category::where('library_id', $library->id)->count())->toBe(1);
+});
+
+test('category creation keeps categories with the same name under different parents', function () {
+    $library = makeCatAuthorLibrary();
+    $admin = makeCatAuthorAdmin($library);
+    $firstParent = Category::factory()->for($library)->create(['name' => 'Родитељ 1']);
+    $secondParent = Category::factory()->for($library)->create(['name' => 'Родитељ 2']);
+    Category::factory()->for($library)->create(['name' => 'Роман', 'parent_id' => $firstParent->id]);
+
+    $this->actingAs($admin)->postJson('/api/v1/categories', [
+        'name' => 'Roman',
+        'parent_id' => $secondParent->id,
+    ], catAuthorHeaders())
+        ->assertSuccessful()
+        ->assertJsonPath('data.name', 'Roman')
+        ->assertJsonPath('data.parent_id', $secondParent->id);
+
+    expect(Category::where('library_id', $library->id)->whereIn('name', ['Роман', 'Roman'])->count())->toBe(2);
+});
+
 test('library admin can list only their own categories and authors', function () {
     $library = makeCatAuthorLibrary();
     $other = makeCatAuthorLibrary();

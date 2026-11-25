@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageLoader } from '@/components/ui/loader'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { PaginationBar } from '@/components/pagination-bar'
 import { UserFormModal } from '@/components/users/user-form-modal'
 import { UserMembershipModal } from '@/components/users/user-membership-modal'
@@ -28,6 +29,7 @@ import {
   type UserFilters,
 } from '@/components/users/user-filters-panel'
 import { useAuth } from '@/hooks/useAuth'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { PaginatedResponse, User } from '@/types'
 
 const PAGE_SIZE = 10
@@ -53,11 +55,11 @@ function readFilters(params: URLSearchParams): UserFilters {
   return filters
 }
 
-function useUsersQuery(page: number, filters: UserFilters) {
+function useUsersQuery(page: number, filters: UserFilters, sort: string, direction: string) {
   return useQuery({
-    queryKey: ['users', { page, filters }],
+    queryKey: ['users', { page, filters, sort, direction }],
     queryFn: async () => {
-      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page) })
+      const query = new URLSearchParams({ per_page: String(PAGE_SIZE), page: String(page), sort, direction })
       Object.entries(filters).forEach(([key, value]) => {
         if (value) query.set(key, String(value))
       })
@@ -71,6 +73,7 @@ export function UsersPage() {
   const { can, user } = useAuth()
   const isSuperAdmin = user?.is_super_admin
   const [searchParams, setSearchParams] = useSearchParams()
+  const { sort, direction, onSort } = useTableSort('created_at', 'desc')
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const filters = readFilters(searchParams)
@@ -88,7 +91,7 @@ export function UsersPage() {
   const [bulkBarcodeOpen, setBulkBarcodeOpen] = useState(false)
   const [bulkBarcodePrintOpen, setBulkBarcodePrintOpen] = useState(false)
 
-  const usersQuery = useUsersQuery(page, filters)
+  const usersQuery = useUsersQuery(page, filters, sort, direction)
 
   const activeFilters = countActiveFilters(filters)
 
@@ -294,11 +297,21 @@ export function UsersPage() {
                     aria-label={t('tags.selectAll')}
                   />
                 </TableHead>
-                <TableHead className="px-4">{t('users.columns.user')}</TableHead>
-                <TableHead className="px-4">{t('users.columns.email')}</TableHead>
-                <TableHead className="px-4">{t('users.columns.role')}</TableHead>
-                <TableHead className="px-4">{t('users.columns.libraries')}</TableHead>
-                <TableHead className="px-4">{t('users.columns.barcode')}</TableHead>
+                <SortableTableHead column="user" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('users.columns.user')}
+                </SortableTableHead>
+                <SortableTableHead column="email" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('users.columns.email')}
+                </SortableTableHead>
+                <SortableTableHead column="role" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('users.columns.role')}
+                </SortableTableHead>
+                <SortableTableHead column="libraries" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('users.columns.libraries')}
+                </SortableTableHead>
+                <SortableTableHead column="bar_code" sort={sort} direction={direction} onSort={onSort} className="px-4">
+                  {t('users.columns.barcode')}
+                </SortableTableHead>
                 <TableHead className="px-4 text-right">{t('common.actions')}</TableHead>
               </TableRow>
             </TableHeader>

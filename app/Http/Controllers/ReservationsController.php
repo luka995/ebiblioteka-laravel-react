@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ReservationStatus;
+use App\DTOs\Queries\ReservationListQueryDTO;
+use App\DTOs\Queries\SortingDTO;
 use App\Http\Requests\StoreReservationRequest;
 use App\Http\Resources\BorrowResource;
 use App\Http\Resources\ReservationResource;
@@ -10,6 +11,7 @@ use App\Models\Book;
 use App\Models\Reservation;
 use App\Services\ActiveLibraryService;
 use App\Services\BorrowService;
+use App\Services\Queries\ReservationQueryService;
 use App\Services\ReservationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,20 +25,23 @@ class ReservationsController extends Controller
      *
      * @return AnonymousResourceCollection<int, ReservationResource>
      */
-    public function index(Request $request, ReservationService $reservations): AnonymousResourceCollection
-    {
+    public function index(
+        Request $request,
+        ReservationService $reservations,
+        ReservationQueryService $queryService,
+    ): AnonymousResourceCollection {
         $reservations->expireOverdue();
 
-        $items = Reservation::query()
-            ->with(['book.authors', 'bookCopy', 'library'])
-            ->where('user_id', $request->user()->id)
-            ->where('status', ReservationStatus::Active)
-            ->where('valid_till', '>', now())
-            ->orderBy('valid_till')
-            ->orderBy('id')
-            ->get();
+        $dto = new ReservationListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            perPage: $request->integer('per_page', 25),
+        );
 
-        return ReservationResource::collection($items);
+        return ReservationResource::collection(
+            $queryService->forUser($dto, $request->user()->id)
+                ->paginate($dto->perPage)
+                ->withQueryString()
+        );
     }
 
     /**
@@ -50,6 +55,7 @@ class ReservationsController extends Controller
         Request $request,
         ActiveLibraryService $activeLibrary,
         ReservationService $reservations,
+        ReservationQueryService $queryService,
     ): AnonymousResourceCollection {
         $library = $activeLibrary->requireActiveLibrary($request->user());
         $reservations->expireOverdue();
@@ -59,50 +65,19 @@ class ReservationsController extends Controller
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
         ]);
 
-        $status = trim((string) $request->query('status', 'active'));
-
-        $query = Reservation::query()
-            ->with(['book.authors', 'bookCopy', 'library', 'user'])
-            ->where('library_id', $library->id);
-
-        if (! empty($data['date_from'])) {
-            $query->whereDate('from_date', '>=', $data['date_from']);
-        }
-
-        if (! empty($data['date_to'])) {
-            $query->whereDate('from_date', '<=', $data['date_to']);
-        }
-
-        if ($status === 'active') {
-            $query->where('status', ReservationStatus::Active)
-                ->where('valid_till', '>', now())
-                ->orderBy('valid_till')
-                ->orderBy('id');
-        } elseif ($status === 'history') {
-            $query->where('status', '!=', ReservationStatus::Active)
-                ->orderByDesc('updated_at')
-                ->orderByDesc('id');
-        } else {
-            $query->orderByDesc('id');
-        }
-
-        if ($request->filled('search')) {
-            $term = trim((string) $request->string('search'));
-
-            $query->where(function ($group) use ($term): void {
-                $group->whereHas('book', fn ($book) => $book->where('name', 'like', '%'.$term.'%'))
-                    ->orWhereHas('user', function ($user) use ($term): void {
-                        $user->where('first_name', 'like', '%'.$term.'%')
-                            ->orWhere('last_name', 'like', '%'.$term.'%')
-                            ->orWhere('name', 'like', '%'.$term.'%')
-                            ->orWhere('bar_code', 'like', '%'.$term.'%');
-                    })
-                    ->orWhereHas('bookCopy', fn ($copy) => $copy->where('barcode', 'like', '%'.$term.'%'));
-            });
-        }
+        $dto = new ReservationListQueryDTO(
+            new SortingDTO($request->query('sort'), $request->query('direction')),
+            $request->string('status')->toString() ?: null,
+            $request->string('search')->toString() ?: null,
+            $data['date_from'] ?? null,
+            $data['date_to'] ?? null,
+            $request->integer('per_page', 25),
+        );
 
         return ReservationResource::collection(
-            $query->paginate($request->integer('per_page', 25))->withQueryString()
+            $queryService->forLibrary($dto, $library)
+                ->paginate($dto->perPage)
+                ->withQueryString()
         );
     }
 

@@ -27,14 +27,17 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { to: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, permission: null },
+  { to: '/libraries', labelKey: 'nav.libraries', icon: Building2, permission: 'libraries.viewAny' },
+  { to: '/books', labelKey: 'nav.books', icon: BookOpen, permission: 'books.viewAny' },
+  { to: '/borrows/library', labelKey: 'nav.libraryBorrows', icon: BookCheck, permission: 'borrows.viewAny' },
+]
+
+const ADMIN_ITEMS: NavItem[] = [
   { to: '/users', labelKey: 'nav.users', icon: Users, permission: 'users.viewAny' },
   { to: '/classes', labelKey: 'nav.classes', icon: GraduationCap, permission: 'classes.viewAny' },
-  { to: '/libraries', labelKey: 'nav.libraries', icon: Building2, permission: 'libraries.viewAny' },
   { to: '/tags', labelKey: 'nav.tags', icon: Tag, permission: 'tags.viewAny' },
   { to: '/categories', labelKey: 'nav.categories', icon: FolderTree, permission: 'categories.viewAny' },
   { to: '/authors', labelKey: 'nav.authors', icon: PenLine, permission: 'authors.viewAny' },
-  { to: '/books', labelKey: 'nav.books', icon: BookOpen, permission: 'books.viewAny' },
-  { to: '/borrows/library', labelKey: 'nav.libraryBorrows', icon: BookCheck, permission: 'borrows.viewAny' },
 ]
 
 const REFERENCE_ITEMS: NavItem[] = [
@@ -42,6 +45,52 @@ const REFERENCE_ITEMS: NavItem[] = [
   { to: '/places', labelKey: 'nav.places', icon: MapPin, permission: 'places.viewAny' },
   { to: '/news', labelKey: 'nav.news', icon: Newspaper, permission: 'news.viewAny' },
 ]
+
+interface NavGroupProps {
+  labelKey: string
+  items: NavItem[]
+  open: boolean
+  onToggle: () => void
+  onNavigate?: () => void
+}
+
+function NavGroup({ labelKey, items, open, onToggle, onNavigate }: NavGroupProps) {
+  const { t } = useTranslation()
+
+  if (items.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="pt-2">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted hover:text-sidebar-foreground"
+        aria-expanded={open}
+      >
+        {t(labelKey)}
+        <ChevronDown className={cn('size-4 transition-transform', open && 'rotate-180')} />
+      </button>
+
+      {open ? (
+        <div className="mt-1 space-y-1">
+          {items.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={onNavigate}
+              className={({ isActive }) => navItemClass(isActive, true)}
+            >
+              <item.icon className="size-4" />
+              {t(item.labelKey)}
+            </NavLink>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
 
 function navItemClass(isActive: boolean, nested = false): string {
   return cn(
@@ -59,6 +108,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const [passwordOpen, setPasswordOpen] = useState(false)
   const location = useLocation()
   const items = NAV_ITEMS.filter((item) => item.permission === null || can(item.permission))
+  const adminItems = ADMIN_ITEMS.filter((item) => item.permission === null || can(item.permission))
   const referenceItems = REFERENCE_ITEMS.filter((item) => item.permission === null || can(item.permission))
 
   if (user?.is_super_admin) {
@@ -76,8 +126,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     })
   }
 
+  const adminActive = adminItems.some((item) => location.pathname.startsWith(item.to))
   const referenceActive = referenceItems.some((item) => location.pathname.startsWith(item.to))
+  const [adminOpen, setAdminOpen] = useState(adminActive)
   const [referenceOpen, setReferenceOpen] = useState(referenceActive)
+
+  useEffect(() => {
+    if (adminActive) setAdminOpen(true)
+  }, [adminActive])
 
   useEffect(() => {
     if (referenceActive) setReferenceOpen(true)
@@ -106,35 +162,21 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </NavLink>
         ))}
 
-        {referenceItems.length > 0 ? (
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={() => setReferenceOpen((value) => !value)}
-              className="flex w-full items-center justify-between rounded-md px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:bg-muted hover:text-sidebar-foreground"
-              aria-expanded={referenceOpen}
-            >
-              {t('nav.reference')}
-              <ChevronDown className={cn('size-4 transition-transform', referenceOpen && 'rotate-180')} />
-            </button>
+        <NavGroup
+          labelKey="nav.administration"
+          items={adminItems}
+          open={adminOpen}
+          onToggle={() => setAdminOpen((value) => !value)}
+          onNavigate={onNavigate}
+        />
 
-            {referenceOpen ? (
-              <div className="mt-1 space-y-1">
-                {referenceItems.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    onClick={onNavigate}
-                    className={({ isActive }) => navItemClass(isActive, true)}
-                  >
-                    <item.icon className="size-4" />
-                    {t(item.labelKey)}
-                  </NavLink>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ) : null}
+        <NavGroup
+          labelKey="nav.reference"
+          items={referenceItems}
+          open={referenceOpen}
+          onToggle={() => setReferenceOpen((value) => !value)}
+          onNavigate={onNavigate}
+        />
       </nav>
 
       <div className="border-t px-2 py-2">

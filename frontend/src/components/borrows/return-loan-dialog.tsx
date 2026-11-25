@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { api, apiPaths, ApiError } from '@/lib/api'
+import { truncateBookTitle } from '@/lib/text'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import type { Borrow } from '@/types'
 
@@ -47,9 +48,9 @@ export function ReturnLoanDialog({ borrow, onClose, onSuccess }: ReturnLoanDialo
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{t('borrows.returnTitle')}</AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogDescription title={borrow?.book_name ?? undefined}>
             {t('borrows.returnText', {
-              title: borrow?.book_name ?? '—',
+              title: truncateBookTitle(borrow?.book_name),
               user: borrow?.user_name ?? '—',
               due: borrow?.valid_till_formatted ?? '—',
             })}

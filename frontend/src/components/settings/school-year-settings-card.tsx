@@ -11,7 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { SortableTableHead } from '@/components/ui/sortable-table-head'
 import { SchoolYearFormModal } from '@/components/settings/school-year-form-modal'
+import { useTableSort } from '@/hooks/useTableSort'
 import type { SchoolYear, SchoolYearsMeta } from '@/types'
 
 interface SchoolYearsResponse {
@@ -27,10 +29,11 @@ export function SchoolYearSettingsCard() {
   const [editingYear, setEditingYear] = useState<SchoolYear | null>(null)
   const [deletingYear, setDeletingYear] = useState<SchoolYear | null>(null)
   const [activatingYear, setActivatingYear] = useState<SchoolYear | null>(null)
+  const { sort, direction, onSort } = useTableSort('year', 'desc')
 
   const yearsQuery = useQuery({
-    queryKey: ['school-years'],
-    queryFn: () => api.get<SchoolYearsResponse>(apiPaths.schoolYears),
+    queryKey: ['school-years', sort, direction],
+    queryFn: () => api.get<SchoolYearsResponse>(`${apiPaths.schoolYears}?sort=${sort}&direction=${direction}`),
   })
 
   const years = yearsQuery.data?.data ?? []
@@ -164,11 +167,11 @@ export function SchoolYearSettingsCard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('settings.schoolYear.year')}</TableHead>
-                  <TableHead>{t('settings.schoolYear.startsOn')}</TableHead>
-                  <TableHead>{t('settings.schoolYear.endsOn')}</TableHead>
-                  <TableHead>{t('settings.schoolYear.classes')}</TableHead>
-                  <TableHead>{t('settings.schoolYear.status')}</TableHead>
+                  <SortableTableHead column="year" sort={sort} direction={direction} onSort={onSort}>{t('settings.schoolYear.year')}</SortableTableHead>
+                  <SortableTableHead column="starts_on" sort={sort} direction={direction} onSort={onSort}>{t('settings.schoolYear.startsOn')}</SortableTableHead>
+                  <SortableTableHead column="ends_on" sort={sort} direction={direction} onSort={onSort}>{t('settings.schoolYear.endsOn')}</SortableTableHead>
+                  <SortableTableHead column="classes_count" sort={sort} direction={direction} onSort={onSort}>{t('settings.schoolYear.classes')}</SortableTableHead>
+                  <SortableTableHead column="is_active" sort={sort} direction={direction} onSort={onSort}>{t('settings.schoolYear.status')}</SortableTableHead>
                   <TableHead className="text-right">{t('common.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
