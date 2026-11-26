@@ -9,12 +9,12 @@ class BookImportPolicy
 {
     public function viewAny(User $actor): bool
     {
-        return $actor->isStaff();
+        return $actor->isLibraryAdmin();
     }
 
     public function create(User $actor): bool
     {
-        return $actor->isStaff();
+        return $actor->isLibraryAdmin();
     }
 
     public function view(User $actor, BookImport $import): bool
@@ -39,6 +39,6 @@ class BookImportPolicy
 
     private function inScope(User $actor, BookImport $import): bool
     {
-        return $actor->isSuperAdmin() || $actor->isStaffIn($import->library_id);
+        return $actor->isLibraryAdmin($import->library_id);
     }
 }

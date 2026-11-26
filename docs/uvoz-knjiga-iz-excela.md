@@ -16,17 +16,11 @@ Ovaj dokument objedinjuje:
 
 Cilj je da se jedan dokument može direktno koristiti kao ulaz za implementaciju.
 
-**Status (26.11.2026):** implementirane su faze 1–3 — infrastruktura, modeli,
-permisije, upload sa sinhronom proverom zaglavlja i asinhrona priprema redova do
-statusa `ready`. Dostupni su API endpointi `index`, `store` i `show`, bez liste
-pojedinačnih redova i korisničkog ekrana. Faza 3 dodaje stvarnu `isbn_check`
-obradu knjiga/kopija, COBISS-only strukturisani lookup, brojače, lease i recovery.
-Interni `BookImportStartService::start($import, $rowIds)` pokreće izričito izabrane
-redove pripremljenog importa; nije HTTP endpoint i ne zamenjuje autorizaciju
-budućeg kontrolera. `excel_direct`, HTTP pokretanje, ispravke i retry ostaju za
-fazu 4, a frontend za fazu 5.
-Ulazni sloj je izdvojen u generički `ExcelImportReader` i ugovor
-`ExcelImportMapper`; knjige koriste `BookImportMapper`, bez promene API ponašanja.
+**Status:** implementirane su faze 1–5: backend infrastruktura i obrada, HTTP API
+za pregled/pokretanje/ispravke/retry i React UI za upload, preview, praćenje i
+ponovni pokušaj. Preostaje faza 6 — završni testovi i provera produkcionog queue
+okruženja. Ulazni sloj je izdvojen u generički `ExcelImportReader` i ugovor
+`ExcelImportMapper`; knjige koriste `BookImportMapper`.
 
 ---
 
@@ -1271,11 +1265,10 @@ Filter deo query servisa koristi se i pri razrešavanju `all_matching`, bez pagi
 
 `BookImportPolicy`:
 
-- `viewAny` — staff,
-- `create` — staff,
-- `view` — superadmin ili staff u biblioteci,
-- `retry` — superadmin ili staff u biblioteci.
-- `start`, `updateRow` — superadmin ili staff u aktivnoj biblioteci, uz validaciju pripadnosti reda importu.
+- `viewAny`, `create` — administrator biblioteke ili superadmin.
+- `view`, `start`, `retry`, `updateRow` — superadmin ili administrator biblioteke kojoj import pripada.
+- Bibliotekari i članovi nemaju pristup uvozu.
+- Kontroler dodatno zahteva aktivnu biblioteku i proverava da import pripada tom kontekstu.
 
 `AuthorizationService::globalPermissions()`:
 
@@ -1285,9 +1278,8 @@ Frontend:
 
 - `can('book_imports.viewAny')`
 - `can('book_imports.create')`
-- `can('book_imports.retry')`
-- `can('book_imports.start')`
-- `can('book_imports.updateRow')`
+- `viewAny` kontroliše navigaciju i pregled; `create` kontroliše upload.
+- Start, retry i izmene štiti serverski policy po biblioteci importa.
 
 ---
 
@@ -1403,7 +1395,7 @@ Zadržati postojeći `api.upload()` za slike.
 
 - Dodati karticu „Uvoz knjižnog fonda“ na `BooksLandingPage`.
 - Ikona: `Upload` ili `FileUp`.
-- Ne mora novi sidebar item; knjige su već u navigaciji.
+- Dodati stavku u administratorski sidebar i import dugmad na listama naslova i kopija; prikazati ih administratoru biblioteke i superadminu.
 
 ### 14.7 Prevod
 

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { FileSpreadsheet, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -108,18 +108,28 @@ export function BooksPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-brand-heading text-2xl font-bold tracking-tight">{t('books.listTitle')}</h2>
-        {can('books.create') ? (
-          <Button
-            variant="brand"
-            onClick={() => {
-              setEditingBook(null)
-              setModalOpen(true)
-            }}
-          >
-            <Plus />
-            {t('books.add')}
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap gap-2">
+          {can('book_imports.viewAny') ? (
+            <Button asChild variant="outline">
+              <Link to="/books/imports">
+                <FileSpreadsheet />
+                {t('bookImports.open')}
+              </Link>
+            </Button>
+          ) : null}
+          {can('books.create') ? (
+            <Button
+              variant="brand"
+              onClick={() => {
+                setEditingBook(null)
+                setModalOpen(true)
+              }}
+            >
+              <Plus />
+              {t('books.add')}
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start">

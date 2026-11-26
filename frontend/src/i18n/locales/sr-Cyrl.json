@@ -1178,5 +1178,178 @@
     "reject": "Одбиј захтев",
     "approveSuccess": "Библиотека је отворена.",
     "rejectSuccess": "Захтев је одбијен."
+  },
+  "bookImports": {
+    "title": "Увоз књижног фонда",
+    "sidebar": "Увоз књижног фонда",
+    "open": "Увоз књига",
+    "subtitle": "Увезите наслове и физичке примерке из Excel .xlsx датотеке.",
+    "activeLibraryRequired": "Изаберите активну библиотеку да бисте прегледали увозе.",
+    "backToImports": "Назад на увозе",
+    "emptyTitle": "Још нема увоза",
+    "emptyText": "Додајте .xlsx датотеку да бисте припремили први увоз.",
+    "rowCounts": "Увезено: {{imported}} · Неуспешно: {{failed}} · Укупно: {{total}}",
+    "retry": "Покушај поново",
+    "saving": "Чување...",
+    "columns": {
+      "file": "Датотека",
+      "status": "Статус",
+      "rows": "Редови",
+      "requestedBy": "Покренуо",
+      "createdAt": "Датум отпремања"
+    },
+    "upload": {
+      "button": "Увези Excel",
+      "title": "Увоз књига из Excel-а",
+      "description": "Изаберите .xlsx датотеку. После припреме можете прегледати редове и изабрати начин обраде.",
+      "fileLabel": "Excel датотека (.xlsx)",
+      "xlsxOnly": "Изаберите Excel датотеку са .xlsx екстензијом.",
+      "success": "Датотека је додата. Припрема прегледа је покренута.",
+      "inventoryGuidance": "Оставите колону „Инвентарни број“ ако желите да користите бројеве из датотеке. Уклоните је за аутоматско додељивање; ручни режим библиотеке захтева број у сваком реду.",
+      "processingGuidance": "Отпремање припрема само преглед. Наслови и примерци се не креирају док не изаберете редове и покренете увоз.",
+      "uploading": "Отпремање...",
+      "submit": "Отпреми датотеку"
+    },
+    "status": {
+      "pending": "У припреми",
+      "ready": "Спреман за преглед",
+      "processing": "У обради",
+      "completed": "Завршен",
+      "completed_with_errors": "Завршен са грешкама",
+      "failed": "Неуспешан"
+    },
+    "rowStatus": {
+      "pending": "На чекању",
+      "processing": "У обради",
+      "imported": "Увезен",
+      "failed": "Неуспешан"
+    },
+    "summary": {
+      "total": "Укупно Excel редова",
+      "completedRows": "Тренутно завршени редови",
+      "imported": "Успешно увезено",
+      "failed": "Неуспешно",
+      "completedAttempts": "Кумулативно завршених покушаја"
+    },
+    "inventoryGuidance": {
+      "noColumn": "Excel датотека нема колону инвентарног броја. Бројеви се додељују приликом креирања примерака ако библиотека користи аутоматско нумерисање.",
+      "manualLibrary": "Библиотека користи ручно нумерисање, зато редови без инвентарног броја не могу бити увезени.",
+      "hasColumn": "Датотека садржи инвентарне бројеве; они ће се користити, а секвенца се никада неће враћати уназад."
+    },
+    "detail": {
+      "subtitle": "Библиотека: {{library}} · Радни лист: {{sheet}}"
+    },
+    "filters": {
+      "status": "Статус реда",
+      "allStatuses": "Сви статуси",
+      "failureCode": "Разлог грешке",
+      "allFailureCodes": "Сви разлози",
+      "attemptMode": "Режим покушаја",
+      "allModes": "Сви режими",
+      "search": "Претрага",
+      "searchPlaceholder": "Ред, ISBN, наслов или инвентарни број"
+    },
+    "selection": {
+      "targetStatus": "Редови за акцију",
+      "pending": "На чекању — први увоз",
+      "failed": "Неуспешни — поновни покушај",
+      "mode": "Начин обраде",
+      "allSelected": "Изабрани су сви {{count}} редови који одговарају филтерима, кроз све странице.",
+      "selected": "Ручно изабрано редова: {{count}}",
+      "clear": "Поништи избор",
+      "start": "Покрени увоз",
+      "retry": "Покушај поново",
+      "statusFilterConflict": "Изаберите статус реда који одговара акцији или „Сви статуси“ да бисте бирали редове.",
+      "selectAllMatching": "Изабери свих {{count}} редова који одговарају филтерима",
+      "selectRow": "Изабери Excel ред {{row}}",
+      "accepted": "У обраду је прихваћено {{count}} редова."
+    },
+    "modes": {
+      "isbn_check": "Са ISBN провером (COBISS)",
+      "excel_direct": "Директно из Excel података"
+    },
+    "table": {
+      "row": "Excel ред",
+      "status": "Статус",
+      "failure": "Грешка",
+      "assignedInventory": "Додељени инвентарни број",
+      "barcode": "Бар-код",
+      "actions": "Акције"
+    },
+    "failureCodes": {
+      "missing_isbn": "Недостаје ISBN",
+      "invalid_isbn": "Неважећи ISBN",
+      "invalid_field_value": "Неважећа вредност поља",
+      "isbn_not_found": "ISBN није пронађен",
+      "lookup_failed": "Провера ISBN-а није успела",
+      "missing_title": "Недостаје наслов",
+      "missing_inventory_number": "Недостаје инвентарни број",
+      "invalid_inventory_number": "Неважећи инвентарни број",
+      "duplicate_inventory_number": "Дуплиран инвентарни број",
+      "inventory_collision": "Сукоб инвентарног броја",
+      "duplicate_seq_number": "Дуплиран редни број",
+      "file_unreadable": "Датотека не може да се прочита",
+      "missing_columns": "Недостају обавезне колоне",
+      "duplicate_headers": "Дуплирана заглавља",
+      "no_rows": "Нема редова за увоз",
+      "too_many_rows": "Превише редова",
+      "job_failed": "Обрада није успела",
+      "unexpected_error": "Неочекивана грешка"
+    },
+    "fields": {
+      "isbn": "ISBN",
+      "title": "Наслов",
+      "authors": "Аутори",
+      "category": "Примарна категорија",
+      "category_secondary": "Секундарна категорија",
+      "description": "Опис",
+      "cover_url": "URL корице",
+      "inventory_number": "Инвентарни број",
+      "seq_number": "Редни број",
+      "publisher": "Издавач",
+      "publish_place": "Место издања",
+      "publish_year": "Година издања",
+      "issue_number": "Број издања",
+      "num_of_pages": "Број страна",
+      "dimension": "Димензије",
+      "part": "Део",
+      "udk": "UDK",
+      "binding": "Повез",
+      "origin": "Тип набавке",
+      "book_number": "Број књиге",
+      "place_on_shelf": "Место на полици",
+      "price": "Цена",
+      "notice": "Напомена"
+    },
+    "rows": {
+      "empty": "Нема редова који одговарају филтерима.",
+      "openBook": "Наслов",
+      "openCopy": "Примерак",
+      "assignedOnImport": "Додељује се при увозу",
+      "edit": "Исправи ред",
+      "saved": "Исправка је сачувана.",
+      "editTitle": "Исправка Excel реда {{row}}",
+      "editDescription": "Оригинални подаци остају сачувани. Измене се користе при наредном покушају увоза.",
+      "inventoryEditUnavailable": "Инвентарни број не може да се мења јер датотека нема ту колону.",
+      "save": "Сачувај исправке",
+      "perPage": "Редова по страници",
+      "dataView": "Приказ података",
+      "originalData": "Оригинални Excel",
+      "effectiveData": "Подаци за увоз",
+      "resolvedData": "Коришћени подаци",
+      "previewCorrection": "(исправка у прегледу)"
+    },
+    "confirm": {
+      "startTitle": "Покренути увоз изабраних редова?",
+      "retryTitle": "Поново обрадити неуспешне редове?",
+      "description": "{{count}} редова биће послато у режиму „{{mode}}“.",
+      "excelDirectWarning": "Директни Excel режим не проверава ISBN на спољним сервисима.",
+      "confirm": "Потврди"
+    },
+    "notifications": {
+      "completed": "Увоз је завршен.",
+      "completedWithErrors": "Увоз је завршен, али неки редови нису успешно обрађени.",
+      "failed": "Обрада увоза није успела."
+    }
   }
 }

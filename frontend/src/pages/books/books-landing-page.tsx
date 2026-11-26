@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Archive, BookCheck, BookOpen, ClipboardList, FileText, Library, ScanBarcode } from 'lucide-react'
+import { Archive, BookCheck, BookOpen, ClipboardList, FileSpreadsheet, FileText, Library, ScanBarcode } from 'lucide-react'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -43,6 +43,14 @@ export function BooksLandingPage() {
       title: t('books.cards.barcodePrintTitle'),
       description: t('books.cards.barcodePrintDescription'),
     },
+    ...(can('book_imports.viewAny')
+      ? [{
+          to: '/books/imports',
+          icon: FileSpreadsheet,
+          title: t('bookImports.title'),
+          description: t('bookImports.subtitle'),
+        }]
+      : []),
     ...(can('reservations.viewAny')
       ? [{
           to: '/reservations/library',

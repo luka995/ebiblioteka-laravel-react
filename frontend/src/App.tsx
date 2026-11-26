@@ -27,6 +27,8 @@ import { BookCopyDetailPage } from '@/pages/books/book-copy-detail-page'
 import { BooksArchivePage } from '@/pages/books/books-archive-page'
 import { BooksInventoryBooksPage } from '@/pages/books/books-inventory-books-page'
 import { BooksBarcodePrintPage } from '@/pages/books/books-barcode-print-page'
+import { BookImportsPage } from '@/pages/books/book-imports-page'
+import { BookImportDetailPage } from '@/pages/books/book-import-detail-page'
 import { LibraryBorrowsPage } from '@/pages/borrows/library-borrows-page'
 import { MyBorrowsPage } from '@/pages/borrows/my-borrows-page'
 import { CatalogBookPage } from '@/pages/catalog/catalog-book-page'
@@ -80,6 +82,8 @@ function App() {
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/authors" element={<AuthorsPage />} />
           <Route path="/books" element={<BooksLandingPage />} />
+          <Route path="/books/imports" element={<BookImportsPage />} />
+          <Route path="/books/imports/:id" element={<BookImportDetailPage />} />
           <Route path="/books/titles" element={<BooksPage />} />
           <Route path="/books/titles/:id" element={<BookDetailPage />} />
           <Route path="/books/copies" element={<BookCopiesPage />} />

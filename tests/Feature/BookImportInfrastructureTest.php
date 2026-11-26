@@ -174,10 +174,10 @@ test('deleting a library cascades its imports and staged rows', function () {
     $this->assertModelMissing($row);
 });
 
-test('staff can manage imports only in their library', function (LibraryRole $role) {
+test('library admins can manage imports only in their library', function () {
     $library = Library::factory()->create();
     $actor = User::factory()->create();
-    $actor->libraries()->attach($library, ['role' => $role->value]);
+    $actor->libraries()->attach($library, ['role' => LibraryRole::LibraryAdmin->value]);
     $own = bookImportRecord($library);
     $foreign = bookImportRecord(Library::factory()->create());
     $gate = Gate::forUser($actor);
@@ -193,7 +193,49 @@ test('staff can manage imports only in their library', function (LibraryRole $ro
     ])->assertOk()
         ->assertJsonPath('permissions.book_imports.viewAny', true)
         ->assertJsonPath('permissions.book_imports.create', true);
-})->with([LibraryRole::LibraryAdmin, LibraryRole::Librarian]);
+});
+
+test('librarians cannot access any part of the book import flow', function () {
+    $library = Library::factory()->create();
+    $actor = User::factory()->create();
+    $actor->libraries()->attach($library, ['role' => LibraryRole::Librarian->value]);
+    $import = bookImportRecord($library, ['status' => BookImportStatusEnum::Ready]);
+    $row = $import->rows()->create([
+        'row_number' => 2,
+        'raw_payload' => ['title' => 'Title'],
+    ]);
+    $gate = Gate::forUser($actor);
+
+    foreach (['viewAny', 'create'] as $action) {
+        expect($gate->allows($action, BookImport::class))->toBeFalse();
+    }
+
+    foreach (['view', 'start', 'retry', 'updateRow'] as $action) {
+        expect($gate->allows($action, $import))->toBeFalse();
+    }
+
+    $request = $this->actingAs($actor)->withSession(['active_library_id' => $library->id]);
+    $request->getJson('/api/v1/auth/me')
+        ->assertOk()
+        ->assertJsonPath('permissions.book_imports.viewAny', false)
+        ->assertJsonPath('permissions.book_imports.create', false);
+    $request->getJson('/api/v1/book-imports')->assertForbidden();
+    $request->postJson('/api/v1/book-imports')->assertForbidden();
+    $request->getJson("/api/v1/book-imports/{$import->id}")->assertForbidden();
+    $request->getJson("/api/v1/book-imports/{$import->id}/rows")->assertForbidden();
+    $request->postJson("/api/v1/book-imports/{$import->id}/start", [
+        'mode' => 'isbn_check',
+        'row_ids' => [$row->id],
+    ])->assertForbidden();
+    $request->postJson("/api/v1/book-imports/{$import->id}/retry", [
+        'mode' => 'isbn_check',
+        'row_ids' => [$row->id],
+    ])->assertForbidden();
+    $request->patchJson("/api/v1/book-imports/{$import->id}/rows/{$row->id}", [
+        'input_version' => 1,
+        'changes' => ['title' => 'Updated title'],
+    ])->assertForbidden();
+});
 
 test('members and guests cannot access imports', function () {
     $library = Library::factory()->create();

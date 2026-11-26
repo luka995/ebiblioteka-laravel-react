@@ -1178,5 +1178,178 @@
     "reject": "Reject request",
     "approveSuccess": "Library opened.",
     "rejectSuccess": "Request rejected."
+  },
+  "bookImports": {
+    "title": "Book collection import",
+    "sidebar": "Book collection import",
+    "open": "Import books",
+    "subtitle": "Import titles and physical copies from an Excel .xlsx file.",
+    "activeLibraryRequired": "Select an active library to view imports.",
+    "backToImports": "Back to imports",
+    "emptyTitle": "No imports yet",
+    "emptyText": "Upload an .xlsx file to prepare your first import.",
+    "rowCounts": "Imported: {{imported}} · Failed: {{failed}} · Total: {{total}}",
+    "retry": "Retry",
+    "saving": "Saving...",
+    "columns": {
+      "file": "File",
+      "status": "Status",
+      "rows": "Rows",
+      "requestedBy": "Requested by",
+      "createdAt": "Uploaded"
+    },
+    "upload": {
+      "button": "Import Excel",
+      "title": "Import books from Excel",
+      "description": "Choose an .xlsx file. After preparation, review its rows and choose how to process them.",
+      "fileLabel": "Excel file (.xlsx)",
+      "xlsxOnly": "Choose an Excel file with the .xlsx extension.",
+      "success": "File uploaded. Preview preparation has started.",
+      "inventoryGuidance": "Keep the Inventory number column to use the numbers in the file. Remove it for automatic numbering; manual numbering requires a value in every row.",
+      "processingGuidance": "Uploading prepares a preview only. Titles and copies are not created until you select rows and start the import.",
+      "uploading": "Uploading...",
+      "submit": "Upload file"
+    },
+    "status": {
+      "pending": "Preparing",
+      "ready": "Ready for review",
+      "processing": "Processing",
+      "completed": "Completed",
+      "completed_with_errors": "Completed with errors",
+      "failed": "Failed"
+    },
+    "rowStatus": {
+      "pending": "Pending",
+      "processing": "Processing",
+      "imported": "Imported",
+      "failed": "Failed"
+    },
+    "summary": {
+      "total": "Excel rows",
+      "completedRows": "Currently completed rows",
+      "imported": "Imported successfully",
+      "failed": "Failed",
+      "completedAttempts": "Cumulative completed attempts"
+    },
+    "inventoryGuidance": {
+      "noColumn": "The Excel file has no inventory number column. Numbers are assigned when copies are created if the library uses automatic numbering.",
+      "manualLibrary": "This library uses manual numbering, so rows without an inventory number cannot be imported.",
+      "hasColumn": "The file contains inventory numbers; they will be used and the sequence will never move backwards."
+    },
+    "detail": {
+      "subtitle": "Library: {{library}} · Worksheet: {{sheet}}"
+    },
+    "filters": {
+      "status": "Row status",
+      "allStatuses": "All statuses",
+      "failureCode": "Failure reason",
+      "allFailureCodes": "All reasons",
+      "attemptMode": "Attempt mode",
+      "allModes": "All modes",
+      "search": "Search",
+      "searchPlaceholder": "Row, ISBN, title or inventory number"
+    },
+    "selection": {
+      "targetStatus": "Rows to act on",
+      "pending": "Pending — initial import",
+      "failed": "Failed — retry",
+      "mode": "Processing mode",
+      "allSelected": "All {{count}} rows matching the filters are selected across pages.",
+      "selected": "Manually selected rows: {{count}}",
+      "clear": "Clear selection",
+      "start": "Start import",
+      "retry": "Retry",
+      "statusFilterConflict": "Choose the row status that matches the action, or select All statuses.",
+      "selectAllMatching": "Select all {{count}} rows matching the filters",
+      "selectRow": "Select Excel row {{row}}",
+      "accepted": "{{count}} rows accepted for processing."
+    },
+    "modes": {
+      "isbn_check": "With ISBN lookup (COBISS)",
+      "excel_direct": "Directly from Excel data"
+    },
+    "table": {
+      "row": "Excel row",
+      "status": "Status",
+      "failure": "Failure",
+      "assignedInventory": "Assigned inventory number",
+      "barcode": "Barcode",
+      "actions": "Actions"
+    },
+    "failureCodes": {
+      "missing_isbn": "ISBN is missing",
+      "invalid_isbn": "Invalid ISBN",
+      "invalid_field_value": "Invalid field value",
+      "isbn_not_found": "ISBN not found",
+      "lookup_failed": "ISBN lookup failed",
+      "missing_title": "Title is missing",
+      "missing_inventory_number": "Inventory number is missing",
+      "invalid_inventory_number": "Invalid inventory number",
+      "duplicate_inventory_number": "Duplicate inventory number",
+      "inventory_collision": "Inventory number collision",
+      "duplicate_seq_number": "Duplicate sequence number",
+      "file_unreadable": "File cannot be read",
+      "missing_columns": "Required columns are missing",
+      "duplicate_headers": "Duplicate headers",
+      "no_rows": "No rows to import",
+      "too_many_rows": "Too many rows",
+      "job_failed": "Processing failed",
+      "unexpected_error": "Unexpected error"
+    },
+    "fields": {
+      "isbn": "ISBN",
+      "title": "Title",
+      "authors": "Authors",
+      "category": "Primary category",
+      "category_secondary": "Secondary category",
+      "description": "Description",
+      "cover_url": "Cover URL",
+      "inventory_number": "Inventory number",
+      "seq_number": "Sequence number",
+      "publisher": "Publisher",
+      "publish_place": "Publication place",
+      "publish_year": "Publication year",
+      "issue_number": "Issue number",
+      "num_of_pages": "Number of pages",
+      "dimension": "Dimensions",
+      "part": "Part",
+      "udk": "UDC",
+      "binding": "Binding",
+      "origin": "Acquisition type",
+      "book_number": "Book number",
+      "place_on_shelf": "Shelf location",
+      "price": "Price",
+      "notice": "Note"
+    },
+    "rows": {
+      "empty": "No rows match these filters.",
+      "openBook": "Title",
+      "openCopy": "Copy",
+      "assignedOnImport": "Assigned during import",
+      "edit": "Edit row",
+      "saved": "The correction has been saved.",
+      "editTitle": "Edit Excel row {{row}}",
+      "editDescription": "Original values remain unchanged. Corrections are used on the next import attempt.",
+      "inventoryEditUnavailable": "The inventory number cannot be edited because the file has no such column.",
+      "save": "Save corrections",
+      "perPage": "Rows per page",
+      "dataView": "Data view",
+      "originalData": "Original Excel",
+      "effectiveData": "Import input",
+      "resolvedData": "Resolved data",
+      "previewCorrection": "(preview correction)"
+    },
+    "confirm": {
+      "startTitle": "Start importing the selected rows?",
+      "retryTitle": "Retry the failed rows?",
+      "description": "{{count}} rows will be submitted in “{{mode}}” mode.",
+      "excelDirectWarning": "Direct Excel mode does not check ISBNs with external services.",
+      "confirm": "Confirm"
+    },
+    "notifications": {
+      "completed": "The import has completed.",
+      "completedWithErrors": "The import completed, but some rows failed.",
+      "failed": "The import processing failed."
+    }
   }
 }

@@ -361,6 +361,116 @@ export interface BookDuplicateCheckResult {
   matches: Book[]
 }
 
+export type BookImportStatus = 'pending' | 'ready' | 'processing' | 'completed' | 'completed_with_errors' | 'failed'
+export type BookImportRowStatus = 'pending' | 'processing' | 'imported' | 'failed'
+export type BookImportMode = 'isbn_check' | 'excel_direct'
+export type BookImportFailureCode =
+  | 'missing_isbn'
+  | 'invalid_isbn'
+  | 'invalid_field_value'
+  | 'isbn_not_found'
+  | 'lookup_failed'
+  | 'missing_title'
+  | 'missing_inventory_number'
+  | 'invalid_inventory_number'
+  | 'duplicate_inventory_number'
+  | 'inventory_collision'
+  | 'duplicate_seq_number'
+  | 'file_unreadable'
+  | 'missing_columns'
+  | 'duplicate_headers'
+  | 'no_rows'
+  | 'too_many_rows'
+  | 'job_failed'
+  | 'unexpected_error'
+
+export type BookImportField =
+  | 'isbn'
+  | 'title'
+  | 'authors'
+  | 'category'
+  | 'category_secondary'
+  | 'description'
+  | 'cover_url'
+  | 'inventory_number'
+  | 'seq_number'
+  | 'publisher'
+  | 'publish_place'
+  | 'publish_year'
+  | 'issue_number'
+  | 'num_of_pages'
+  | 'dimension'
+  | 'part'
+  | 'udk'
+  | 'binding'
+  | 'origin'
+  | 'book_number'
+  | 'place_on_shelf'
+  | 'price'
+  | 'notice'
+
+export interface BookImport {
+  id: number
+  library_id: number
+  library_name?: string | null
+  requested_by?: string | null
+  original_filename: string
+  file_size: number
+  sheet_name: string | null
+  status: BookImportStatus
+  status_label: string
+  has_inventory_column: boolean
+  headers: string[]
+  column_map: Record<string, number>
+  total_rows: number
+  processed_rows: number
+  imported_rows: number
+  failed_rows: number
+  completed_attempts: number
+  failure_code: BookImportFailureCode | null
+  failure_message: string | null
+  started_at: string | null
+  finished_at: string | null
+  created_at: string
+}
+
+export interface BookImportRow {
+  id: number
+  row_number: number
+  status: BookImportRowStatus
+  status_label: string
+  raw_payload: Record<string, unknown>
+  input_overrides: Record<string, unknown>
+  input_version: number
+  effective_input: Record<string, unknown>
+  resolved_payload: Record<string, unknown> | null
+  field_sources: Record<string, unknown> | null
+  isbn: string | null
+  title: string | null
+  inventory_number: string | null
+  assigned_inventory_number: string | null
+  barcode: string | null
+  failure_code: BookImportFailureCode | null
+  failure_code_label: string | null
+  failure_message: string | null
+  lookup_diagnostics: Record<string, unknown> | null
+  attempts: number
+  completed_attempts: number
+  attempt_mode: BookImportMode | null
+  attempt_mode_label: string | null
+  book_id: number | null
+  book_copy_id: number | null
+  processed_at: string | null
+  created_at: string
+}
+
+export interface BookImportSelectionResponse {
+  data: {
+    id: number
+    selected_rows: number
+  }
+}
+
 export interface InventoryDiscrepancy {
   next_auto: number
   max_existing: number
@@ -382,6 +492,8 @@ export interface PaginatedMeta {
   last_page: number
   per_page: number
   total: number
+  matching_pending_rows?: number
+  matching_failed_rows?: number
 }
 
 export interface PaginatedResponse<T> {

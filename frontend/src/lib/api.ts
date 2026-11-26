@@ -179,11 +179,16 @@ export function downloadBlob(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url)
 }
 
-async function upload<T>(path: string, file: File, fields: Record<string, string> = {}): Promise<T> {
+async function upload<T>(
+  path: string,
+  file: File,
+  fields: Record<string, string> = {},
+  field = 'image',
+): Promise<T> {
   await ensureCsrf()
 
   const formData = new FormData()
-  formData.append('image', file)
+  formData.append(field, file)
   Object.entries(fields).forEach(([key, value]) => formData.append(key, value))
 
   const response = await fetch(`${laravelBaseUrl()}${path}`, {
@@ -221,6 +226,8 @@ export const api = {
   delete: <T>(path: string, body?: unknown) => request<T>(path, { method: 'DELETE', body }),
   del: <T>(path: string, body?: unknown) => request<T>(path, { method: 'DELETE', body }),
   upload: <T>(path: string, file: File, fields?: Record<string, string>) => upload<T>(path, file, fields),
+  uploadFile: <T>(path: string, file: File, field = 'file', fields?: Record<string, string>) =>
+    upload<T>(path, file, fields, field),
   download: (path: string, options?: DownloadOptions) => download(path, options),
 }
 
@@ -280,6 +287,12 @@ export const apiPaths = {
   libraryRequestApprove: (id: number) => `/api/v1/library-requests/${id}/approve`,
   libraryRequestReject: (id: number) => `/api/v1/library-requests/${id}/reject`,
   bookCopyHistory: (id: number) => `/api/v1/book-copies/${id}/history`,
+  bookImports: '/api/v1/book-imports',
+  bookImport: (id: number) => `/api/v1/book-imports/${id}`,
+  bookImportRows: (id: number) => `/api/v1/book-imports/${id}/rows`,
+  bookImportStart: (id: number) => `/api/v1/book-imports/${id}/start`,
+  bookImportRetry: (id: number) => `/api/v1/book-imports/${id}/retry`,
+  bookImportRow: (id: number, rowId: number) => `/api/v1/book-imports/${id}/rows/${rowId}`,
   reservations: '/api/v1/reservations',
   libraryReservations: '/api/v1/reservations/library',
   reservation: (id: number) => `/api/v1/reservations/${id}`,

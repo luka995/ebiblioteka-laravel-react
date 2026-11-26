@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { BookCheck, Eye, Filter, Plus, Printer, Search } from 'lucide-react'
+import { BookCheck, Eye, FileSpreadsheet, Filter, Plus, Printer, Search } from 'lucide-react'
 import { api, apiPaths } from '@/lib/api'
 import { normalizeBarcode } from '@/lib/barcode'
 import { Badge } from '@/components/ui/badge'
@@ -164,7 +164,15 @@ export function BookCopiesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-brand-heading text-2xl font-bold tracking-tight">{t('books.copies.listTitle')}</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {can('book_imports.viewAny') ? (
+            <Button asChild variant="outline">
+              <Link to="/books/imports">
+                <FileSpreadsheet />
+                {t('bookImports.open')}
+              </Link>
+            </Button>
+          ) : null}
           <Button
             variant="outline"
             onClick={() => setFiltersOpen((value) => !value)}

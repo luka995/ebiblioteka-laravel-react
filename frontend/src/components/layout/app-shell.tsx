@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { BadgeCheck, BookCheck, BookOpen, Building2, ChevronDown, ClipboardList, FolderTree, GraduationCap, KeyRound, LayoutDashboard, LogOut, Map, MapPin, Menu, Newspaper, PenLine, Settings, SlidersHorizontal, Tag, Users, X } from 'lucide-react'
+import { BadgeCheck, BookCheck, BookOpen, Building2, ChevronDown, ClipboardList, FileSpreadsheet, FolderTree, GraduationCap, KeyRound, LayoutDashboard, LogOut, Map, MapPin, Menu, Newspaper, PenLine, Settings, SlidersHorizontal, Tag, Users, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { BrandMark } from '@/components/brand'
 import { HeaderLibrarySwitcher } from '@/components/layout/library-switcher'
@@ -38,6 +38,7 @@ const ADMIN_ITEMS: NavItem[] = [
   { to: '/tags', labelKey: 'nav.tags', icon: Tag, permission: 'tags.viewAny' },
   { to: '/categories', labelKey: 'nav.categories', icon: FolderTree, permission: 'categories.viewAny' },
   { to: '/authors', labelKey: 'nav.authors', icon: PenLine, permission: 'authors.viewAny' },
+  { to: '/books/imports', labelKey: 'bookImports.sidebar', icon: FileSpreadsheet, permission: 'book_imports.viewAny' },
 ]
 
 const REFERENCE_ITEMS: NavItem[] = [
@@ -155,7 +156,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             to={item.to}
             end={item.to === '/'}
             onClick={onNavigate}
-            className={({ isActive }) => navItemClass(isActive)}
+            className={({ isActive }) =>
+              navItemClass(isActive && !(item.to === '/books' && location.pathname.startsWith('/books/imports')))
+            }
           >
             <item.icon className="size-4" />
             {t(item.labelKey)}
@@ -247,6 +250,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function pageTitleFor(pathname: string): string {
+  if (pathname.startsWith('/books/imports')) return 'bookImports.title'
   if (pathname.startsWith('/borrows/library')) return 'nav.libraryBorrows'
   if (pathname.startsWith('/borrows')) return 'nav.myBorrows'
   if (pathname.startsWith('/reservations/library')) return 'nav.libraryReservations'

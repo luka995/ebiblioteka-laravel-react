@@ -18,10 +18,10 @@ use App\Services\Queries\BookImportRowQueryService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
-function phaseFourStaff(Library $library): User
+function phaseFourAdmin(Library $library): User
 {
     $user = User::factory()->create();
-    $user->libraries()->attach($library, ['role' => LibraryRole::Librarian->value]);
+    $user->libraries()->attach($library, ['role' => LibraryRole::LibraryAdmin->value]);
 
     return $user;
 }
@@ -61,7 +61,7 @@ beforeEach(function () {
 
 test('rows endpoint paginates but returns full filtered counts and start selects matching rows across pages', function () {
     $library = Library::factory()->create();
-    $actor = phaseFourStaff($library);
+    $actor = phaseFourAdmin($library);
     $import = phaseFourImport($library);
 
     foreach (range(1, 205) as $index) {
@@ -114,7 +114,7 @@ test('row query service applies filters, transliteration in both directions and 
 
 test('selection endpoints reject mixed manual and filtered selection', function () {
     $library = Library::factory()->create();
-    $actor = phaseFourStaff($library);
+    $actor = phaseFourAdmin($library);
     $import = phaseFourImport($library);
     $row = phaseFourRow($import, ['title' => 'A title']);
 
@@ -129,7 +129,7 @@ test('selection endpoints reject mixed manual and filtered selection', function 
 
 test('retry cannot reactivate an old import while another library import is active', function () {
     $library = Library::factory()->create();
-    $actor = phaseFourStaff($library);
+    $actor = phaseFourAdmin($library);
     $finished = phaseFourImport($library, ['status' => BookImportStatusEnum::CompletedWithErrors]);
     $row = phaseFourRow($finished, ['title' => 'Failed title'], [
         'status' => BookImportRowStatusEnum::Failed,
@@ -149,7 +149,7 @@ test('retry cannot reactivate an old import while another library import is acti
 
 test('preview corrections are versioned without clearing failure and retry preserves attempt counters', function () {
     $library = Library::factory()->create();
-    $actor = phaseFourStaff($library);
+    $actor = phaseFourAdmin($library);
     $import = phaseFourImport($library, [
         'status' => BookImportStatusEnum::CompletedWithErrors,
         'total_rows' => 1,
@@ -201,7 +201,7 @@ test('preview corrections are versioned without clearing failure and retry prese
 
 test('inventory number corrections are rejected when the uploaded workbook has no inventory column', function () {
     $library = Library::factory()->create();
-    $actor = phaseFourStaff($library);
+    $actor = phaseFourAdmin($library);
     $import = phaseFourImport($library, [
         'status' => BookImportStatusEnum::CompletedWithErrors,
         'has_inventory_column' => false,

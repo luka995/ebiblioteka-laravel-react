@@ -58,10 +58,10 @@ function importXlsx(iterable $rows, array $secondSheet = [], string $name = 'boo
     return new UploadedFile($path, $name, null, null, true);
 }
 
-function importStaff(Library $library): User
+function importAdmin(Library $library): User
 {
     $user = User::factory()->create();
-    $user->libraries()->attach($library, ['role' => LibraryRole::Librarian->value]);
+    $user->libraries()->attach($library, ['role' => LibraryRole::LibraryAdmin->value]);
 
     return $user;
 }
@@ -95,7 +95,7 @@ beforeEach(function () {
 
 test('upload validates only the header, saves a private pending import and queues preparation', function () {
     $library = Library::factory()->create();
-    $actor = importStaff($library);
+    $actor = importAdmin($library);
     $response = $this->actingAs($actor)->postJson('/api/v1/book-imports', [
         'file' => importXlsx([['Uputstvo: naslov knjige je obavezan'], [], ['ISBN', 'Naslov'], ['bad-isbn', 'Knjiga']]),
         'library_id' => Library::factory()->create()->id,
@@ -154,7 +154,7 @@ test('the supplied template supports all columns and removal of the complete inv
 });
 
 test('invalid headers are rejected before creating records or storing files', function (array $headers) {
-    $actor = importStaff(Library::factory()->create());
+    $actor = importAdmin(Library::factory()->create());
 
     $this->actingAs($actor)->postJson('/api/v1/book-imports', [
         'file' => importXlsx([$headers, ['Knjiga']]),
@@ -174,7 +174,7 @@ test('header scan is limited to the first twenty physical rows of the first shee
     $file = importXlsx([...array_fill(0, 20, []), ['Naslov']], [['Naslov'], ['Primer']]);
 
     expect($reader->header($file->getPathname(), app(BookImportMapper::class), 20))->toBeNull();
-    $this->actingAs(importStaff(Library::factory()->create()))
+    $this->actingAs(importAdmin(Library::factory()->create()))
         ->postJson('/api/v1/book-imports', ['file' => $file])
         ->assertUnprocessable()
         ->assertJsonPath('errors.file.0', BookImportFailureEnum::MissingColumns->getLabel());
@@ -247,7 +247,7 @@ test('generic reader propagates file and mapper errors without module specific w
 });
 
 test('upload rejects wrong extension, invalid contents, oversized files and array inputs', function () {
-    $this->actingAs(importStaff(Library::factory()->create()));
+    $this->actingAs(importAdmin(Library::factory()->create()));
 
     foreach ([
         importXlsx([['Naslov']], name: 'books.csv'),
@@ -268,7 +268,7 @@ test('upload rejects wrong extension, invalid contents, oversized files and arra
 
 test('an active database import returns conflict and cleans only the rejected upload', function () {
     $library = Library::factory()->create();
-    $this->actingAs(importStaff($library));
+    $this->actingAs(importAdmin($library));
     $this->postJson('/api/v1/book-imports', ['file' => importXlsx([['Naslov'], ['Prva']])])->assertCreated();
     $first = BookImport::sole();
 
@@ -280,7 +280,7 @@ test('an active database import returns conflict and cleans only the rejected up
 });
 
 test('unrelated database constraints are not misreported as active import conflicts', function () {
-    $actor = importStaff(Library::factory()->create());
+    $actor = importAdmin(Library::factory()->create());
     BookImport::creating(function () {
         $previous = new PDOException('duplicate key value violates unique constraint "book_imports_pkey"', 23505);
         $previous->errorInfo = ['23505', 7, $previous->getMessage()];
@@ -317,8 +317,8 @@ test('import API requires active library and scopes history and detail to that l
     $other = Library::factory()->create();
     $import = stagedBookImport(importXlsx([['Naslov']]), $library);
     $foreign = stagedBookImport(importXlsx([['Naslov']]), $other);
-    $actor = importStaff($library);
-    $actor->libraries()->attach($other, ['role' => LibraryRole::Librarian->value]);
+    $actor = importAdmin($library);
+    $actor->libraries()->attach($other, ['role' => LibraryRole::LibraryAdmin->value]);
     $this->actingAs($actor)->getJson('/api/v1/book-imports')->assertUnprocessable();
     $this->postJson('/api/v1/book-imports', ['file' => importXlsx([['Naslov']])])->assertUnprocessable();
     $this->withSession(['active_library_id' => $library->id])
@@ -343,7 +343,7 @@ test('import query DTO applies library scope, sorting and paginated API uses per
     $dto = new BookImportListQueryDTO(new SortingDTO('total_rows', 'desc'), 2);
     $query = app(BookImportQueryService::class)->build($dto, $library);
     expect($query->pluck('total_rows')->all())->toBe([9, 3, 1]);
-    $this->actingAs(importStaff($library))
+    $this->actingAs(importAdmin($library))
         ->getJson('/api/v1/book-imports?sort=total_rows&direction=desc&per_page=2')
         ->assertOk()->assertJsonPath('meta.per_page', 2)->assertJsonPath('meta.total', 3)
         ->assertJsonCount(2, 'data')->assertJsonPath('data.0.total_rows', 9);
@@ -526,7 +526,7 @@ test('malformed workbook XML is rejected as a file validation error', function (
     $zip->addFromString('xl/workbook.xml', '<workbook><broken>');
     $zip->close();
 
-    $this->actingAs(importStaff(Library::factory()->create()))
+    $this->actingAs(importAdmin(Library::factory()->create()))
         ->postJson('/api/v1/book-imports', ['file' => $file])
         ->assertUnprocessable()->assertJsonValidationErrors('file');
     expect(BookImport::count())->toBe(0);
@@ -634,7 +634,7 @@ test('ten thousand rows are prepared in bounded chunks without generating invent
         }
     })());
     $library = Library::factory()->create();
-    $response = $this->actingAs(importStaff($library))
+    $response = $this->actingAs(importAdmin($library))
         ->postJson('/api/v1/book-imports', ['file' => $file])
         ->assertCreated()->assertJsonPath('data.status', 'pending')->assertJsonPath('data.total_rows', 0);
     $import = BookImport::findOrFail($response->json('data.id'));
