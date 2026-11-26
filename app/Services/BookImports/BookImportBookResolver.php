@@ -6,6 +6,7 @@ use App\DTOs\BookImportBookResultDTO;
 use App\DTOs\BookImportResolutionDTO;
 use App\DTOs\ExcelImportHeaderMapDTO;
 use App\Enums\BookImportFailureEnum;
+use App\Enums\BookImportModeEnum;
 use App\Enums\IsbnLookupStatusEnum;
 use App\Exceptions\BookImportRowFailureException;
 use App\Models\Book;
@@ -55,6 +56,10 @@ class BookImportBookResolver
      */
     public function resolve(BookImport $import, BookImportRow $row, array $input): BookImportResolutionDTO
     {
+        if ($row->attempt_mode === BookImportModeEnum::ExcelDirect) {
+            return $this->resolveDirect($row, $input);
+        }
+
         $isbn = $this->normalizer->normalize($input['isbn'] ?? '');
 
         if ($isbn === '') {
@@ -130,6 +135,32 @@ class BookImportBookResolver
         }
 
         return new BookImportResolutionDTO($payload, $sources, $diagnostics, input: $input, inputSources: $inputSources);
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    private function resolveDirect(BookImportRow $row, array $input): BookImportResolutionDTO
+    {
+        $payload = array_replace(array_fill_keys($this->headers->fields(), null), ['authors' => []], $input);
+        $sources = [];
+
+        foreach ($payload as $field => $value) {
+            $sources[$field] = array_key_exists($field, $row->input_overrides ?? [])
+                ? 'preview_edit' : (filled($value) ? 'excel' : 'default');
+        }
+
+        if (! filled($payload['title'])) {
+            throw new BookImportRowFailureException(BookImportFailureEnum::MissingTitle);
+        }
+
+        return new BookImportResolutionDTO(
+            $payload,
+            $sources,
+            ['provider' => 'excel', 'status' => 'direct'],
+            input: $input,
+            inputSources: $sources,
+        );
     }
 
     public function persist(Library $library, BookImportResolutionDTO $resolution): BookImportBookResultDTO

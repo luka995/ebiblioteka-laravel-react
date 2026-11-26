@@ -12,6 +12,13 @@ return [
         'active_import' => 'This library already has an active import.',
         'invalid_field' => 'Invalid value in column ":field".',
         'filename_too_long' => 'The filename must not exceed 255 characters.',
+        'invalid_retry_selection' => 'Select failed rows belonging to this import.',
+        'import_busy' => 'The import is currently being prepared or processed.',
+        'row_not_editable' => 'Only pending or failed rows can be edited.',
+        'stale_input' => 'The row was changed in the meantime. Refresh it before editing again.',
+        'invalid_changes' => 'One or more changed fields are not allowed.',
+        'inventory_column_missing' => 'The inventory number can only be changed when the Excel file has that column.',
+        'unsupported_parameters' => 'The request contains unsupported parameters.',
     ],
 
     'status' => [

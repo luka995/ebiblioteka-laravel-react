@@ -12,6 +12,13 @@ return [
         'active_import' => 'Ova biblioteka već ima aktivan uvoz.',
         'invalid_field' => 'Neispravna vrednost u koloni „:field“.',
         'filename_too_long' => 'Naziv fajla ne sme biti duži od 255 znakova.',
+        'invalid_retry_selection' => 'Izaberite neuspešne redove koji pripadaju ovom uvozu.',
+        'import_busy' => 'Uvoz je trenutno u pripremi ili obradi.',
+        'row_not_editable' => 'Samo redovi na čekanju ili neuspešni mogu da se menjaju.',
+        'stale_input' => 'Red je u međuvremenu izmenjen. Osvežite ga pre nove izmene.',
+        'invalid_changes' => 'Jedno ili više izmenjenih polja nije dozvoljeno.',
+        'inventory_column_missing' => 'Inventarni broj može da se menja samo ako postoji kolona u Excel fajlu.',
+        'unsupported_parameters' => 'Zahtev sadrži nedozvoljene parametre.',
     ],
 
     'status' => [

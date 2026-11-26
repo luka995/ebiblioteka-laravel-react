@@ -4,7 +4,6 @@ namespace App\Services\BookImports;
 
 use App\DTOs\BookImportResolutionDTO;
 use App\Enums\BookImportFailureEnum;
-use App\Enums\BookImportModeEnum;
 use App\Enums\BookImportRowStatusEnum;
 use App\Exceptions\BookImportLeaseLostException;
 use App\Exceptions\BookImportRowFailureException;
@@ -34,7 +33,7 @@ class BookImportRowProcessor
             $row = $import->rows()->whereKey($rowId)->lockForUpdate()->first();
 
             if ($row === null || $row->status !== BookImportRowStatusEnum::Pending
-                || $row->processing_requested_at === null || $row->attempt_mode !== BookImportModeEnum::IsbnCheck) {
+                || $row->processing_requested_at === null || $row->attempt_mode === null) {
                 Log::channel(config('book_imports.log_channel'))->info('book_import.row_skipped', ['row_id' => $rowId]);
 
                 return null;

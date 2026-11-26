@@ -41,10 +41,6 @@ class ProcessBookImportJob implements ShouldQueue
 
     public function handle(BookImportLeaseService $leases, BookImportRowProcessor $processor, BookImportCounterService $counters): void
     {
-        if ($this->mode !== BookImportModeEnum::IsbnCheck) {
-            throw new LogicException('Excel-direct processing is implemented in phase four.');
-        }
-
         $this->withLocale($this->locale, function () use ($leases, $processor, $counters): void {
             $token = $leases->claim($this->bookImportId, $this->mode);
 
@@ -54,16 +50,21 @@ class ProcessBookImportJob implements ShouldQueue
 
             try {
                 $started = microtime(true);
-                $budget = $this->lookupBudget();
+                $budget = $this->mode === BookImportModeEnum::IsbnCheck ? $this->lookupBudget() : 0;
 
-                if ($budget >= $this->timeout) {
+                if ($this->mode === BookImportModeEnum::IsbnCheck && $budget >= $this->timeout) {
                     throw new LogicException('The configured ISBN request budget must be shorter than the import job timeout.');
                 }
 
+                $batchSize = (int) config(
+                    $this->mode === BookImportModeEnum::ExcelDirect
+                        ? 'book_imports.excel_batch_size'
+                        : 'book_imports.standard_batch_size'
+                );
                 $ids = BookImport::findOrFail($this->bookImportId)->rows()
                     ->where('status', BookImportRowStatusEnum::Pending)
                     ->where('attempt_mode', $this->mode)->whereNotNull('processing_requested_at')
-                    ->orderBy('row_number')->limit((int) config('book_imports.standard_batch_size'))->pluck('id');
+                    ->orderBy('row_number')->limit($batchSize)->pluck('id');
 
                 foreach ($ids as $id) {
                     if (microtime(true) - $started + $budget >= $this->timeout) {
