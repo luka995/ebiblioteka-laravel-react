@@ -992,8 +992,8 @@ Ovo važi za bibliografske podatke. Podaci konkretne bibliotečke kopije nisu is
 - Nepotpuni, ali potvrđeni odgovarajući COBISS zapis dopunjava se iz Excel-a polje po polje; to nije ručni Excel fallback celog reda.
 - Neispravna COBISS vrednost se evidentira u dijagnostici i ne koristi; validna Excel vrednost može je zameniti. Neispravna izabrana Excel vrednost podleže pravilima validacije, ne postaje tiho prazna.
 - Ako polje nedostaje u oba izvora, opciono ostaje prazno/podrazumevano, a obavezno daje jasnu grešku.
-- Postojeći naslov se ne prepisuje automatski. Pri njegovom korišćenju preview prikazuje stvarno zadržane podatke sa poreklom `existing_book`, ne obećava zamenu postojećih autora/kategorija.
-- Lokalni ISBN pogodak ostaje put ponovnog korišćenja postojećeg naslova bez eksternog poziva. Bibliografski podaci nove kopije tada dolaze iz Excel-a; lokalne kopije nisu zamenski eksterni provajder.
+- Postojeći naslov se ne prepisuje automatski tamo gde već ima vrednost. Ako naslov, autori, primarna/sekundarna kategorija, opis ili korica nedostaju, popunjavaju se validnim vrednostima koje su razrešene iz COBISS-a pa Excel-a. Popunjena polja se zadržavaju; `field_sources` za svako polje beleži da li je zadržano (`existing_book`) ili dopunjeno (`cobiss`/`excel`/`preview_edit`).
+- Lokalni ISBN pogodak ostaje put ponovnog korišćenja postojećeg naslova bez eksternog poziva. Prazna polja tada se dopunjavaju iz Excel-a; lokalne kopije nisu zamenski eksterni provajder.
 - Datum dodavanja nije kolona šablona: aplikacija ga dodeljuje prilikom uspešnog kreiranja kopije, sa poreklom `generated`. Ne preuzima se iz COBISS-a, Excel-a ni druge kopije.
 - Oznake pogrešnog zavođenja nisu podržan ulaz i ne nasleđuju se iz postojeće kopije.
 - Matrica koristi efektivni ulaz (`raw_payload` + `input_overrides`). U direktnom Excel režimu nema COBISS grane: sva bibliografska polja dolaze iz tog ulaza. Automatski inventarni broj i datum nastaju tek pri kreiranju kopije.

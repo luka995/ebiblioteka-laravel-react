@@ -134,45 +134,153 @@ class BookImportBookResolver
 
     public function persist(Library $library, BookImportResolutionDTO $resolution): BookImportBookResultDTO
     {
-        $payload = $resolution->payload;
-        $sources = $resolution->sources;
-        $book = $resolution->existingBook === null
-            ? $this->matcher->duplicates($library, $payload['title'], $payload['authors'])->first()
-            : Book::where('library_id', $library->id)->find($resolution->existingBook->id);
+        $book = $this->findReusableBook($library, $resolution);
 
         if ($resolution->existingBook !== null && $book === null) {
             throw new BookImportRowFailureException(BookImportFailureEnum::UnexpectedError, diagnostics: ['reason' => 'existing_book_missing']);
         }
 
         if ($book !== null) {
-            foreach (['title', 'authors', 'category', 'category_secondary', 'description', 'cover_url'] as $field) {
-                $sources[$field] = 'existing_book';
+            return $this->persistExistingBook($book, $library, $resolution);
+        }
+
+        return $this->createBook($library, $resolution);
+    }
+
+    private function findReusableBook(Library $library, BookImportResolutionDTO $resolution): ?Book
+    {
+        if ($resolution->existingBook !== null) {
+            return Book::where('library_id', $library->id)->find($resolution->existingBook->id);
+        }
+
+        return $this->matcher->duplicates(
+            $library,
+            $resolution->payload['title'],
+            $resolution->payload['authors'],
+        )->first();
+    }
+
+    private function persistExistingBook(
+        Book $book,
+        Library $library,
+        BookImportResolutionDTO $resolution,
+    ): BookImportBookResultDTO {
+        $book->loadMissing(['authors', 'categoryPrimary', 'categorySecondary']);
+        $updates = [];
+        $sources = $resolution->sources;
+
+        $this->fillMissingScalarFields($book, $resolution->payload, $updates, $sources);
+        $this->fillMissingAuthors($book, $resolution->payload, $updates, $sources);
+        $this->fillMissingPrimaryCategory($book, $library, $resolution, $updates, $sources);
+        $this->fillMissingSecondaryCategory($book, $library, $resolution, $updates, $sources);
+
+        if ($updates !== []) {
+            $book = $this->books->update($book, $updates);
+            $book->refresh()->load(['authors', 'categoryPrimary', 'categorySecondary']);
+        }
+
+        return new BookImportBookResultDTO($book, $sources);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $updates
+     * @param  array<string, string>  $sources
+     */
+    private function fillMissingScalarFields(Book $book, array $payload, array &$updates, array &$sources): void
+    {
+        foreach ([
+            'name' => 'title',
+            'description' => 'description',
+            'cover_url' => 'cover_url',
+        ] as $attribute => $field) {
+            $current = $book->getAttribute($attribute);
+            $candidate = $payload[$field];
+
+            if (! filled($current) && filled($candidate)) {
+                $updates[$attribute] = $candidate;
+
+                continue;
             }
 
-            return new BookImportBookResultDTO($book, $sources);
+            $sources[$field] = filled($current) ? 'existing_book' : 'default';
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $updates
+     * @param  array<string, string>  $sources
+     */
+    private function fillMissingAuthors(Book $book, array $payload, array &$updates, array &$sources): void
+    {
+        if ($book->authors->isEmpty() && filled($payload['authors'])) {
+            $updates['authors'] = $payload['authors'];
+
+            return;
         }
 
-        $primary = null;
+        $sources['authors'] = $book->authors->isNotEmpty() ? 'existing_book' : 'default';
+    }
 
-        if ($sources['category'] === 'cobiss' || $sources['udk'] === 'cobiss') {
-            $primary = $this->cobissCategories->categoryId(
-                $library,
-                $sources['category'] === 'cobiss' ? $payload['category'] : null,
-                $sources['udk'] === 'cobiss' ? $payload['udk'] : null,
-            );
+    /**
+     * @param  array<string, mixed>  $updates
+     * @param  array<string, string>  $sources
+     */
+    private function fillMissingPrimaryCategory(
+        Book $book,
+        Library $library,
+        BookImportResolutionDTO $resolution,
+        array &$updates,
+        array &$sources,
+    ): void {
+        if ($book->category_primary_id !== null) {
+            $sources['category'] = 'existing_book';
+
+            return;
         }
 
-        if ($primary !== null) {
-            $sources['category'] = 'cobiss';
-        } else {
-            $primary = $this->category($library, $resolution->input['category'] ?? null);
-            $sources['category'] = $resolution->inputSources['category'] ?? 'default';
+        [$categoryId, $source] = $this->primaryCategory($library, $resolution);
 
-            if ($primary === null && filled($payload['udk'])) {
-                $primary = $this->cobissCategories->categoryId($library, null, $payload['udk']);
-                $sources['category'] = $primary === null ? 'default' : $sources['udk'];
-            }
+        if ($categoryId !== null) {
+            $updates['category_primary_id'] = $categoryId;
         }
+
+        $sources['category'] = $source;
+    }
+
+    /**
+     * @param  array<string, mixed>  $updates
+     * @param  array<string, string>  $sources
+     */
+    private function fillMissingSecondaryCategory(
+        Book $book,
+        Library $library,
+        BookImportResolutionDTO $resolution,
+        array &$updates,
+        array &$sources,
+    ): void {
+        if ($book->category_secondary_id !== null) {
+            $sources['category_secondary'] = 'existing_book';
+
+            return;
+        }
+
+        [$categoryId, $source] = $this->secondaryCategory($library, $resolution);
+
+        if ($categoryId !== null) {
+            $updates['category_secondary_id'] = $categoryId;
+        }
+
+        $sources['category_secondary'] = $source;
+    }
+
+    private function createBook(Library $library, BookImportResolutionDTO $resolution): BookImportBookResultDTO
+    {
+        $payload = $resolution->payload;
+        $sources = $resolution->sources;
+        [$primary, $sources['category']] = $this->primaryCategory($library, $resolution);
+        [$secondary, $sources['category_secondary']] = $this->secondaryCategory($library, $resolution);
 
         $book = $this->books->create([
             'library_id' => $library->id,
@@ -181,10 +289,60 @@ class BookImportBookResolver
             'description' => $payload['description'],
             'cover_url' => $payload['cover_url'],
             'category_primary_id' => $primary,
-            'category_secondary_id' => $this->category($library, $payload['category_secondary']),
+            'category_secondary_id' => $secondary,
         ]);
 
         return new BookImportBookResultDTO($book, $sources);
+    }
+
+    /**
+     * @return array{?int, string}
+     */
+    private function primaryCategory(Library $library, BookImportResolutionDTO $resolution): array
+    {
+        $payload = $resolution->payload;
+        $sources = $resolution->sources;
+
+        if ($sources['category'] === 'cobiss' || $sources['udk'] === 'cobiss') {
+            $categoryId = $this->cobissCategories->categoryId(
+                $library,
+                $sources['category'] === 'cobiss' ? $payload['category'] : null,
+                $sources['udk'] === 'cobiss' ? $payload['udk'] : null,
+            );
+
+            if ($categoryId !== null) {
+                return [$categoryId, 'cobiss'];
+            }
+        }
+
+        $categoryId = $this->category($library, $resolution->input['category'] ?? null);
+
+        if ($categoryId !== null) {
+            return [$categoryId, $resolution->inputSources['category'] ?? 'default'];
+        }
+
+        if (filled($payload['udk'])) {
+            $categoryId = $this->cobissCategories->categoryId($library, null, $payload['udk']);
+
+            if ($categoryId !== null) {
+                return [$categoryId, $sources['udk']];
+            }
+        }
+
+        return [null, 'default'];
+    }
+
+    /**
+     * @return array{?int, string}
+     */
+    private function secondaryCategory(Library $library, BookImportResolutionDTO $resolution): array
+    {
+        $categoryId = $this->category($library, $resolution->payload['category_secondary']);
+
+        return [
+            $categoryId,
+            $categoryId === null ? 'default' : ($resolution->sources['category_secondary'] ?? 'default'),
+        ];
     }
 
     public function forgetRolledBackCache(Library $library): void

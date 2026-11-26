@@ -20,6 +20,7 @@ use App\Models\Library;
 use App\Services\BookImports\BookImportLeaseService;
 use App\Services\BookImports\BookImportRowProcessor;
 use App\Services\BookImports\BookImportStartService;
+use App\Services\BookService;
 use App\Services\InventoryNumberService;
 use App\Services\Isbn\BookMetadata;
 use App\Services\Isbn\IsbnMetadataService;
@@ -122,12 +123,19 @@ test('selected rows merge COBISS fields individually and snapshot actual persist
 
 test('local ISBN reuses only an active same-library book without inheriting copy metadata', function () {
     $import = processingImport();
-    $book = Book::factory()->create(['library_id' => $import->library_id, 'name' => 'Existing title']);
+    $book = Book::factory()->create([
+        'library_id' => $import->library_id, 'name' => 'Existing title',
+        'description' => null, 'cover_url' => null, 'category_primary_id' => null, 'category_secondary_id' => null,
+    ]);
     $old = BookCopy::factory()->create([
         'library_id' => $import->library_id, 'book_id' => $book->id,
         'isbn' => '8681131214', 'order_number' => '50', 'publisher' => 'Old publisher',
     ]);
-    $row = processingRow($import, ['publisher' => 'Excel publisher']);
+    $row = processingRow($import, [
+        'publisher' => 'Excel publisher', 'description' => 'Excel description',
+        'cover_url' => 'https://books.test/excel-cover.jpg',
+        'category' => 'Excel / Primary', 'category_secondary' => 'Excel / Secondary',
+    ]);
     processSelected($import, [$row]);
 
     expect($row->fresh()->book_id)->toBe($book->id)
@@ -135,8 +143,49 @@ test('local ISBN reuses only an active same-library book without inheriting copy
         ->and($row->fresh()->bookCopy->order_number)->toBe('51')
         ->and($row->fresh()->resolved_payload['title'])->toBe('Existing title')
         ->and($row->fresh()->field_sources['title'])->toBe('existing_book')
+        ->and($row->fresh()->field_sources['authors'])->toBe('excel')
+        ->and($row->fresh()->field_sources['description'])->toBe('excel')
+        ->and($row->fresh()->field_sources['cover_url'])->toBe('excel')
+        ->and($row->fresh()->field_sources['category'])->toBe('excel')
+        ->and($row->fresh()->field_sources['category_secondary'])->toBe('excel')
+        ->and($book->fresh()->description)->toBe('Excel description')
+        ->and($book->fresh()->cover_url)->toBe('https://books.test/excel-cover.jpg')
+        ->and($book->fresh()->authors->pluck('name')->all())->toBe(['Excel author'])
+        ->and($book->fresh()->categoryPrimary->fullName())->toBe('Excel / Primary')
+        ->and($book->fresh()->categorySecondary->fullName())->toBe('Excel / Secondary')
         ->and($old->fresh()->publisher)->toBe('Old publisher');
     Http::assertNothingSent();
+});
+
+test('duplicate book is enriched from valid COBISS values only where stored fields are blank', function () {
+    processingMetadata(new BookMetadata(
+        'nbs', '9788681131213', 'COBISS title', ['COBISS author'],
+        description: 'COBISS description', coverUrl: 'https://cobiss.test/cover.jpg',
+    ));
+    $import = processingImport();
+    $book = app(BookService::class)->create([
+        'library_id' => $import->library_id,
+        'name' => 'COBISS title',
+        'authors' => ['COBISS author'],
+        'description' => null,
+        'cover_url' => null,
+    ]);
+    $row = processingRow($import, [
+        'description' => 'Excel description',
+        'cover_url' => 'https://books.test/excel-cover.jpg',
+    ]);
+
+    processSelected($import, [$row]);
+
+    expect($row->fresh()->book_id)->toBe($book->id)
+        ->and($book->fresh()->description)->toBe('COBISS description')
+        ->and($book->fresh()->cover_url)->toBe('https://cobiss.test/cover.jpg')
+        ->and($book->fresh()->name)->toBe('COBISS title')
+        ->and($book->fresh()->authors->pluck('name')->all())->toBe(['COBISS author'])
+        ->and($row->fresh()->field_sources['description'])->toBe('cobiss')
+        ->and($row->fresh()->field_sources['cover_url'])->toBe('cobiss')
+        ->and($row->fresh()->field_sources['title'])->toBe('existing_book')
+        ->and($row->fresh()->field_sources['authors'])->toBe('existing_book');
 });
 
 test('foreign or archived ISBN matches never bypass COBISS', function () {
