@@ -6,6 +6,7 @@ use App\Models\Author;
 use App\Models\BarcodePrintJob;
 use App\Models\Book;
 use App\Models\BookCopy;
+use App\Models\BookImport;
 use App\Models\Borrow;
 use App\Models\Category;
 use App\Models\InventoryBook;
@@ -76,6 +77,7 @@ class AuthorizationService
             'authors' => $this->collectionPermissions($actor, Author::class),
             'books' => $this->collectionPermissions($actor, Book::class),
             'book_copies' => $this->collectionPermissions($actor, BookCopy::class),
+            'book_imports' => $this->collectionPermissions($actor, BookImport::class),
             'inventory_books' => $this->collectionPermissions($actor, InventoryBook::class),
             'barcode_print_jobs' => $this->collectionPermissions($actor, BarcodePrintJob::class),
             'news' => $this->collectionPermissions($actor, News::class),

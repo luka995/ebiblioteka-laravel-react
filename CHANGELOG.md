@@ -1,5 +1,25 @@
 # Changelog
 
+## [26.11.2026] Excel uvoz: faza 1 — infrastruktura i model
+
+### Added
+
+- OpenSpout `^4.33`, privatni disk i log kanal `imports`, konfiguracija limita/batch-eva i poseban `queue-imports` worker.
+- Modeli `BookImport` i `BookImportRow`, tipizovane enumeracije i migracije sa originalnim/ispravljenim/konačnim podacima, brojačima pokušaja, selekcijom redova i DB lease poljima.
+- Parcijalni unique indeks za jedan aktivan import po biblioteci, uključujući `ready` preview, i jedinstven broj Excel reda unutar importa.
+- `BookImportPolicy` i globalne `book_imports` permisije; upload, procesori i UI ostaju za naredne faze.
+
+### Changed
+
+- Podrazumevani `DB_QUEUE_RETRY_AFTER` je 900s, duže od timeout-a database workera.
+- Uvoz nema preview rezervacije inventarnih brojeva ili barkodova; postojeća dodela kopija nije menjana.
+- Import ima samo dva režima: `isbn_check` i `excel_direct`. Ponovni pokušaj bez ISBN provere koristi `excel_direct`, bez zasebnog fallback režima.
+
+### Tests
+
+- `tests/Feature/BookImportInfrastructureTest.php` — DB jedinstvenost aktivnog importa i redova, istorijski podaci/FK ponašanje, policy scope i `/me` permisije.
+- Fokusirana provera: 55 testova / 173 assertiona, uz postojeće testove inventarnih knjiga, štampe barkodova i aktivne biblioteke; Pint prolazi.
+
 ## [23.11.2026] Prebacivanje učenika: izbor odeljenja i obračun dostupnih učenika
 
 ### Added

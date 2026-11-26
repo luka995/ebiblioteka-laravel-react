@@ -131,6 +131,27 @@ services:
     networks:
       - ebiblioteka-network
 
+  # Jedan imports worker zbog COBISS crawl delay-a, odvojen od ostalih queue-ova.
+  queue-imports:
+    build:
+      context: ./php
+      args:
+        APP_TIMEZONE: Europe/Belgrade
+    container_name: ebiblioteka-queue-imports
+    user: "33:33"
+    working_dir: /var/www/html
+    environment:
+      TZ: Europe/Belgrade
+    volumes:
+      - ./:/var/www/html:rw
+    command: php artisan queue:work database --queue=imports --sleep=3 --tries=3 --timeout=300
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ebiblioteka-network
+
   # Drzi Laravel scheduler pokrenutim; trenutno obradjuje istekle rezervacije
   # (i buduce periodicne zadatke).
   scheduler:

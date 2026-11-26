@@ -182,6 +182,29 @@ Testovi koriste PostgreSQL bazu `ebiblioteka_testing` (podešeno u `phpunit.xml`
 Host, korisnik i lozinka se preuzimaju iz `.env`; baza se kreira jednom
 (`CREATE DATABASE ebiblioteka_testing OWNER <db_user>`).
 
+## Excel uvoz — faza 1
+
+Implementirana je infrastruktura prema [specifikaciji uvoza](./docs/uvoz-knjiga-iz-excela.md):
+modeli, migracije, statusi, policy/permisije, OpenSpout i poseban `imports` worker.
+Upload, čitanje Excel redova, obrada i korisnički ekran još nisu implementirani.
+
+```bash
+docker compose exec php composer install
+docker compose exec php php artisan migrate
+docker compose up -d --build queue-imports
+```
+
+- Privatni fajlovi: disk `imports`, `storage/app/private/book-imports`, bez javne storage rute.
+- Log: kanal `imports`, `storage/logs/imports-YYYY-MM-DD.log`.
+- `config/book_imports.php`: limiti 20 MB / 20.000 redova, priprema po 500 redova,
+  standardni batch 20, Excel-only batch 100, timeout 300s i lease 360s.
+- U `.env` postaviti `DB_QUEUE_RETRY_AFTER=900` (podrazumevana vrednost), duže od
+  timeout-a svih database workera, uključujući PDF workere sa timeout-om 600s.
+  Posle promene konfiguracije ponovo pokrenuti postojeće queue workere.
+- DB parcijalni unique indeks dozvoljava samo jedan `pending`/`ready`/`processing`
+  import po biblioteci; završeni importi ostaju u istoriji.
+- Preview redovi ne rezervišu inventarne brojeve/barkodove i ne pomeraju sekvencu.
+
 ## Demo podaci za prebacivanje učenika
 
 Za lokalno testiranje transfera u biblioteci Akademija Filipovic:
