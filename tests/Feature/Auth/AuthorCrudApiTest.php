@@ -30,6 +30,25 @@ test('superadmin can list authors paginated with meta', function () {
         ->assertJsonStructure(['data', 'meta' => ['current_page', 'last_page', 'per_page', 'total']]);
 });
 
+test('superadmin author list defaults to the active library and allows an explicit override', function () {
+    $admin = User::factory()->superAdmin()->create();
+    $active = makeAuthorLibrary();
+    $other = makeAuthorLibrary();
+    $own = Author::factory()->for($active)->create();
+    $foreign = Author::factory()->for($other)->create();
+    $request = $this->actingAs($admin)->withSession(['active_library_id' => $active->id]);
+
+    $request->getJson('/api/v1/authors', authorCrudHeaders())
+        ->assertOk()
+        ->assertJsonFragment(['id' => $own->id])
+        ->assertJsonMissing(['id' => $foreign->id]);
+
+    $request->getJson("/api/v1/authors?library_id={$other->id}", authorCrudHeaders())
+        ->assertOk()
+        ->assertJsonFragment(['id' => $foreign->id])
+        ->assertJsonMissing(['id' => $own->id]);
+});
+
 test('superadmin can create update and delete an author', function () {
     $admin = User::factory()->superAdmin()->create();
     $library = makeAuthorLibrary();

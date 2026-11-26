@@ -31,8 +31,12 @@ final class AuthorQueryService
             } else {
                 $builder->where('library_id', $active->id);
             }
-        } elseif ($query->libraryId !== null) {
-            $builder->where('library_id', $query->libraryId);
+        } else {
+            $libraryId = $query->libraryId ?? $active?->id;
+
+            if ($libraryId !== null) {
+                $builder->where('library_id', $libraryId);
+            }
         }
 
         if ($query->search !== null && trim($query->search) !== '') {

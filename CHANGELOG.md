@@ -1,5 +1,57 @@
 # Changelog
 
+## [27.11.2026] Excel uvoz: praćenje pripreme, lifecycle i inline izmene
+
+### Added
+
+- Razdvojeni brojači uvoza: `pending_rows`, `processing_rows`, `preparation_failed_rows` i `import_failed_rows`; `processed_rows` sada predstavlja stvarno obrađene redove (`imported + import_failed`), dok `failed_rows` ostaje ukupan zbir grešaka pripreme i uvoza.
+- `failure_stage` na `book_import_rows` (`preparation` / `processing`) sa backfill migracijom za postojeće redove i preračunatim brojačima postojećih importa.
+- Live praćenje obrade: brojači se ažuriraju po započetom, uspešnom i neuspešnom redu, a detalj importa ih preračunava pri svakom poll-u.
+- Otkazivanje i brisanje uvoza bez uvezenih redova (`POST /book-imports/{id}/cancel`, `DELETE /book-imports/{id}`), uz zaštitu uvezenih redova i čišćenje privatnog fajla.
+- Inline izmene redova u tabeli umesto modala, sticky header tabele, uža prva kolona i help tekstovi kolona kroz tooltip.
+- Test fajlovi u `docs/test-uvoz/`: po 5.000 redova sa ISBN-om, samo Excel podacima i inventarnim brojevima, uz izvorne COBISS podatke.
+
+### Tests
+
+- Fokusirani import testovi: 66 prolazi / 472 assertiona.
+- Frontend build i Pint prolaze.
+- Migracija `2026_11_27_000001_add_import_counter_breakdown` je primenjena.
+
+## [26.11.2026] Excel uvoz: faza 5 — frontend
+
+### Added
+
+- React stranice `/books/imports` i `/books/imports/:id` sa upload dijalogom, listom importa, preview tabelom, selekcijom redova, ispravkama i retry akcijama.
+- Polling statusa importa, navigacija, API klijent sa `uploadFile`, TypeScript tipovi, prevodi na tri jezika i kartica uvoza na books landing stranici.
+- `BookImportPolicy` sveden na administratora biblioteke i superadmina; prateći policy testovi.
+
+### Tests
+
+- Fokusirani testovi: 59 prolazi / 348 assertiona; frontend build prolazi.
+
+## [26.11.2026] Excel uvoz: faza 4 — HTTP start, retry i ispravke
+
+### Added
+
+- `GET /book-imports/{id}/rows` sa filterima, pretragom, sortiranjem i paginacijom, uz pun filtered count za selekciju kroz sve stranice.
+- `POST /book-imports/{id}/start`, `POST /book-imports/{id}/retry` i `PATCH /book-imports/{id}/rows/{row}` sa verzionisanim ispravkama i zaštitom od stale izmena.
+- `all_matching` selekcija, `excel_direct` režim pri prvom pokretanju i retry-ju, `BookImportRowQueryService`, `BookImportRowListQueryDTO` i `BookImportRowResource`.
+
+### Tests
+
+- Fokusirani testovi: 103 prolazi / 621 assertiona; Pint prolazi.
+
+## [26.11.2026] Excel uvoz: refaktor resolvera za postojeće naslove
+
+### Changed
+
+- `BookImportBookResolver::persist()` razdvojen na pronalazak, dopunu postojećeg naslova i kreiranje novog naslova.
+- Prazna bibliografska polja postojećeg naslova dopunjavaju se validnim COBISS/Excel vrednostima; `field_sources` beleži zadržane i dopunjene vrednosti.
+
+### Tests
+
+- Fokusirani testovi: 44 prolazi / 278 assertiona; Pint prolazi.
+
 ## [26.11.2026] Excel uvoz: faza 3 — ISBN obrada i recovery
 
 ### Added
