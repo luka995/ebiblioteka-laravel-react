@@ -21,6 +21,8 @@ permisije, upload sa sinhronom proverom zaglavlja i asinhrona priprema redova do
 statusa `ready`. Dostupni su API endpointi `index`, `store` i `show`, bez liste
 pojedinačnih redova i korisničkog ekrana. Obrada knjiga/kopija, COBISS, recovery,
 pokretanje, ispravke i retry ostaju za naredne faze.
+Ulazni sloj je izdvojen u generički `ExcelImportReader` i ugovor
+`ExcelImportMapper`; knjige koriste `BookImportMapper`, bez promene API ponašanja.
 
 ---
 
@@ -330,6 +332,34 @@ Time se dobija:
 - `DB_QUEUE_RETRY_AFTER` mora biti veći od timeout-a, npr. 900 sekundi.
 - Job se dispečuje posle commit-a transakcije.
 
+### 6.4 Zajednički Excel ulaz i domenski mapperi
+
+- `ExcelImportReader` u `app/Services/ExcelImports/` otvara i zatvara XLSX,
+  streamuje prvi list i čuva fizičke brojeve redova. Ne poznaje modele, tabelu
+  importa, inventarne brojeve, ISBN, queue ili `book_imports` konfiguraciju.
+- `ExcelImportMapper<TRow>` ima dve metode: `mapHeader()` prepoznaje zaglavlje,
+  a `mapRow()` vraća konkretan tip reda ili `null` za red koji se preskače.
+  Reader ne određuje obavezna polja ni pravila validacije pojedinačnog domena.
+- `ExcelImportHeaderMapDTO` sadrži naziv lista, broj header reda, originalna
+  zaglavlja i mapu kolona. `hasColumn()` nije vezan za inventarnu kolonu.
+- `ExcelCellNormalizer` zajednički normalizuje tekst, razmake i numeričke
+  vrednosti bez naučne notacije; koriste ga reader i mapperi.
+- `BookImportMapper` implementira ugovor za `BookImportRowDataDTO` i koristi
+  postojeće knjiške header/payload mappere. Aliasi, ISBN/naslov uslov, validacija
+  kolona i knjiški kodovi grešaka ostaju izvan generičkog reader-a.
+- Pipeline prosleđuje limit pretrage zaglavlja. `header()` vraća `null` kada
+  zaglavlje nije pronađeno u tom limitu; book pipeline to pretvara u postojeći
+  `missing_columns`. OpenSpout greške čitanja pretvara u `file_unreadable`,
+  dok se neočekivane greške mappera ne prikrivaju. API statusi i poruke ostaju isti.
+- Priprema i upload sada koriste `ExcelImportReader` sa `BookImportMapper`.
+  DB lease, chunk upis, limiti redova i brojači ostaju odgovornost knjiškog pipeline-a.
+
+Naredni korak je faza 3 na ovoj osnovi. Obrada koristi već pripremljene preview
+redove iz baze, bez ponovnog parsiranja originalnog XLSX fajla.
+Kada dođe uvoz učenika, dodaju se `StudentImportMapper` i studentski pipeline
+(njegovi DTO-i, validacija i upis), bez novog XLSX reader-a. Studentski import
+i faza 3 nisu implementirani u ovom refaktoru.
+
 ---
 
 ## 7. Model podataka
@@ -476,7 +506,7 @@ Po konvenciji, DTO klase imaju sufiks `DTO`.
 
 - `BookImportListQueryDTO`
 - `BookImportRowListQueryDTO`
-- `BookImportHeaderMapDTO`
+- `ExcelImportHeaderMapDTO` — zajedničko zaglavlje za različite tipove importa
 - `BookImportRowDataDTO`
 
 Efektivni ulaz je originalni `raw_payload` sa primenjenim dozvoljenim `input_overrides`, uključujući eksplicitno brisanje vrednosti. Korisnički `null` ne znači „vrati original“. Ako inventarna kolona ne postoji, DTO ne prihvata naknadno ručno zadavanje broja: generator se koristi pri kreiranju kopije.
@@ -1613,10 +1643,11 @@ korisnički ekran i API lista pojedinačnih redova nisu deo ove faze.
 
 Zadaci:
 
-- `BookImportFileReader` — OpenSpout streaming,
+- `ExcelImportReader` — zajednički OpenSpout streaming,
+- `ExcelImportMapper` i knjiška implementacija `BookImportMapper`,
 - `BookImportHeaderMapper` — detekcija i aliasi,
 - `BookImportRowPayloadMapper` — mapiranje ćelija,
-- `BookImportHeaderMapDTO`,
+- `ExcelImportHeaderMapDTO`,
 - `BookImportRowDataDTO`,
 - `StoreBookImportRequest`,
 - `BookImportsController` — `index`, `store`, `show`,

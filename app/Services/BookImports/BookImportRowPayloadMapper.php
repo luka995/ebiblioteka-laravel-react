@@ -2,18 +2,21 @@
 
 namespace App\Services\BookImports;
 
-use App\DTOs\BookImportHeaderMapDTO;
 use App\DTOs\BookImportRowDataDTO;
+use App\DTOs\ExcelImportHeaderMapDTO;
 use App\Enums\BookImportFailureEnum;
+use App\Services\ExcelImports\ExcelCellNormalizer;
 use OpenSpout\Common\Entity\Cell;
 use OpenSpout\Common\Entity\Cell\FormulaCell;
 
 class BookImportRowPayloadMapper
 {
+    public function __construct(private readonly ExcelCellNormalizer $cellsNormalizer) {}
+
     /**
      * @param  array<int, Cell>  $cells
      */
-    public function map(array $cells, int $rowNumber, BookImportHeaderMapDTO $header): ?BookImportRowDataDTO
+    public function map(array $cells, int $rowNumber, ExcelImportHeaderMapDTO $header): ?BookImportRowDataDTO
     {
         $payload = [];
         $invalidField = null;
@@ -23,7 +26,7 @@ class BookImportRowPayloadMapper
             $cell = $cells[$index] ?? null;
             $value = $cell?->getValue();
             $hasData = $hasData || ($value !== null && $value !== '');
-            $text = $this->text($value);
+            $text = $this->cellsNormalizer->text($value);
 
             if ($cell instanceof FormulaCell || ($value !== null && ! is_string($value) && ! is_int($value) && ! is_float($value))) {
                 $invalidField ??= $field;
@@ -100,20 +103,5 @@ class BookImportRowPayloadMapper
             $invalidField === null ? null : BookImportFailureEnum::InvalidFieldValue,
             $invalidField,
         );
-    }
-
-    public function text(mixed $value): ?string
-    {
-        if (is_float($value)) {
-            return rtrim(rtrim(number_format($value, 8, '.', ''), '0'), '.');
-        }
-
-        if (! is_string($value) && ! is_int($value)) {
-            return null;
-        }
-
-        $text = trim(preg_replace('/[\s\x{00a0}]+/u', ' ', (string) $value));
-
-        return $text === '' ? null : $text;
     }
 }

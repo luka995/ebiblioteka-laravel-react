@@ -2,7 +2,7 @@
 
 namespace App\Services\BookImports;
 
-use App\DTOs\BookImportHeaderMapDTO;
+use App\DTOs\ExcelImportHeaderMapDTO;
 use App\Enums\BookImportFailureEnum;
 use App\Exceptions\BookImportFileException;
 use App\Support\Text;
@@ -50,7 +50,7 @@ class BookImportHeaderMapper
     /**
      * @param  array<int, string|null>  $headers
      */
-    public function map(array $headers, int $rowNumber, string $sheetName): ?BookImportHeaderMapDTO
+    public function map(array $headers, int $rowNumber, string $sheetName): ?ExcelImportHeaderMapDTO
     {
         $columns = [];
         $duplicate = false;
@@ -72,6 +72,6 @@ class BookImportHeaderMapper
             throw new BookImportFileException(BookImportFailureEnum::DuplicateHeaders);
         }
 
-        return new BookImportHeaderMapDTO($sheetName, $rowNumber, $headers, $columns);
+        return new ExcelImportHeaderMapDTO($sheetName, $rowNumber, $headers, $columns);
     }
 }

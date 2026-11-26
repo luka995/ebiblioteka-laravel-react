@@ -1,24 +1,23 @@
 <?php
 
-namespace App\Services\BookImports;
+namespace App\Services\ExcelImports;
 
-use App\DTOs\BookImportHeaderMapDTO;
-use App\DTOs\BookImportRowDataDTO;
-use App\Enums\BookImportFailureEnum;
-use App\Exceptions\BookImportFileException;
+use App\DTOs\ExcelImportHeaderMapDTO;
 use Generator;
 use OpenSpout\Common\Exception\OpenSpoutException;
 use OpenSpout\Reader\XLSX\Options;
 use OpenSpout\Reader\XLSX\Reader;
 
-class BookImportFileReader
+class ExcelImportReader
 {
-    public function __construct(
-        private readonly BookImportHeaderMapper $headers,
-        private readonly BookImportRowPayloadMapper $payloads,
-    ) {}
+    public function __construct(private readonly ExcelCellNormalizer $cells) {}
 
-    public function header(string $path): BookImportHeaderMapDTO
+    /**
+     * @param  ExcelImportMapper<object>  $mapper
+     *
+     * @throws OpenSpoutException
+     */
+    public function header(string $path, ExcelImportMapper $mapper, int $scanRows): ?ExcelImportHeaderMapDTO
     {
         $reader = $this->reader();
 
@@ -27,12 +26,12 @@ class BookImportFileReader
 
             foreach ($reader->getSheetIterator() as $sheet) {
                 foreach ($sheet->getRowIterator() as $number => $row) {
-                    if ($number > config('book_imports.header_scan_rows')) {
+                    if ($number > $scanRows) {
                         break;
                     }
 
-                    $header = $this->headers->map(
-                        array_map($this->payloads->text(...), $row->toArray()),
+                    $header = $mapper->mapHeader(
+                        array_map($this->cells->text(...), $row->toArray()),
                         $number,
                         $sheet->getName(),
                     );
@@ -44,19 +43,22 @@ class BookImportFileReader
 
                 break;
             }
-        } catch (OpenSpoutException $e) {
-            throw new BookImportFileException(BookImportFailureEnum::FileUnreadable, $e);
         } finally {
             $reader->close();
         }
 
-        throw new BookImportFileException(BookImportFailureEnum::MissingColumns);
+        return null;
     }
 
     /**
-     * @return Generator<int, BookImportRowDataDTO>
+     * @template TRow of object
+     *
+     * @param  ExcelImportMapper<TRow>  $mapper
+     * @return Generator<int, TRow>
+     *
+     * @throws OpenSpoutException
      */
-    public function rows(string $path, BookImportHeaderMapDTO $header): Generator
+    public function rows(string $path, ExcelImportHeaderMapDTO $header, ExcelImportMapper $mapper): Generator
     {
         $reader = $this->reader();
 
@@ -69,7 +71,7 @@ class BookImportFileReader
                         continue;
                     }
 
-                    $payload = $this->payloads->map($row->getCells(), $number, $header);
+                    $payload = $mapper->mapRow($row->getCells(), $number, $header);
 
                     if ($payload !== null) {
                         yield $number => $payload;
@@ -78,8 +80,6 @@ class BookImportFileReader
 
                 break;
             }
-        } catch (OpenSpoutException $e) {
-            throw new BookImportFileException(BookImportFailureEnum::FileUnreadable, $e);
         } finally {
             $reader->close();
         }

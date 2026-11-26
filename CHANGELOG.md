@@ -1,5 +1,19 @@
 # Changelog
 
+## [26.11.2026] Excel uvoz: generički reader i mapper ugovor
+
+### Changed
+
+- Zamenjen knjiški file reader generičkim `ExcelImportReader` i tipizovanim ugovorom `ExcelImportMapper<TRow>`, bez zavisnosti od knjiških modela, grešaka ili konfiguracije.
+- Dodat `BookImportMapper` kao adapter postojećih knjiških header/payload mappera; upload i `PrepareBookImportJob` koriste zajednički reader.
+- Zajednički header DTO je `ExcelImportHeaderMapDTO`, a normalizacija ćelija izdvojena je u `ExcelCellNormalizer`. API odgovori, kodovi grešaka, preview podaci, queue i DB lease ponašanje ostaju nepromenjeni.
+- Faza 3 nastavlja na ovoj osnovi u narednom koraku. Budući uvoz učenika dodaje `StudentImportMapper` i svoj pipeline; studentski import nije implementiran.
+
+### Tests
+
+- 52 book import testa / 303 assertiona prolaze, uključujući 10.000 redova, originalni šablon, lease/retry i postojeće API greške.
+- Dodat test nepovezanog mappera sa sopstvenim kolonama i tipom reda, kao i propagacije generičkih file/mapper grešaka; Pint prolazi.
+
 ## [26.11.2026] Excel uvoz: faza 2 — upload i priprema preview-a
 
 ### Added

@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
-use App\DTOs\BookImportHeaderMapDTO;
 use App\DTOs\BookImportRowDataDTO;
+use App\DTOs\ExcelImportHeaderMapDTO;
 use App\Enums\BookImportFailureEnum;
 use App\Enums\BookImportRowStatusEnum;
 use App\Enums\BookImportStatusEnum;
@@ -11,7 +11,8 @@ use App\Exceptions\BookImportFileException;
 use App\Http\Middleware\SetLocale;
 use App\Models\BookCopy;
 use App\Models\BookImport;
-use App\Services\BookImports\BookImportFileReader;
+use App\Services\BookImports\BookImportMapper;
+use App\Services\ExcelImports\ExcelImportReader;
 use App\Services\InventoryNumberService;
 use Closure;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Localizable;
 use InvalidArgumentException;
+use OpenSpout\Common\Exception\OpenSpoutException;
 use Throwable;
 
 class PrepareBookImportJob implements ShouldQueue
@@ -46,12 +48,12 @@ class PrepareBookImportJob implements ShouldQueue
         $this->onQueue(config('book_imports.queue'));
     }
 
-    public function handle(BookImportFileReader $reader, InventoryNumberService $numbers): void
+    public function handle(ExcelImportReader $reader, BookImportMapper $mapper, InventoryNumberService $numbers): void
     {
-        $this->withLocale($this->locale, fn () => $this->prepare($reader, $numbers));
+        $this->withLocale($this->locale, fn () => $this->prepare($reader, $mapper, $numbers));
     }
 
-    private function prepare(BookImportFileReader $reader, InventoryNumberService $numbers): void
+    private function prepare(ExcelImportReader $reader, BookImportMapper $mapper, InventoryNumberService $numbers): void
     {
         if (! $this->claim()) {
             return;
@@ -60,12 +62,13 @@ class PrepareBookImportJob implements ShouldQueue
         try {
             $import = BookImport::findOrFail($this->bookImportId);
             $path = Storage::disk(config('book_imports.disk'))->path($import->file_path);
-            $header = $reader->header($path);
+            $header = $reader->header($path, $mapper, (int) config('book_imports.header_scan_rows'))
+                ?? throw new BookImportFileException(BookImportFailureEnum::MissingColumns);
             $chunk = [];
             $seen = [];
             $count = 0;
 
-            foreach ($reader->rows($path, $header) as $row) {
+            foreach ($reader->rows($path, $header, $mapper) as $row) {
                 if (++$count > config('book_imports.max_rows')) {
                     throw new BookImportFileException(BookImportFailureEnum::TooManyRows);
                 }
@@ -95,14 +98,15 @@ class PrepareBookImportJob implements ShouldQueue
                     'sheet_name' => $header->sheetName,
                     'headers' => $header->headers,
                     'column_map' => $header->columnMap,
-                    'has_inventory_column' => $header->hasInventoryColumn(),
+                    'has_inventory_column' => $header->hasColumn('inventory_number'),
                     'processing_token' => null,
                     'lease_expires_at' => null,
                 ]);
                 $this->log('info', 'book_import.prepared', ['total_rows' => $import->total_rows]);
             });
-        } catch (BookImportFileException $e) {
-            $this->withLease(fn (BookImport $import) => $this->markFailed($import, $e->failureCode));
+        } catch (BookImportFileException|OpenSpoutException $e) {
+            $failure = $e instanceof BookImportFileException ? $e->failureCode : BookImportFailureEnum::FileUnreadable;
+            $this->withLease(fn (BookImport $import) => $this->markFailed($import, $failure));
         } catch (Throwable $e) {
             $this->log('error', 'book_import.preparation_error', ['exception' => $e::class]);
             $this->withLease(function (BookImport $import): void {
@@ -198,7 +202,7 @@ class PrepareBookImportJob implements ShouldQueue
      */
     private function record(
         BookImportRowDataDTO $row,
-        BookImportHeaderMapDTO $header,
+        ExcelImportHeaderMapDTO $header,
         InventoryNumberService $numbers,
         array &$seen,
     ): array {
@@ -206,7 +210,7 @@ class PrepareBookImportJob implements ShouldQueue
         $field = $row->failureField;
         $inventory = $row->payload['inventory_number'] ?? null;
 
-        if ($header->hasInventoryColumn()) {
+        if ($header->hasColumn('inventory_number')) {
             if ($inventory === null) {
                 $failure ??= BookImportFailureEnum::MissingInventoryNumber;
             } else {

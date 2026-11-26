@@ -215,6 +215,11 @@ docker compose up -d --build queue-imports
 - DB parcijalni unique indeks dozvoljava samo jedan `pending`/`ready`/`processing`
   import po biblioteci; završeni importi ostaju u istoriji.
 - Preview redovi ne rezervišu inventarne brojeve/barkodove i ne pomeraju sekvencu.
+- XLSX čita zajednički `ExcelImportReader` preko ugovora `ExcelImportMapper`.
+  Knjiška pravila ostaju u `BookImportMapper` i njegovim helperima, dok
+  `ExcelCellNormalizer` i `ExcelImportHeaderMapDTO` ne zavise od tipa importa.
+  Budući uvoz učenika dodaje svoj mapper i pipeline, bez kopiranja reader-a;
+  faza 3 i studentski import nisu deo ovog refaktora.
 - Čita se samo prvi list; zaglavlje je u prvih 20 fizičkih redova. Uputstvo,
   prazni redovi i pomoćni listovi se ne uvoze. Excel formule se ne izvršavaju;
   formula u podržanoj koloni označava red kao neispravan.

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\DTOs\Queries\BookImportListQueryDTO;
 use App\DTOs\Queries\SortingDTO;
+use App\Enums\BookImportFailureEnum;
 use App\Exceptions\BookImportFileException;
 use App\Http\Requests\StoreBookImportRequest;
 use App\Http\Resources\BookImportResource;
@@ -11,8 +12,9 @@ use App\Jobs\PrepareBookImportJob;
 use App\Models\BookImport;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
-use App\Services\BookImports\BookImportFileReader;
+use App\Services\BookImports\BookImportMapper;
 use App\Services\DatabaseExceptionService;
+use App\Services\ExcelImports\ExcelImportReader;
 use App\Services\Queries\BookImportQueryService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -23,6 +25,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use OpenSpout\Common\Exception\OpenSpoutException;
 use RuntimeException;
 use Throwable;
 
@@ -54,16 +57,20 @@ class BookImportsController extends Controller
     public function store(
         StoreBookImportRequest $request,
         ActiveLibraryService $activeLibrary,
-        BookImportFileReader $reader,
+        ExcelImportReader $reader,
+        BookImportMapper $mapper,
         DatabaseExceptionService $databaseErrors,
     ): JsonResponse {
         $library = $activeLibrary->requireActiveLibrary($request->user());
         $file = $request->file('file');
 
         try {
-            $header = $reader->header($file->getPathname());
-        } catch (BookImportFileException $e) {
-            throw ValidationException::withMessages(['file' => $e->getMessage()]);
+            $header = $reader->header($file->getPathname(), $mapper, (int) config('book_imports.header_scan_rows'))
+                ?? throw new BookImportFileException(BookImportFailureEnum::MissingColumns);
+        } catch (BookImportFileException|OpenSpoutException $e) {
+            throw ValidationException::withMessages([
+                'file' => $e instanceof BookImportFileException ? $e->getMessage() : BookImportFailureEnum::FileUnreadable->getLabel(),
+            ]);
         }
 
         $disk = Storage::disk(config('book_imports.disk'));
@@ -83,7 +90,7 @@ class BookImportsController extends Controller
                 'sheet_name' => $header->sheetName,
                 'headers' => $header->headers,
                 'column_map' => $header->columnMap,
-                'has_inventory_column' => $header->hasInventoryColumn(),
+                'has_inventory_column' => $header->hasColumn('inventory_number'),
             ]));
         } catch (Throwable $e) {
             if (! $disk->delete($path)) {

@@ -2,7 +2,7 @@
 
 namespace App\DTOs;
 
-final readonly class BookImportHeaderMapDTO
+final readonly class ExcelImportHeaderMapDTO
 {
     /**
      * @param  array<int, string|null>  $headers
@@ -15,8 +15,8 @@ final readonly class BookImportHeaderMapDTO
         public array $columnMap,
     ) {}
 
-    public function hasInventoryColumn(): bool
+    public function hasColumn(string $field): bool
     {
-        return isset($this->columnMap['inventory_number']);
+        return isset($this->columnMap[$field]);
     }
 }

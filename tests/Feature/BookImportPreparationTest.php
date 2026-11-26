@@ -1,12 +1,12 @@
 <?php
 
+use App\DTOs\ExcelImportHeaderMapDTO;
 use App\DTOs\Queries\BookImportListQueryDTO;
 use App\DTOs\Queries\SortingDTO;
 use App\Enums\BookImportFailureEnum;
 use App\Enums\BookImportRowStatusEnum;
 use App\Enums\BookImportStatusEnum;
 use App\Enums\LibraryRole;
-use App\Exceptions\BookImportFileException;
 use App\Jobs\PrepareBookImportJob;
 use App\Models\Book;
 use App\Models\BookCopy;
@@ -14,7 +14,10 @@ use App\Models\BookImport;
 use App\Models\BookInventorySequence;
 use App\Models\Library;
 use App\Models\User;
-use App\Services\BookImports\BookImportFileReader;
+use App\Services\BookImports\BookImportMapper;
+use App\Services\ExcelImports\ExcelCellNormalizer;
+use App\Services\ExcelImports\ExcelImportMapper;
+use App\Services\ExcelImports\ExcelImportReader;
 use App\Services\InventoryNumberService;
 use App\Services\Queries\BookImportQueryService;
 use Illuminate\Database\QueryException;
@@ -25,6 +28,7 @@ use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use OpenSpout\Common\Entity\Row;
+use OpenSpout\Common\Exception\OpenSpoutException;
 use OpenSpout\Reader\XLSX\Options;
 use OpenSpout\Reader\XLSX\Reader;
 use OpenSpout\Writer\XLSX\Writer;
@@ -115,12 +119,13 @@ test('upload validates only the header, saves a private pending import and queue
 });
 
 test('the supplied template supports all columns and removal of the complete inventory column', function () {
-    $service = app(BookImportFileReader::class);
+    $service = app(ExcelImportReader::class);
+    $mapper = app(BookImportMapper::class);
     $path = base_path('docs/sablon-uvoza-knjiga.xlsx');
-    $header = $service->header($path);
+    $header = $service->header($path, $mapper, 20);
     expect($header->rowNumber)->toBe(14)
         ->and($header->columnMap)->toHaveCount(23)
-        ->and($header->hasInventoryColumn())->toBeTrue();
+        ->and($header->hasColumn('inventory_number'))->toBeTrue();
 
     $options = new Options;
     $options->SHOULD_PRESERVE_EMPTY_ROWS = true;
@@ -142,10 +147,10 @@ test('the supplied template supports all columns and removal of the complete inv
         $reader->close();
     }
 
-    $withoutInventory = $service->header($file->getPathname());
+    $withoutInventory = $service->header($file->getPathname(), $mapper, 20);
     expect($withoutInventory->rowNumber)->toBe(14)
         ->and($withoutInventory->columnMap)->toHaveCount(22)
-        ->and($withoutInventory->hasInventoryColumn())->toBeFalse();
+        ->and($withoutInventory->hasColumn('inventory_number'))->toBeFalse();
 });
 
 test('invalid headers are rejected before creating records or storing files', function (array $headers) {
@@ -165,11 +170,80 @@ test('invalid headers are rejected before creating records or storing files', fu
 ]);
 
 test('header scan is limited to the first twenty physical rows of the first sheet', function () {
-    $reader = app(BookImportFileReader::class);
+    $reader = app(ExcelImportReader::class);
     $file = importXlsx([...array_fill(0, 20, []), ['Naslov']], [['Naslov'], ['Primer']]);
 
-    expect(fn () => $reader->header($file->getPathname()))
-        ->toThrow(BookImportFileException::class, BookImportFailureEnum::MissingColumns->getLabel());
+    expect($reader->header($file->getPathname(), app(BookImportMapper::class), 20))->toBeNull();
+    $this->actingAs(importStaff(Library::factory()->create()))
+        ->postJson('/api/v1/book-imports', ['file' => $file])
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.file.0', BookImportFailureEnum::MissingColumns->getLabel());
+});
+
+test('the same reader accepts an unrelated mapper without book headers or book row DTOs', function () {
+    $mapper = new class(app(ExcelCellNormalizer::class)) implements ExcelImportMapper
+    {
+        public function __construct(private readonly ExcelCellNormalizer $cells) {}
+
+        public function mapHeader(array $headers, int $rowNumber, string $sheetName): ?ExcelImportHeaderMapDTO
+        {
+            if ($headers !== ['External reference', 'Label']) {
+                return null;
+            }
+
+            return new ExcelImportHeaderMapDTO($sheetName, $rowNumber, $headers, ['reference' => 0, 'label' => 1]);
+        }
+
+        public function mapRow(array $cells, int $rowNumber, ExcelImportHeaderMapDTO $header): ?stdClass
+        {
+            $reference = $this->cells->text(($cells[$header->columnMap['reference']] ?? null)?->getValue());
+
+            return $reference === null ? null : (object) [
+                'reference' => $reference,
+                'label' => $this->cells->text(($cells[$header->columnMap['label']] ?? null)?->getValue()),
+                'row_number' => $rowNumber,
+            ];
+        }
+    };
+    $file = importXlsx([
+        ['Uputstvo'], [], ['External reference', 'Label'], ['001', '  Prvi   zapis '], [], [1234567890123, 'Drugi'],
+    ], [['External reference', 'Label'], ['999', 'Primer se ne uvozi']]);
+    $reader = app(ExcelImportReader::class);
+    config(['book_imports.header_scan_rows' => 1]);
+
+    expect($reader->header($file->getPathname(), $mapper, 2))->toBeNull();
+    $header = $reader->header($file->getPathname(), $mapper, 3);
+    expect($header->rowNumber)->toBe(3)
+        ->and($header->sheetName)->toBe('Uvoz');
+    $rows = iterator_to_array($reader->rows($file->getPathname(), $header, $mapper));
+
+    expect(array_keys($rows))->toBe([4, 6])
+        ->and($rows[4])->toBeInstanceOf(stdClass::class)
+        ->and((array) $rows[4])->toBe(['reference' => '001', 'label' => 'Prvi zapis', 'row_number' => 4])
+        ->and($rows[6]->reference)->toBe('1234567890123');
+});
+
+test('generic reader propagates file and mapper errors without module specific wrapping', function () {
+    $mapper = new class implements ExcelImportMapper
+    {
+        public function mapHeader(array $headers, int $rowNumber, string $sheetName): ?ExcelImportHeaderMapDTO
+        {
+            return new ExcelImportHeaderMapDTO($sheetName, $rowNumber, $headers, ['reference' => 0]);
+        }
+
+        public function mapRow(array $cells, int $rowNumber, ExcelImportHeaderMapDTO $header): ?object
+        {
+            throw new DomainException('Mapping rejected this row.');
+        }
+    };
+    $reader = app(ExcelImportReader::class);
+    $invalid = UploadedFile::fake()->createWithContent('invalid.xlsx', 'invalid workbook');
+    expect(fn () => $reader->header($invalid->getPathname(), $mapper, 20))->toThrow(OpenSpoutException::class);
+
+    $file = importXlsx([['Reference'], ['1']]);
+    $header = $reader->header($file->getPathname(), $mapper, 20);
+    expect(fn () => iterator_to_array($reader->rows($file->getPathname(), $header, $mapper)))
+        ->toThrow(DomainException::class, 'Mapping rejected this row.');
 });
 
 test('upload rejects wrong extension, invalid contents, oversized files and array inputs', function () {
@@ -508,14 +582,15 @@ test('duplicate execution and failed callback cannot overwrite a live preparatio
 
 test('a stale worker cannot insert another chunk or finalize after losing its token', function () {
     $import = stagedBookImport(importXlsx([['Naslov'], ['1'], ['2'], ['3'], ['4']]));
-    $real = app(BookImportFileReader::class);
+    $real = app(ExcelImportReader::class);
+    $mapper = app(BookImportMapper::class);
     $replacement = (string) Str::uuid();
-    $reader = Mockery::mock(BookImportFileReader::class);
-    $reader->shouldReceive('header')->once()->andReturn($real->header(Storage::disk('imports')->path($import->file_path)));
-    $reader->shouldReceive('rows')->once()->andReturnUsing(function ($path, $header) use ($real, $import, $replacement) {
+    $reader = Mockery::mock(ExcelImportReader::class);
+    $reader->shouldReceive('header')->once()->andReturn($real->header(Storage::disk('imports')->path($import->file_path), $mapper, 20));
+    $reader->shouldReceive('rows')->once()->andReturnUsing(function ($path, $header, $mapper) use ($real, $import, $replacement) {
         $count = 0;
 
-        foreach ($real->rows($path, $header) as $number => $row) {
+        foreach ($real->rows($path, $header, $mapper) as $number => $row) {
             yield $number => $row;
 
             if (++$count === 2) {
@@ -524,7 +599,7 @@ test('a stale worker cannot insert another chunk or finalize after losing its to
         }
     });
 
-    (new PrepareBookImportJob($import->id))->handle($reader, app(InventoryNumberService::class));
+    (new PrepareBookImportJob($import->id))->handle($reader, $mapper, app(InventoryNumberService::class));
     expect($import->fresh()->status)->toBe(BookImportStatusEnum::Pending)
         ->and($import->fresh()->processing_token)->toBe($replacement)
         ->and($import->rows()->count())->toBe(2)
@@ -533,17 +608,18 @@ test('a stale worker cannot insert another chunk or finalize after losing its to
 
 test('unexpected preparation exceptions are rethrown, retriable and terminally reported on the final attempt', function () {
     $import = stagedBookImport(importXlsx([['Naslov'], ['1']]));
-    $reader = Mockery::mock(BookImportFileReader::class);
+    $reader = Mockery::mock(ExcelImportReader::class);
+    $mapper = app(BookImportMapper::class);
     $reader->shouldReceive('header')->twice()->andThrow(new RuntimeException('unexpected failure'));
     $numbers = app(InventoryNumberService::class);
-    expect(fn () => (new PrepareBookImportJob($import->id))->handle($reader, $numbers))
+    expect(fn () => (new PrepareBookImportJob($import->id))->handle($reader, $mapper, $numbers))
         ->toThrow(RuntimeException::class, 'unexpected failure');
     expect($import->fresh()->status)->toBe(BookImportStatusEnum::Pending)
         ->and($import->fresh()->processing_token)->toBeNull();
 
     $job = new PrepareBookImportJob($import->id);
     $job->tries = 1;
-    expect(fn () => $job->handle($reader, $numbers))->toThrow(RuntimeException::class, 'unexpected failure');
+    expect(fn () => $job->handle($reader, $mapper, $numbers))->toThrow(RuntimeException::class, 'unexpected failure');
     expect($import->fresh()->status)->toBe(BookImportStatusEnum::Failed)
         ->and($import->fresh()->failure_code)->toBe(BookImportFailureEnum::JobFailed);
 });
