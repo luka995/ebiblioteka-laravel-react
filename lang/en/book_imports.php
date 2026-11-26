@@ -1,7 +1,14 @@
 <?php
 
 return [
+    'lookup_status' => [
+        'found' => 'Found',
+        'not_found' => 'Not found',
+        'failed' => 'Lookup failed',
+    ],
     'errors' => [
+        'not_ready' => 'The import must be ready before starting.',
+        'invalid_selection' => 'Select pending rows belonging to this import.',
         'active_import' => 'This library already has an active import.',
         'invalid_field' => 'Invalid value in column ":field".',
         'filename_too_long' => 'The filename must not exceed 255 characters.',

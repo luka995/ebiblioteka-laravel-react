@@ -4,6 +4,7 @@ use App\Enums\BookImportFailureEnum;
 use App\Enums\BookImportModeEnum;
 use App\Enums\BookImportRowStatusEnum;
 use App\Enums\BookImportStatusEnum;
+use App\Enums\IsbnLookupStatusEnum;
 use App\Enums\LibraryRole;
 use App\Models\Book;
 use App\Models\BookCopy;
@@ -34,6 +35,7 @@ test('import enum options use labels from the selected locale', function (string
         BookImportRowStatusEnum::class => 'row_status',
         BookImportModeEnum::class => 'modes',
         BookImportFailureEnum::class => 'failures',
+        IsbnLookupStatusEnum::class => 'lookup_status',
     ] as $enum => $group) {
         $expected = [];
 

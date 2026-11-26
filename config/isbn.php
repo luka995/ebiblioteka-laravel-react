@@ -9,10 +9,14 @@ return [
     |
     | Redosled izvora: NBS/COBISS+ scraping -> Open Library -> Google Books.
     | Kesiraju se samo uspesni rezultati (negativni se ne pamte).
+    | Excel import koristi samo COBISS, uz poseban import-scoped kes koji pamti
+    | i potvrdjeni not_found, ali nikada tehnicki neuspeh.
     |
     */
 
     'timeout' => env('ISBN_HTTP_TIMEOUT', 8),
+    'http_retries' => (int) env('ISBN_HTTP_RETRIES', 2),
+    'http_retry_delay_ms' => (int) env('ISBN_HTTP_RETRY_DELAY_MS', 250),
 
     'cache_ttl' => env('ISBN_CACHE_TTL', 86400),
 

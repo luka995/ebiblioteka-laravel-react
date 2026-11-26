@@ -16,11 +16,15 @@ Ovaj dokument objedinjuje:
 
 Cilj je da se jedan dokument može direktno koristiti kao ulaz za implementaciju.
 
-**Status (26.11.2026):** implementirane su faze 1 i 2 — infrastruktura, modeli,
+**Status (26.11.2026):** implementirane su faze 1–3 — infrastruktura, modeli,
 permisije, upload sa sinhronom proverom zaglavlja i asinhrona priprema redova do
 statusa `ready`. Dostupni su API endpointi `index`, `store` i `show`, bez liste
-pojedinačnih redova i korisničkog ekrana. Obrada knjiga/kopija, COBISS, recovery,
-pokretanje, ispravke i retry ostaju za naredne faze.
+pojedinačnih redova i korisničkog ekrana. Faza 3 dodaje stvarnu `isbn_check`
+obradu knjiga/kopija, COBISS-only strukturisani lookup, brojače, lease i recovery.
+Interni `BookImportStartService::start($import, $rowIds)` pokreće izričito izabrane
+redove pripremljenog importa; nije HTTP endpoint i ne zamenjuje autorizaciju
+budućeg kontrolera. `excel_direct`, HTTP pokretanje, ispravke i retry ostaju za
+fazu 4, a frontend za fazu 5.
 Ulazni sloj je izdvojen u generički `ExcelImportReader` i ugovor
 `ExcelImportMapper`; knjige koriste `BookImportMapper`, bez promene API ponašanja.
 
@@ -275,7 +279,7 @@ PrepareBookImportJob
    ↓
 Preview: izbor redova i režima → Pokreni uvoz
    ↓
-ProcessBookImport (isbn_check ili excel_direct)
+ProcessBookImportJob (isbn_check ili excel_direct)
    ├─ batch ~20 redova
    ├─ po jedan red = jedna kratka transakcija
    ├─ isbn_check: ISBN → lokalna baza → COBISS
@@ -291,7 +295,7 @@ Korisnik filtrira failed redove i ispravlja podatke
    ↓
 Retry izabranih redova
    ↓
-ProcessBookImport (isbn_check ili excel_direct)
+ProcessBookImportJob (isbn_check ili excel_direct)
    ├─ isbn_check ponavlja proveru; excel_direct preskače COBISS
    ├─ efektivni podaci iz previewa
    ├─ kreiranje/reuse naslova
@@ -309,7 +313,7 @@ Ne koristiti:
 Koristiti:
 
 - `PrepareBookImportJob` za pripremu,
-- `ProcessBookImport` koji obrađuje batch i ponovo sebe dispečuje dok ima posla,
+- `ProcessBookImportJob` koji obrađuje batch i ponovo sebe dispečuje dok ima posla,
 - DB lease za vlasništvo nad obradom aktivnog importa biblioteke,
 - kratke transakcije po redu,
 - čuvanje napretka u bazi.
@@ -747,7 +751,7 @@ nula, jer stvarna obrada još nije počela.
 3. API vraća `202` sa `selected_rows`; job se dispečuje posle commit-a. Zahtev ne radi COBISS HTTP poziv niti kreira knjige/kopije.
 4. Neizabrani redovi zadržavaju `pending`, bez zahteva za obradu i bez zauzimanja brojeva. Filtriranje i sortiranje prikaza ne dodeljuju brojeve.
 
-`ProcessBookImport` u `isbn_check` režimu:
+`ProcessBookImportJob` u `isbn_check` režimu:
 
 1. Atomski preuzima DB lease importa i proverava da je status `processing` i da sačuvani režim odgovara poslu.
 2. Samo posle bezbednog preuzimanja isteklog lease-a vraća zaostale `processing` redove na `pending`, prema odeljku 15.3; aktivan pokušaj se ne resetuje.
@@ -797,14 +801,14 @@ Ako job konačno padne:
    - `resolved_payload = null`, `field_sources = null`, da prethodni rezultat ne izgleda kao ishod novog pokušaja; `raw_payload` se ne menja,
    - `processed_at = null`; `attempts` i `completed_attempts` se ne resetuju.
 6. Izbor se razrešava na serveru, a promene redova, prelazak importa u `processing`, `finished_at = null` i trenutni brojači ažuriraju se u jednoj DB transakciji.
-7. Posle commit-a dispečuje se `ProcessBookImport` u izabranom režimu. Broj iz efektivnog Excel ulaza ponovo se proverava; bez inventarne kolone broj će se generisati tek pri upisu kopije.
+7. Posle commit-a dispečuje se `ProcessBookImportJob` u izabranom režimu. Broj iz efektivnog Excel ulaza ponovo se proverava; bez inventarne kolone broj će se generisati tek pri upisu kopije.
 8. Fallback batch može biti veći, npr. 100, jer nema eksternih poziva.
 9. Na kraju se ponovo računaju brojači i finalizuje status.
 
 ### 9.5 Direktni Excel režim iz početnog previewa
 
 - Isti `/start` endpoint prima `mode = excel_direct` za izabrane `pending` redove; COBISS neuspeh nije preduslov.
-- `ProcessBookImport` može obrađivati veći batch, npr. 100, ali svaki red ima sopstvenu kratku transakciju.
+- `ProcessBookImportJob` može obrađivati veći batch, npr. 100, ali svaki red ima sopstvenu kratku transakciju.
 - `excel_direct` koristi isti Excel-only procesor iz odeljka 12 pri početnom pokretanju i retry-ju. Endpoint i stanje reda određuju kontekst ponovnog pokušaja, ne dodatna vrednost režima.
 - Ne pozivaju se eksterni ISBN servisi, scraping ni metapodaci iz njihovog keša. Ne traži se zamena naslova preko ISBN-a; postojeći naslov može se povezati lokalno po naslovu i autorima.
 - Prazan ISBN nije greška u ovom režimu. Naslov, pravila inventarnog broja i ostala pravila valjanog upisa i dalje važe.
@@ -1465,6 +1469,20 @@ Backend prevodi:
 - Za `pending` import sa prekinutom pripremom nastavlja se priprema prema odeljku 9.2; za `processing` import nastavlja se obrada izabranih redova. Nepotvrđena dodela broja vraćena je sa transakcijom i ne čuva se radi retry-ja.
 - `ready` import koji čeka korisnika ne dispečuje se kroz recovery i ne finalizuje se kao neuspešan zbog starosti. Ne zauzima brojeve dok čeka.
 - Kopija i uspešan ishod reda nastaju u istoj transakciji. Ako je commit već uspeo, recovery vidi `imported` i ne pravi novu kopiju.
+- Implementacija faze 3: `ProcessBookImportJob` obrađuje najviše 20 izabranih
+  redova i dispečuje nastavak posle commit-a. Pre novog reda ostavlja vreme za
+  najgori konfigurisani broj COBISS zahteva, timeout, pauze i ponovne pokušaje.
+  Ako ni jedan lookup ne staje u hard timeout, posao prijavljuje konfiguracionu
+  grešku umesto beskonačnog dispečovanja praznih batch-eva.
+- Neočekivana greška konkretnog reda beleži se kao `unexpected_error`, uz
+  rollback svih njegovih upisa i invalidaciju keširanih autora/kategorija iz
+  transakcije. Ostali redovi nastavljaju. Greška samog job-a ponovo se baca queue-u;
+  nakon iscrpljenih pokušaja samo izabrani nedovršeni redovi dobijaju `job_failed`,
+  import postaje `failed`, a uspešni i neizabrani redovi ostaju sačuvani. Nepočeti
+  redovi ne dobijaju izmišljene pokušaje.
+- Svež queue `failed()` callback ne poništava živ tuđi lease; tada prepušta
+  oporavak scheduler-u. Recovery pod DB lock-om osvežava `updated_at` i kada su
+  token i rok već prazni, da ponovljen poziv ne dispečuje isti posao iznova.
 
 ### 15.4 Logovanje
 
@@ -1673,7 +1691,7 @@ Zadaci:
 - `BookImportBookResolver`,
 - `BookImportCopyService`,
 - `BookImportCounterService`,
-- `ProcessBookImport` job u `isbn_check` režimu, sa eksplicitnim trajnim izborom redova,
+- `ProcessBookImportJob` u `isbn_check` režimu, sa eksplicitnim trajnim izborom redova,
 - lokalni ISBN lookup,
 - strukturisani COBISS ishodi i eksplicitni COBISS-only ulaz sa izolovanim kešom; ostali ISBN tokovi ostaju nepromenjeni,
 - `BookMatcher`, `BookService`, `AuthorResolverService`, `CobissCategoryMapper`,
@@ -1705,7 +1723,7 @@ Zadaci:
 - `BookImportListQueryDTO`,
 - `BookImportRowListQueryDTO`,
 - filteri, pretraga, sortiranje, paginacija,
-- zajednička Excel-only obrada u `ProcessBookImport` za `excel_direct` pri prvom pokretanju i retry-ju, kao i `isbn_check` retry ispravljenih redova,
+- zajednička Excel-only obrada u `ProcessBookImportJob` za `excel_direct` pri prvom pokretanju i retry-ju, kao i `isbn_check` retry ispravljenih redova,
 - selekcija redova i `all_matching` sa zajedničkim filterima, bez paginacionog ograničenja,
 - resursi `BookImportResource`, `BookImportRowResource`,
 - policy provere.

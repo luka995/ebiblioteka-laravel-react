@@ -16,6 +16,11 @@ class AuthorResolverService
     /** @var array<int, array<string, Author>> */
     private array $cache = [];
 
+    public function forgetLibrary(int $libraryId): void
+    {
+        unset($this->cache[$libraryId]);
+    }
+
     public function key(string $name): string
     {
         return Text::authorKey($name);

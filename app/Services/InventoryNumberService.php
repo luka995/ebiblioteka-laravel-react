@@ -80,6 +80,22 @@ class InventoryNumberService
         });
     }
 
+    public function lockForImport(Library $library): BookInventorySequence
+    {
+        if (DB::transactionLevel() === 0) {
+            throw new \LogicException('Import sequence locking requires an active transaction.');
+        }
+
+        $sequence = $this->lockSequence($library);
+        $maximum = max((int) $sequence->last_number, $this->maxUsed($library));
+
+        if ($maximum !== (int) $sequence->last_number) {
+            $sequence->update(['last_number' => $maximum]);
+        }
+
+        return $sequence;
+    }
+
     /**
      * Najveci broj medju postojećim (ne-arhiviranim) kopijama.
      */

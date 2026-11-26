@@ -2,6 +2,8 @@
 
 namespace App\Services\Isbn;
 
+use App\DTOs\IsbnLookupResultDTO;
+use App\Enums\IsbnLookupStatusEnum;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -49,6 +51,40 @@ class IsbnMetadataService
         }
 
         return $metadata;
+    }
+
+    public function lookupForImport(string $isbn, int $importId): IsbnLookupResultDTO
+    {
+        $provider = collect($this->providers)->first(fn (IsbnProvider $provider) => $provider instanceof NbsCatalogProvider);
+
+        if (! $provider instanceof NbsCatalogProvider) {
+            Log::channel(config('book_imports.log_channel'))->error('book_import.cobiss_not_configured');
+
+            return new IsbnLookupResultDTO(IsbnLookupStatusEnum::Failed, null, [
+                'provider' => 'nbs', 'status' => 'failed', 'reason' => 'configuration_error', 'http_attempts' => 0,
+            ]);
+        }
+
+        $forms = $this->normalizer->forms($isbn);
+        $canonical = collect($forms)->first(fn (string $form) => strlen($form) === 13) ?? $this->normalizer->normalize($isbn);
+        $key = "isbn:imports:nbs:{$importId}:{$canonical}";
+        $cached = Cache::get($key);
+
+        if ($provider->importConfigured() && $this->normalizer->isValid($canonical) && $cached instanceof IsbnLookupResultDTO
+            && ($cached->diagnostics['provider'] ?? null) === 'nbs'
+            && ($cached->status === IsbnLookupStatusEnum::NotFound
+                || ($cached->status === IsbnLookupStatusEnum::Found && $cached->metadata?->source === 'nbs'
+                    && in_array($this->normalizer->normalize($cached->metadata->isbn ?? ''), $forms, true)))) {
+            return $cached;
+        }
+
+        $result = $provider->lookupForImport($canonical);
+
+        if ($result->status !== IsbnLookupStatusEnum::Failed) {
+            Cache::put($key, $result, (int) config('isbn.cache_ttl', 86400));
+        }
+
+        return $result;
     }
 
     private function resolve(string $isbn): ?BookMetadata

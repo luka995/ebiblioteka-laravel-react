@@ -3,6 +3,7 @@
 namespace App\Services\Isbn;
 
 use App\Services\Isbn\Concerns\LogsProviderRequests;
+use App\Services\Isbn\Concerns\LooksUpImportMetadata;
 use DOMDocument;
 use DOMNode;
 use DOMXPath;
@@ -18,6 +19,7 @@ use DOMXPath;
 class NbsCatalogProvider implements IsbnProvider
 {
     use LogsProviderRequests;
+    use LooksUpImportMetadata;
 
     public function __construct(private readonly IsbnNormalizer $normalizer) {}
 

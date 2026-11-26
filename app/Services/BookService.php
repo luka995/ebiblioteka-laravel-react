@@ -16,6 +16,11 @@ class BookService
 {
     public function __construct(private readonly AuthorResolverService $authors) {}
 
+    public function forgetResolvedAuthors(int $libraryId): void
+    {
+        $this->authors->forgetLibrary($libraryId);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */

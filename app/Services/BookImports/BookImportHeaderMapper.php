@@ -48,6 +48,14 @@ class BookImportHeaderMapper
     }
 
     /**
+     * @return list<string>
+     */
+    public function fields(): array
+    {
+        return array_keys(self::ALIASES);
+    }
+
+    /**
      * @param  array<int, string|null>  $headers
      */
     public function map(array $headers, int $rowNumber, string $sheetName): ?ExcelImportHeaderMapDTO

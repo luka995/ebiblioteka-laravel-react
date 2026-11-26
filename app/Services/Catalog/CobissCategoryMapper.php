@@ -22,6 +22,11 @@ class CobissCategoryMapper
 
     public function __construct(private readonly CategorySeeder $seeder) {}
 
+    public function forgetLibrary(int $libraryId): void
+    {
+        unset($this->cache[$libraryId]);
+    }
+
     public function categoryId(Library $library, ?string $category, ?string $udk): ?int
     {
         $map = $this->mapFor($library);

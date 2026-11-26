@@ -14,6 +14,10 @@ Schedule::command('reservations:expire')
     ->everyMinute()
     ->withoutOverlapping(10);
 
+Schedule::command('book-imports:recover')
+    ->everyMinute()
+    ->withoutOverlapping();
+
 Schedule::command('notifications:reservation-expiring')
     ->hourly()
     ->withoutOverlapping();

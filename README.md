@@ -182,12 +182,13 @@ Testovi koriste PostgreSQL bazu `ebiblioteka_testing` (podešeno u `phpunit.xml`
 Host, korisnik i lozinka se preuzimaju iz `.env`; baza se kreira jednom
 (`CREATE DATABASE ebiblioteka_testing OWNER <db_user>`).
 
-## Excel uvoz — faze 1 i 2
+## Excel uvoz — faze 1–3
 
 Implementirana je infrastruktura prema [specifikaciji uvoza](./docs/uvoz-knjiga-iz-excela.md):
 modeli, migracije, statusi, policy/permisije, OpenSpout i poseban `imports` worker,
-kao i upload i asinhrona priprema preview redova. Stvarni uvoz knjiga/kopija,
-COBISS, recovery komanda i korisnički ekran ostaju za naredne faze.
+upload i asinhrona priprema preview redova, kao i stvarna `isbn_check` obrada
+izabranih redova kroz `ProcessBookImportJob`. HTTP pokretanje/ispravke/retry i
+`excel_direct` ostaju za fazu 4, a korisnički ekran za fazu 5.
 
 - `POST /api/v1/book-imports` — multipart polje `file`; sinhrona validacija
   zaglavlja i odgovor `201` sa statusom `pending`. Priprema ide kroz
@@ -219,7 +220,7 @@ docker compose up -d --build queue-imports
   Knjiška pravila ostaju u `BookImportMapper` i njegovim helperima, dok
   `ExcelCellNormalizer` i `ExcelImportHeaderMapDTO` ne zavise od tipa importa.
   Budući uvoz učenika dodaje svoj mapper i pipeline, bez kopiranja reader-a;
-  faza 3 i studentski import nisu deo ovog refaktora.
+  studentski import nije implementiran.
 - Čita se samo prvi list; zaglavlje je u prvih 20 fizičkih redova. Uputstvo,
   prazni redovi i pomoćni listovi se ne uvoze. Excel formule se ne izvršavaju;
   formula u podržanoj koloni označava red kao neispravan.
@@ -227,11 +228,31 @@ docker compose up -d --build queue-imports
   bezbedno ponovo da krene od početka, a dupli job ne prepisuje aktivnog vlasnika.
 - Provera formata i duplikata čuva vodeće nule u originalnom ulazu, ali brojeve
   poredi normalizovano, uključujući arhivirane kopije. To nije rezervacija broja.
+- `BookImportStartService::start($import, $rowIds)` je interni ulaz faze 3 za
+  eksplicitan izbor `pending` redova `ready` importa; autorizacija budućeg HTTP
+  ulaza ostaje odgovornost kontrolera/policy-ja. Ne čita ponovo XLSX.
+- Lokalni aktivni ISBN u istoj biblioteci ponovo koristi postojeći naslov.
+  Inače se poziva isključivo COBISS, uz `found` / `not_found` / `failed` ishode,
+  keš izolovan po importu i kontrolisane ponovne zahteve za timeout/connection/5xx.
+  Prazna ili nevalidna COBISS polja dopunjava Excel; nema automatskog
+  Excel-only fallback-a ako lookup nema rezultat ili ne uspe.
+- Upis knjige/kopije, broj/barkod, datum dodavanja i uspeh reda su jedna
+  transakcija. Sekvenca uzima u obzir arhivu i nikada se ne smanjuje; validni
+  ručni brojevi smeju imati praznine i proizvoljan redosled.
+- Brojači se ažuriraju po batch-u. Nepočeti redovi ne uvećavaju broj pokušaja;
+  ponovljeni prekinuti pokušaji ostaju u `attempts`, a završeni u
+  `completed_attempts`. Neizabrani redovi ostaju `pending`, uz povratak na `ready`.
+- `book-imports:recover` se izvršava svake minute kroz scheduler i vraća samo
+  zaglavljene `pending`/`processing` importe, nikada `ready`. Potreban je aktivan
+  Laravel scheduler. Preuzimanje ima novi DB token; stari worker ne može da upiše rezultat.
+- `ISBN_HTTP_RETRIES=2` i `ISBN_HTTP_RETRY_DELAY_MS=250` važe za import; ručni
+  ISBN lookup ostaje nepromenjen. Batch se završava ranije ako nema vremena
+  za još jedan konzervativno procenjen COBISS lookup unutar job timeout-a.
 
 Fokusirani testovi:
 
 ```bash
-docker compose exec php php artisan test tests/Feature/BookImportPreparationTest.php tests/Feature/BookImportInfrastructureTest.php
+docker compose exec php php artisan test tests/Feature/BookImportPreparationTest.php tests/Feature/BookImportInfrastructureTest.php tests/Feature/BookImportLookupTest.php tests/Feature/BookImportProcessingTest.php
 ```
 
 ## Demo podaci za prebacivanje učenika

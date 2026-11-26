@@ -1,5 +1,25 @@
 # Changelog
 
+## [26.11.2026] Excel uvoz: faza 3 — ISBN obrada i recovery
+
+### Added
+
+- `ProcessBookImportJob` i interni `BookImportStartService`: trajan izbor preview redova, batch obrada, DB lease sa tokenom, self-dispatch i oporavak kroz zakazanu `book-imports:recover` komandu.
+- COBISS-only import lookup sa odvojenim `found` / `not_found` / `failed` ishodima, bez Google Books/OpenLibrary ili njihovog keša; kontrolisan HTTP retry i bez menjanja ručnog ISBN lookup-a.
+- Transakcioni upis knjige/kopije i konačnog snimka sa izvorima po poljima; lokalni ISBN ponovo koristi naslov bez prepisivanja, a validna COBISS polja imaju prednost nad Excel vrednostima.
+- Monotona inventarna sekvenca uključuje arhivu, dopušta istorijske praznine i vraća se zajedno sa svim upisima neuspešnog reda. Barkod i datum nastaju tek pri uspešnom upisu.
+- Odvojeni trenutni brojači ishoda i kumulativni završeni pokušaji; rollback-safe keš autora/kategorija, zaštita od duplog upisa i stale worker-a.
+
+### Scope
+
+- HTTP start/retry/ispravke/selekcija/filteri i `excel_direct` nisu deo ove faze; frontend takođe nije implementiran.
+
+### Tests
+
+- 186 fokusiranih i susednih regresionih testova / 900 assertiona prolazi; Pint prolazi za 31 PHP fajl.
+- 10.000 redova sa potvrđenim COBISS `not_found` ishodom obrađuje se kroz tačno 500 batch-eva, uz jedan HTTP zahtev i rast vršne memorije ispod 64 MiB. Test koristi zasebne commit granice kao pravi queue worker.
+- Pokriveni su inventarna arhiva i praznine, rollback broja/knjige/autora/kategorija, stvarni SQL unique konflikt, idempotentnost, stale worker, recovery, trajna selekcija i brojači pokušaja.
+
 ## [26.11.2026] Excel uvoz: generički reader i mapper ugovor
 
 ### Changed

@@ -1,7 +1,14 @@
 <?php
 
 return [
+    'lookup_status' => [
+        'found' => 'Pronađeno',
+        'not_found' => 'Nije pronađeno',
+        'failed' => 'Provera nije uspela',
+    ],
     'errors' => [
+        'not_ready' => 'Uvoz mora biti spreman pre pokretanja.',
+        'invalid_selection' => 'Izaberite redove na čekanju koji pripadaju ovom uvozu.',
         'active_import' => 'Ova biblioteka već ima aktivan uvoz.',
         'invalid_field' => 'Neispravna vrednost u koloni „:field“.',
         'filename_too_long' => 'Naziv fajla ne sme biti duži od 255 znakova.',
