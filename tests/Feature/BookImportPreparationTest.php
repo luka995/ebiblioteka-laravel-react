@@ -14,6 +14,7 @@ use App\Models\BookImport;
 use App\Models\BookInventorySequence;
 use App\Models\Library;
 use App\Models\User;
+use App\Services\BookImports\BookImportCounterService;
 use App\Services\BookImports\BookImportMapper;
 use App\Services\ExcelImports\ExcelCellNormalizer;
 use App\Services\ExcelImports\ExcelImportMapper;
@@ -438,7 +439,9 @@ test('supplied inventory is preserved and blank, invalid and normalized duplicat
         ->and($rows[0]->inventory_number)->toBe('00500')
         ->and($rows[0]->raw_payload['inventory_number'])->toBe('00500')
         ->and($import->fresh()->failed_rows)->toBe(4)
-        ->and($import->fresh()->processed_rows)->toBe(4)
+        ->and($import->fresh()->preparation_failed_rows)->toBe(4)
+        ->and($import->fresh()->pending_rows)->toBe(2)
+        ->and($import->fresh()->processed_rows)->toBe(0)
         ->and($import->fresh()->completed_attempts)->toBe(0)
         ->and(BookInventorySequence::pluck('last_number', 'library_id')->all())->toBe($sequences)
         ->and(BookCopy::withTrashed()->count())->toBe(0);
@@ -599,7 +602,12 @@ test('a stale worker cannot insert another chunk or finalize after losing its to
         }
     });
 
-    (new PrepareBookImportJob($import->id))->handle($reader, $mapper, app(InventoryNumberService::class));
+    (new PrepareBookImportJob($import->id))->handle(
+        $reader,
+        $mapper,
+        app(InventoryNumberService::class),
+        app(BookImportCounterService::class),
+    );
     expect($import->fresh()->status)->toBe(BookImportStatusEnum::Pending)
         ->and($import->fresh()->processing_token)->toBe($replacement)
         ->and($import->rows()->count())->toBe(2)
@@ -612,14 +620,15 @@ test('unexpected preparation exceptions are rethrown, retriable and terminally r
     $mapper = app(BookImportMapper::class);
     $reader->shouldReceive('header')->twice()->andThrow(new RuntimeException('unexpected failure'));
     $numbers = app(InventoryNumberService::class);
-    expect(fn () => (new PrepareBookImportJob($import->id))->handle($reader, $mapper, $numbers))
+    $counters = app(BookImportCounterService::class);
+    expect(fn () => (new PrepareBookImportJob($import->id))->handle($reader, $mapper, $numbers, $counters))
         ->toThrow(RuntimeException::class, 'unexpected failure');
     expect($import->fresh()->status)->toBe(BookImportStatusEnum::Pending)
         ->and($import->fresh()->processing_token)->toBeNull();
 
     $job = new PrepareBookImportJob($import->id);
     $job->tries = 1;
-    expect(fn () => $job->handle($reader, $mapper, $numbers))->toThrow(RuntimeException::class, 'unexpected failure');
+    expect(fn () => $job->handle($reader, $mapper, $numbers, $counters))->toThrow(RuntimeException::class, 'unexpected failure');
     expect($import->fresh()->status)->toBe(BookImportStatusEnum::Failed)
         ->and($import->fresh()->failure_code)->toBe(BookImportFailureEnum::JobFailed);
 });

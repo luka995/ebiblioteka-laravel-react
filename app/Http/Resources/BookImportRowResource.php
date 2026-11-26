@@ -37,6 +37,8 @@ class BookImportRowResource extends JsonResource
             'barcode' => $this->status === BookImportRowStatusEnum::Imported
                 ? ($this->bookCopy?->barcode ?? $this->resolved_payload['barcode'] ?? null)
                 : null,
+            'failure_stage' => $this->failure_stage?->value,
+            'failure_stage_label' => $this->failure_stage?->getLabel(),
             'failure_code' => $this->failure_code?->value,
             'failure_code_label' => $this->failure_code?->getLabel(),
             'failure_message' => $this->failure_message,

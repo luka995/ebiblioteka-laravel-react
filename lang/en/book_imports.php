@@ -19,6 +19,10 @@ return [
         'invalid_changes' => 'One or more changed fields are not allowed.',
         'inventory_column_missing' => 'The inventory number can only be changed when the Excel file has that column.',
         'unsupported_parameters' => 'The request contains unsupported parameters.',
+        'not_cancellable' => 'Only an import that is preparing, ready, or processing can be cancelled.',
+        'cannot_cancel_imported' => 'An import that already has imported rows cannot be cancelled.',
+        'cancel_before_delete' => 'Cancel the import before deleting it.',
+        'cannot_delete_imported' => 'An import that already has imported rows cannot be deleted.',
     ],
 
     'status' => [
@@ -28,6 +32,7 @@ return [
         'completed' => 'Completed',
         'completed_with_errors' => 'Completed with errors',
         'failed' => 'Failed',
+        'cancelled' => 'Cancelled',
     ],
 
     'row_status' => [
@@ -40,6 +45,11 @@ return [
     'modes' => [
         'isbn_check' => 'ISBN lookup',
         'excel_direct' => 'Direct Excel import',
+    ],
+
+    'failure_stages' => [
+        'preparation' => 'Preparation',
+        'processing' => 'Import',
     ],
 
     'failures' => [

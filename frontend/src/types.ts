@@ -361,9 +361,10 @@ export interface BookDuplicateCheckResult {
   matches: Book[]
 }
 
-export type BookImportStatus = 'pending' | 'ready' | 'processing' | 'completed' | 'completed_with_errors' | 'failed'
+export type BookImportStatus = 'pending' | 'ready' | 'processing' | 'completed' | 'completed_with_errors' | 'failed' | 'cancelled'
 export type BookImportRowStatus = 'pending' | 'processing' | 'imported' | 'failed'
 export type BookImportMode = 'isbn_check' | 'excel_direct'
+export type BookImportFailureStage = 'preparation' | 'processing'
 export type BookImportFailureCode =
   | 'missing_isbn'
   | 'invalid_isbn'
@@ -423,6 +424,10 @@ export interface BookImport {
   headers: string[]
   column_map: Record<string, number>
   total_rows: number
+  pending_rows: number
+  processing_rows: number
+  preparation_failed_rows: number
+  import_failed_rows: number
   processed_rows: number
   imported_rows: number
   failed_rows: number
@@ -432,6 +437,11 @@ export interface BookImport {
   started_at: string | null
   finished_at: string | null
   created_at: string
+  can?: {
+    view: boolean
+    cancel: boolean
+    delete: boolean
+  }
 }
 
 export interface BookImportRow {
@@ -450,6 +460,8 @@ export interface BookImportRow {
   inventory_number: string | null
   assigned_inventory_number: string | null
   barcode: string | null
+  failure_stage: BookImportFailureStage | null
+  failure_stage_label: string | null
   failure_code: BookImportFailureCode | null
   failure_code_label: string | null
   failure_message: string | null

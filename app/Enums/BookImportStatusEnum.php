@@ -15,6 +15,7 @@ enum BookImportStatusEnum: string
     case Completed = 'completed';
     case CompletedWithErrors = 'completed_with_errors';
     case Failed = 'failed';
+    case Cancelled = 'cancelled';
 
     #[Override]
     public function getLabel(): string
@@ -26,6 +27,7 @@ enum BookImportStatusEnum: string
             self::Completed => __('book_imports.status.completed'),
             self::CompletedWithErrors => __('book_imports.status.completed_with_errors'),
             self::Failed => __('book_imports.status.failed'),
+            self::Cancelled => __('book_imports.status.cancelled'),
         };
     }
 }

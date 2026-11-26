@@ -4,6 +4,7 @@ namespace App\Services\BookImports;
 
 use App\DTOs\BookImportResolutionDTO;
 use App\Enums\BookImportFailureEnum;
+use App\Enums\BookImportFailureStageEnum;
 use App\Enums\BookImportRowStatusEnum;
 use App\Exceptions\BookImportLeaseLostException;
 use App\Exceptions\BookImportRowFailureException;
@@ -25,6 +26,7 @@ class BookImportRowProcessor
         private readonly BookImportCopyService $copies,
         private readonly InventoryNumberService $numbers,
         private readonly DatabaseExceptionService $databaseErrors,
+        private readonly BookImportCounterService $counters,
     ) {}
 
     public function process(int $importId, int $rowId, string $token): void
@@ -49,6 +51,7 @@ class BookImportRowProcessor
                 'field_sources' => null,
                 'processed_at' => null,
             ]);
+            $this->counters->rowStarted($import);
 
             return $row;
         });
@@ -103,6 +106,7 @@ class BookImportRowProcessor
                 $sources['date_add'] = 'generated';
                 $current->update([
                     'status' => BookImportRowStatusEnum::Imported,
+                    'failure_stage' => null,
                     'book_id' => $book->id,
                     'book_copy_id' => $copy->id,
                     'resolved_payload' => $payload,
@@ -112,6 +116,7 @@ class BookImportRowProcessor
                     'processing_requested_at' => null,
                     'processed_at' => now(),
                 ]);
+                $this->counters->rowImported($import);
             });
         } catch (BookImportLeaseLostException $e) {
             $this->resolver->forgetRolledBackCache($import->library);
@@ -174,6 +179,7 @@ class BookImportRowProcessor
             $label = $field === null ? null : ($import->headers[$import->column_map[$field] ?? -1] ?? $field);
             $row->update([
                 'status' => BookImportRowStatusEnum::Failed,
+                'failure_stage' => BookImportFailureStageEnum::Processing,
                 'failure_code' => $failure->failure,
                 'failure_message' => $label === null ? $failure->getMessage()
                     : __('book_imports.errors.invalid_field', ['field' => $label]),
@@ -184,6 +190,7 @@ class BookImportRowProcessor
                 'processing_requested_at' => null,
                 'processed_at' => now(),
             ]);
+            $this->counters->rowFailed($import);
         });
     }
 }

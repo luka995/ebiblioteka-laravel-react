@@ -20,6 +20,8 @@ use App\Models\BookImport;
 use App\Models\BookImportRow;
 use App\Services\ActiveLibraryService;
 use App\Services\AuthorizationService;
+use App\Services\BookImports\BookImportCounterService;
+use App\Services\BookImports\BookImportLifecycleService;
 use App\Services\BookImports\BookImportMapper;
 use App\Services\BookImports\BookImportRetryService;
 use App\Services\BookImports\BookImportRowEditService;
@@ -128,11 +130,14 @@ class BookImportsController extends Controller
         Request $request,
         BookImport $bookImport,
         ActiveLibraryService $activeLibrary,
+        BookImportCounterService $counters,
     ): BookImportResource {
         $library = $activeLibrary->requireActiveLibrary($request->user());
         abort_unless($bookImport->library_id === $library->id, 404);
 
-        return new BookImportResource($bookImport->load(['library', 'user']));
+        $counters->update($bookImport);
+
+        return new BookImportResource($bookImport->refresh()->load(['library', 'user']));
     }
 
     public function rows(
@@ -215,6 +220,29 @@ class BookImportsController extends Controller
         return new BookImportRowResource(
             $editor->update($bookImport, $row->id, (int) $data['input_version'], $data['changes'])
         );
+    }
+
+    public function cancel(
+        Request $request,
+        BookImport $bookImport,
+        ActiveLibraryService $activeLibrary,
+        BookImportLifecycleService $lifecycle,
+    ): BookImportResource {
+        $this->ensureActiveLibraryScope($request, $bookImport, $activeLibrary);
+
+        return new BookImportResource($lifecycle->cancel($bookImport)->load(['library', 'user']));
+    }
+
+    public function destroy(
+        Request $request,
+        BookImport $bookImport,
+        ActiveLibraryService $activeLibrary,
+        BookImportLifecycleService $lifecycle,
+    ): JsonResponse {
+        $this->ensureActiveLibraryScope($request, $bookImport, $activeLibrary);
+        $lifecycle->delete($bookImport);
+
+        return response()->json(status: 204);
     }
 
     /**

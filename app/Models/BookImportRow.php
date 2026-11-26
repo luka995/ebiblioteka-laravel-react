@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\BookImportFailureEnum;
+use App\Enums\BookImportFailureStageEnum;
 use App\Enums\BookImportModeEnum;
 use App\Enums\BookImportRowStatusEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'title',
     'inventory_number',
     'status',
+    'failure_stage',
     'failure_code',
     'failure_message',
     'lookup_diagnostics',
@@ -39,6 +41,7 @@ class BookImportRow extends Model
         return [
             'row_number' => 'integer',
             'status' => BookImportRowStatusEnum::class,
+            'failure_stage' => BookImportFailureStageEnum::class,
             'failure_code' => BookImportFailureEnum::class,
             'attempt_mode' => BookImportModeEnum::class,
             'raw_payload' => 'array',

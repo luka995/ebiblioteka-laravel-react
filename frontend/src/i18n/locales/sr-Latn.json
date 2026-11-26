@@ -1188,7 +1188,19 @@
     "backToImports": "Nazad na uvoze",
     "emptyTitle": "Još nema uvoza",
     "emptyText": "Dodajte .xlsx fajl da biste pripremili prvi uvoz.",
-    "rowCounts": "Uvezeno: {{imported}} · Neuspešno: {{failed}} · Ukupno: {{total}}",
+    "rowCounts": "Dostupno: {{pending}} · Uvezeno: {{imported}} · Neuspešno: {{importFailed}} · Priprema: {{preparationFailed}} · Ukupno: {{total}}",
+    "actions": {
+      "cancel": "Otkaži uvoz",
+      "delete": "Obriši uvoz",
+      "cancelTitle": "Otkaži uvoz?",
+      "cancelText": "Uvoz će biti zaustavljen i označen kao otkazan. Pripremljeni redovi ostaju sačuvani do brisanja.",
+      "cancelConfirm": "Otkaži uvoz",
+      "deleteTitle": "Obriši uvoz?",
+      "deleteText": "Biće obrisani zapis uvoza, svi pripremljeni redovi i sačuvani Excel fajl. Uvezene knjige i kopije se ne brišu.",
+      "deleteConfirm": "Obriši uvoz",
+      "cancelled": "Uvoz je otkazan.",
+      "deleted": "Uvoz je obrisan."
+    },
     "retry": "Pokušaj ponovo",
     "saving": "Čuvanje...",
     "columns": {
@@ -1197,6 +1209,36 @@
       "rows": "Redovi",
       "requestedBy": "Pokrenuo",
       "createdAt": "Datum uploada"
+    },
+    "help": {
+      "row": "Broj reda u Excel fajlu. Checkbox bira redove; checkbox u zaglavlju bira sve redove koji odgovaraju filterima.",
+      "status": "Status reda: na čekanju, u obradi, uvezen ili neuspešan.",
+      "failure": "Razlog greške i faza u kojoj je nastala: priprema ili uvoz.",
+      "fields": {
+        "isbn": "ISBN iz Excel fajla. U isbn_check režimu mora biti validan; u excel_direct režimu čuva se kao tekst.",
+        "title": "Naslov knjige. Obavezan za excel_direct i za kreiranje novog naslova.",
+        "authors": "Autori razdvojeni tačkom i zapetom (;) ili znakom |.",
+        "category": "Primarna kategorija. Može biti naziv ili putanja sa /.",
+        "category_secondary": "Sekundarna kategorija; opciono.",
+        "description": "Opis naslova; opciono.",
+        "cover_url": "HTTP/HTTPS adresa korice. Slika se ne preuzima.",
+        "inventory_number": "Inventarni broj iz fajla. Ako kolona postoji, koristi se; prazna ćelija je greška.",
+        "seq_number": "Redni broj primerka; jedinstven u biblioteci, uključujući arhivu.",
+        "publisher": "Izdavač.",
+        "publish_place": "Mesto izdanja.",
+        "publish_year": "Godina izdanja, najviše 16 znakova.",
+        "issue_number": "Broj izdanja.",
+        "num_of_pages": "Broj strana; nenegativan ceo broj.",
+        "dimension": "Dimenzije primerka.",
+        "part": "Tom ili deo izdanja.",
+        "udk": "UDK oznaka ili signatura.",
+        "binding": "Vrsta poveza.",
+        "origin": "Način nabavke.",
+        "book_number": "Interni broj knjige.",
+        "place_on_shelf": "Mesto na polici.",
+        "price": "Cena sa dve decimale.",
+        "notice": "Napomena uz primerak."
+      }
     },
     "upload": {
       "button": "Uvezi Excel",
@@ -1216,7 +1258,8 @@
       "processing": "U obradi",
       "completed": "Završen",
       "completed_with_errors": "Završen sa greškama",
-      "failed": "Neuspešan"
+      "failed": "Neuspešan",
+      "cancelled": "Otkazan"
     },
     "rowStatus": {
       "pending": "Na čekanju",
@@ -1225,11 +1268,12 @@
       "failed": "Neuspešan"
     },
     "summary": {
-      "total": "Ukupno Excel redova",
-      "completedRows": "Trenutno završeni redovi",
+      "total": "Učitano redova",
+      "available": "Dostupno za uvoz",
+      "preparationFailed": "Greške pri pripremi",
+      "processing": "U obradi",
       "imported": "Uspešno uvezeno",
-      "failed": "Neuspešno",
-      "completedAttempts": "Kumulativno završenih pokušaja"
+      "importFailed": "Neuspešno uvezeno"
     },
     "inventoryGuidance": {
       "noColumn": "Excel fajl nema kolonu inventarnog broja. Brojevi se dodeljuju prilikom kreiranja kopija ako biblioteka koristi automatsko numerisanje.",
@@ -1275,6 +1319,10 @@
       "assignedInventory": "Dodeljeni inventarni broj",
       "barcode": "Bar-kod",
       "actions": "Akcije"
+    },
+    "failureStages": {
+      "preparation": "Priprema",
+      "processing": "Uvoz"
     },
     "failureCodes": {
       "missing_isbn": "Nedostaje ISBN",

@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Enums\BookImportFailureEnum;
+use App\Enums\BookImportFailureStageEnum;
 use App\Enums\BookImportModeEnum;
 use App\Enums\BookImportRowStatusEnum;
 use App\Enums\BookImportStatusEnum;
@@ -140,6 +141,7 @@ class ProcessBookImportJob implements ShouldQueue
             ->whereIn('status', [BookImportRowStatusEnum::Pending, BookImportRowStatusEnum::Processing])
             ->update([
                 'status' => BookImportRowStatusEnum::Failed,
+                'failure_stage' => BookImportFailureStageEnum::Processing,
                 'failure_code' => BookImportFailureEnum::JobFailed,
                 'failure_message' => BookImportFailureEnum::JobFailed->getLabel(),
                 'completed_attempts' => DB::raw("completed_attempts + CASE WHEN status = 'processing' THEN 1 ELSE 0 END"),

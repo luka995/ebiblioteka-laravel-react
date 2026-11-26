@@ -88,6 +88,7 @@ class BookImportRetryService
 
                 $import->rows()->whereIn('id', $rowIds)->update([
                     'status' => BookImportRowStatusEnum::Pending,
+                    'failure_stage' => null,
                     'failure_code' => null,
                     'failure_message' => null,
                     'lookup_diagnostics' => null,

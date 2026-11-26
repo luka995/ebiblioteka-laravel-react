@@ -37,6 +37,16 @@ class BookImportPolicy
         return $this->inScope($actor, $import);
     }
 
+    public function cancel(User $actor, BookImport $import): bool
+    {
+        return $this->inScope($actor, $import);
+    }
+
+    public function delete(User $actor, BookImport $import): bool
+    {
+        return $this->inScope($actor, $import);
+    }
+
     private function inScope(User $actor, BookImport $import): bool
     {
         return $actor->isLibraryAdmin($import->library_id);

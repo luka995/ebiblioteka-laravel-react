@@ -448,6 +448,7 @@ sa prevodima iz `book_imports.php` za `en`, `sr-Latn` i `sr-Cyrl`.
 - `Completed = 'completed'`
 - `CompletedWithErrors = 'completed_with_errors'`
 - `Failed = 'failed'`
+- `Cancelled = 'cancelled'`
 
 #### `BookImportRowStatusEnum`
 
@@ -1082,6 +1083,10 @@ Ograničenje:
 | `POST` | `/api/v1/book-imports/{bookImport}/start` | pokretanje izabranih čekajućih redova iz previewa |
 | `PATCH` | `/api/v1/book-imports/{bookImport}/rows/{row}` | dozvoljene ispravke preview reda |
 | `POST` | `/api/v1/book-imports/{bookImport}/retry` | ponovna standardna ili Excel-only obrada izabranih neuspešnih redova |
+| `POST` | `/api/v1/book-imports/{bookImport}/cancel` | otkazivanje uvoza bez uvezenih redova |
+| `DELETE` | `/api/v1/book-imports/{bookImport}` | brisanje uvoza, pripremljenih redova i fajla bez uvezenih redova |
+
+Otkazivanje je dozvoljeno za `pending`, `ready` i `processing` uvoz koji nema nijedan uvezeni red. Processing lease se invalidira, a job ne može više da upiše kopiju. Brisanje je dozvoljeno samo kada uvoz nije u obradi i nema uvezene redove; tada se brišu zapis, redovi i privatni Excel fajl. Knjige i kopije se ne brišu kroz import lifecycle.
 
 ### 13.2 Lista uvoza
 
@@ -1813,7 +1818,6 @@ Rezultat:
 - Jedan red = jedna kopija.
 - Nema podrške za `.xls` i `.csv`.
 - Dozvoljene su validirane ispravke čekajućih/neuspešnih redova u previewu, ne izmena već uvezenih kopija kroz import API.
-- Nema brisanja niti otkazivanja uvoza u v1.
 - Nema eksporta failed redova u v1.
 - Nema download-a originalnog fajla kroz API.
 - Ako je red pao zbog postojećeg duplikata inventarnog broja, fallback ne zaobilazi konflikt; korisnik ispravlja ulazni broj u previewu, a konačna provera se ponavlja pri upisu.

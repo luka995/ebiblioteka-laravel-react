@@ -291,6 +291,7 @@ export const apiPaths = {
   bookImport: (id: number) => `/api/v1/book-imports/${id}`,
   bookImportRows: (id: number) => `/api/v1/book-imports/${id}/rows`,
   bookImportStart: (id: number) => `/api/v1/book-imports/${id}/start`,
+  bookImportCancel: (id: number) => `/api/v1/book-imports/${id}/cancel`,
   bookImportRetry: (id: number) => `/api/v1/book-imports/${id}/retry`,
   bookImportRow: (id: number, rowId: number) => `/api/v1/book-imports/${id}/rows/${rowId}`,
   reservations: '/api/v1/reservations',

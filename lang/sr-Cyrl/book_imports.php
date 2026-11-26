@@ -19,6 +19,10 @@ return [
         'invalid_changes' => 'Једно или више измењених поља није дозвољено.',
         'inventory_column_missing' => 'Инвентарни број може да се мења само ако постоји колона у Excel фајлу.',
         'unsupported_parameters' => 'Захтев садржи недозвољене параметре.',
+        'not_cancellable' => 'Само увоз у припреми, спреман увоз или увоз у обради може да се откаже.',
+        'cannot_cancel_imported' => 'Увоз који већ има увезене редове не може да се откаже.',
+        'cancel_before_delete' => 'Откажите увоз пре брисања.',
+        'cannot_delete_imported' => 'Увоз који већ има увезене редове не може да се обрише.',
     ],
 
     'status' => [
@@ -28,6 +32,7 @@ return [
         'completed' => 'Завршено',
         'completed_with_errors' => 'Завршено са грешкама',
         'failed' => 'Неуспешно',
+        'cancelled' => 'Отказано',
     ],
 
     'row_status' => [
@@ -40,6 +45,11 @@ return [
     'modes' => [
         'isbn_check' => 'Провера преко ISBN-а',
         'excel_direct' => 'Директан увоз из Excel-а',
+    ],
+
+    'failure_stages' => [
+        'preparation' => 'Припрема',
+        'processing' => 'Увоз',
     ],
 
     'failures' => [

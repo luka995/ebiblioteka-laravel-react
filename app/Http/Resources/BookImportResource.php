@@ -30,6 +30,10 @@ class BookImportResource extends JsonResource
             'headers' => $this->headers,
             'column_map' => $this->column_map,
             'total_rows' => $this->total_rows,
+            'pending_rows' => $this->pending_rows,
+            'processing_rows' => $this->processing_rows,
+            'preparation_failed_rows' => $this->preparation_failed_rows,
+            'import_failed_rows' => $this->import_failed_rows,
             'processed_rows' => $this->processed_rows,
             'imported_rows' => $this->imported_rows,
             'failed_rows' => $this->failed_rows,
@@ -39,7 +43,7 @@ class BookImportResource extends JsonResource
             'started_at' => $this->started_at?->format('d-m-Y H:i'),
             'finished_at' => $this->finished_at?->format('d-m-Y H:i'),
             'created_at' => $this->created_at?->format('d-m-Y H:i'),
-            'can' => $this->abilities($request->user(), ['view']),
+            'can' => $this->abilities($request->user(), ['view', 'cancel', 'delete']),
         ];
     }
 }

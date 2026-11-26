@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Info, Pencil, Play, RotateCw, Search, TriangleAlert } from 'lucide-react'
+import { ArrowLeft, Ban, Check, Info, Pencil, Play, RotateCw, Search, Trash2, TriangleAlert, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
@@ -22,14 +22,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import type {
   BookImport,
@@ -101,6 +93,7 @@ const IMPORT_STATUS_VARIANTS: Record<BookImportStatus, 'default' | 'secondary' |
   completed: 'default',
   completed_with_errors: 'outline',
   failed: 'destructive',
+  cancelled: 'outline',
 }
 
 const ROW_STATUS_VARIANTS: Record<BookImportRowStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -130,6 +123,13 @@ interface MatchingSelection {
 
 type RowDataView = 'original' | 'effective' | 'resolved'
 
+interface InlineRowEdit {
+  rowId: number
+  inputVersion: number
+  values: Record<BookImportField, string>
+  baseline: Record<BookImportField, string>
+}
+
 function getErrorMessage(error: unknown, fallback: string): string {
   if (!(error instanceof ApiError)) return fallback
   const validationMessage = Object.values(error.validationErrors ?? {}).flat()[0]
@@ -155,6 +155,7 @@ export function BookImportDetailPage() {
   const { t } = useTranslation()
   const { can, activeLibrary, isLoading } = useAuth()
   const { id: routeId } = useParams()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const importId = Number(routeId)
   const libraryId = activeLibrary?.id ?? null
@@ -174,7 +175,11 @@ export function BookImportDetailPage() {
   const [rowDataView, setRowDataView] = useState<RowDataView>('effective')
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [actionPending, setActionPending] = useState(false)
-  const [editingRow, setEditingRow] = useState<BookImportRow | null>(null)
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [lifecyclePending, setLifecyclePending] = useState(false)
+  const [inlineEdit, setInlineEdit] = useState<InlineRowEdit | null>(null)
+  const [inlineSaving, setInlineSaving] = useState(false)
   const previousStatus = useRef<BookImportStatus | null>(null)
 
   const importQuery = useQuery({
@@ -185,6 +190,12 @@ export function BookImportDetailPage() {
 
   const bookImport = importQuery.data?.data
   const importBusy = bookImport?.status === 'pending' || bookImport?.status === 'processing'
+  const canCancelImport = bookImport?.can?.cancel === true
+    && bookImport.imported_rows === 0
+    && (bookImport.status === 'pending' || bookImport.status === 'ready' || bookImport.status === 'processing')
+  const canDeleteImport = bookImport?.can?.delete === true
+    && bookImport.imported_rows === 0
+    && bookImport.status !== 'processing'
   const rowQuery = useQuery({
     queryKey: ['book-import-rows', importId, libraryId, filters, page, perPage],
     queryFn: async () => {
@@ -234,6 +245,10 @@ export function BookImportDetailPage() {
   useEffect(() => {
     setSearchInput(filters.search)
   }, [filters.search])
+
+  useEffect(() => {
+    setInlineEdit(null)
+  }, [filters, page, perPage])
 
   useEffect(() => {
     if (importQuery.data && previousStatus.current === null) {
@@ -317,6 +332,108 @@ export function BookImportDetailPage() {
     }
   }
 
+  const inlineDirty = inlineEdit !== null && IMPORT_FIELDS.some(
+    (field) => inlineEdit.values[field] !== inlineEdit.baseline[field],
+  )
+
+  const startInlineEdit = (row: BookImportRow) => {
+    if (importBusy || (row.status !== 'pending' && row.status !== 'failed')) return
+
+    const values = Object.fromEntries(
+      IMPORT_FIELDS.map((field) => [field, displayValue(row.effective_input[field])]),
+    ) as Record<BookImportField, string>
+
+    setInlineEdit({
+      rowId: row.id,
+      inputVersion: row.input_version,
+      values,
+      baseline: { ...values },
+    })
+  }
+
+  const updateInlineValue = (field: BookImportField, value: string) => {
+    setInlineEdit((current) => current === null
+      ? current
+      : { ...current, values: { ...current.values, [field]: value } })
+  }
+
+  const cancelInlineEdit = () => {
+    if (inlineSaving) return
+    setInlineEdit(null)
+  }
+
+  const saveInlineEdit = async () => {
+    if (!inlineEdit || !inlineDirty) {
+      setInlineEdit(null)
+      return
+    }
+
+    const changes: Partial<Record<BookImportField, string | null>> = {}
+    IMPORT_FIELDS.forEach((field) => {
+      if (field === 'inventory_number' && !bookImport?.has_inventory_column) return
+      if (inlineEdit.values[field] !== inlineEdit.baseline[field]) {
+        changes[field] = inlineEdit.values[field].trim() === '' ? null : inlineEdit.values[field]
+      }
+    })
+
+    if (Object.keys(changes).length === 0) {
+      setInlineEdit(null)
+      return
+    }
+
+    setInlineSaving(true)
+    try {
+      await api.patch(apiPaths.bookImportRow(importId, inlineEdit.rowId), {
+        input_version: inlineEdit.inputVersion,
+        changes,
+      })
+      toast.success(t('bookImports.rows.saved'))
+      setInlineEdit(null)
+      await queryClient.invalidateQueries({ queryKey: ['book-import-rows', importId] })
+      await queryClient.invalidateQueries({ queryKey: ['book-import', importId] })
+    } catch (error) {
+      toast.error(getErrorMessage(error, t('errors.unexpected')))
+      if (error instanceof ApiError && error.status === 409) {
+        setInlineEdit(null)
+        await queryClient.invalidateQueries({ queryKey: ['book-import-rows', importId] })
+      }
+    } finally {
+      setInlineSaving(false)
+    }
+  }
+
+  const cancelImport = async () => {
+    if (!bookImport) return
+    setLifecyclePending(true)
+    try {
+      await api.post(apiPaths.bookImportCancel(importId))
+      toast.success(t('bookImports.actions.cancelled'))
+      setCancelOpen(false)
+      await queryClient.invalidateQueries({ queryKey: ['book-import', importId] })
+      await queryClient.invalidateQueries({ queryKey: ['book-import-rows', importId] })
+      await queryClient.invalidateQueries({ queryKey: ['book-imports'] })
+    } catch (error) {
+      toast.error(getErrorMessage(error, t('errors.unexpected')))
+    } finally {
+      setLifecyclePending(false)
+    }
+  }
+
+  const deleteImport = async () => {
+    setLifecyclePending(true)
+    try {
+      await api.delete(apiPaths.bookImport(importId))
+      toast.success(t('bookImports.actions.deleted'))
+      setDeleteOpen(false)
+      await queryClient.invalidateQueries({ queryKey: ['book-imports'] })
+      navigate('/books/imports')
+    } catch (error) {
+      toast.error(getErrorMessage(error, t('errors.unexpected')))
+    } finally {
+      setLifecyclePending(false)
+    }
+  }
+
   if (isLoading) return <PageLoader />
 
   if (!can('book_imports.viewAny')) {
@@ -368,14 +485,27 @@ export function BookImportDetailPage() {
             </p>
           </div>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {canCancelImport ? (
+            <Button variant="outline" size="sm" onClick={() => setCancelOpen(true)}>
+              <Ban />{t('bookImports.actions.cancel')}
+            </Button>
+          ) : null}
+          {canDeleteImport ? (
+            <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+              <Trash2 />{t('bookImports.actions.delete')}
+            </Button>
+          ) : null}
+        </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <SummaryCard label={t('bookImports.summary.total')} value={bookImport.total_rows} />
-        <SummaryCard label={t('bookImports.summary.completedRows')} value={bookImport.processed_rows} />
+        <SummaryCard label={t('bookImports.summary.available')} value={bookImport.pending_rows} />
+        <SummaryCard label={t('bookImports.summary.preparationFailed')} value={bookImport.preparation_failed_rows} />
+        <SummaryCard label={t('bookImports.summary.processing')} value={bookImport.processing_rows} />
         <SummaryCard label={t('bookImports.summary.imported')} value={bookImport.imported_rows} />
-        <SummaryCard label={t('bookImports.summary.failed')} value={bookImport.failed_rows} />
-        <SummaryCard label={t('bookImports.summary.completedAttempts')} value={bookImport.completed_attempts} />
+        <SummaryCard label={t('bookImports.summary.importFailed')} value={bookImport.import_failed_rows} />
       </div>
 
       {!bookImport.has_inventory_column ? (
@@ -535,28 +665,39 @@ export function BookImportDetailPage() {
                 <option value="resolved">{t('bookImports.rows.resolvedData')}</option>
               </select>
             </label>
-            <div className="overflow-x-auto rounded-md border">
-              <Table className="min-w-max">
-                <TableHeader>
+            <div className="rounded-md border">
+              <Table className="min-w-max" containerClassName="max-h-[70vh] overflow-y-auto">
+                <TableHeader className="sticky top-0 z-20 bg-background shadow-sm [&_th]:sticky [&_th]:top-0 [&_th]:bg-background">
                   <TableRow>
-                    <TableHead className="sticky left-0 z-10 bg-background">
-                      <div className="flex items-center gap-2">
+                    <TableHead className="sticky left-0 z-30 w-28 min-w-28 bg-background">
+                      <div className="flex items-center gap-1.5">
                         <Checkbox
                           checked={allMatchingChecked}
                           onCheckedChange={toggleMatchingSelection}
                           disabled={headerCheckboxDisabled}
                           aria-label={t('bookImports.selection.selectAllMatching', { count: matchingCount })}
                         />
-                        <span>{t('bookImports.table.row')}</span>
+                        <span title={t('bookImports.help.row')}>{t('bookImports.table.row')}</span>
                       </div>
-                      <p className="mt-1 text-xs font-normal text-muted-foreground">
-                        {t('bookImports.selection.selectAllMatching', { count: matchingCount })}
-                      </p>
                     </TableHead>
-                    <TableHead>{t('bookImports.table.status')}</TableHead>
-                    <TableHead>{t('bookImports.table.failure')}</TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-1.5">
+                        <span title={t('bookImports.help.status')}>{t('bookImports.table.status')}</span>
+                      </div>
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-1.5">
+                        <span title={t('bookImports.help.failure')}>{t('bookImports.table.failure')}</span>
+                      </div>
+                    </TableHead>
                     {IMPORT_FIELDS.map((field) => (
-                      <TableHead key={field}>{t(`bookImports.fields.${field}`)}</TableHead>
+                      <TableHead key={field}>
+                        <div className="flex items-center gap-1.5">
+                          <span title={t(`bookImports.help.fields.${field}`)}>
+                            {t(`bookImports.fields.${field}`)}
+                          </span>
+                        </div>
+                      </TableHead>
                     ))}
                     <TableHead>{t('bookImports.table.assignedInventory')}</TableHead>
                     <TableHead>{t('bookImports.table.barcode')}</TableHead>
@@ -573,7 +714,11 @@ export function BookImportDetailPage() {
                       </TableCell>
                     </TableRow>
                   ) : rows.map((row) => {
-                    const rowSelectable = canSelect && row.status === selectionStatus && rowStatusIsSelectable(row.status)
+                    const rowIsEditing = inlineEdit?.rowId === row.id
+                    const rowSelectable = !rowIsEditing
+                      && canSelect
+                      && row.status === selectionStatus
+                      && rowStatusIsSelectable(row.status)
                     const checked = allMatchingSelected
                       ? row.status === selectionStatus
                       : selectedIds.has(row.id)
@@ -585,11 +730,11 @@ export function BookImportDetailPage() {
 
                     return (
                       <TableRow key={row.id}>
-                        <TableCell className="sticky left-0 z-10 bg-background font-medium">
+                        <TableCell className="sticky left-0 z-10 w-28 min-w-28 bg-background font-medium">
                           <div className="flex items-center gap-2">
                             <Checkbox
                               checked={checked}
-                              disabled={!rowSelectable || allMatchingSelected}
+                              disabled={!rowSelectable || allMatchingSelected || rowIsEditing}
                               onCheckedChange={(value) => toggleRowSelection(row, value === true)}
                               aria-label={t('bookImports.selection.selectRow', { row: row.row_number })}
                             />
@@ -607,6 +752,11 @@ export function BookImportDetailPage() {
                         <TableCell className="max-w-56 whitespace-normal">
                           {row.failure_code ? (
                             <>
+                              {row.failure_stage ? (
+                                <p className="text-xs font-medium text-muted-foreground">
+                                  {t(`bookImports.failureStages.${row.failure_stage}`)}
+                                </p>
+                              ) : null}
                               <p className="font-medium">{t(`bookImports.failureCodes.${row.failure_code}`)}</p>
                               {row.failure_message ? <p className="text-xs text-muted-foreground">{row.failure_message}</p> : null}
                             </>
@@ -614,12 +764,32 @@ export function BookImportDetailPage() {
                         </TableCell>
                         {IMPORT_FIELDS.map((field) => (
                           <TableCell key={field} className="max-w-64 whitespace-normal">
-                            {renderValue(rowPayload[field])}
-                            {rowDataView === 'effective' && Object.prototype.hasOwnProperty.call(row.input_overrides, field) ? (
-                              <span className="ml-1 text-xs text-muted-foreground">
-                                {t('bookImports.rows.previewCorrection')}
-                              </span>
-                            ) : null}
+                            {rowIsEditing && inlineEdit ? (
+                              TEXTAREA_FIELDS.has(field) ? (
+                                <textarea
+                                  className="min-h-20 w-full min-w-56 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                                  value={inlineEdit.values[field]}
+                                  disabled={inlineSaving}
+                                  onChange={(event) => updateInlineValue(field, event.target.value)}
+                                />
+                              ) : (
+                                <Input
+                                  className="min-w-40"
+                                  value={inlineEdit.values[field]}
+                                  disabled={inlineSaving || (field === 'inventory_number' && !bookImport.has_inventory_column)}
+                                  onChange={(event) => updateInlineValue(field, event.target.value)}
+                                />
+                              )
+                            ) : (
+                              <>
+                                {renderValue(rowPayload[field])}
+                                {rowDataView === 'effective' && Object.prototype.hasOwnProperty.call(row.input_overrides, field) ? (
+                                  <span className="ml-1 text-xs text-muted-foreground">
+                                    {t('bookImports.rows.previewCorrection')}
+                                  </span>
+                                ) : null}
+                              </>
+                            )}
                           </TableCell>
                         ))}
                         <TableCell>
@@ -630,23 +800,52 @@ export function BookImportDetailPage() {
                         </TableCell>
                         <TableCell>{row.barcode ?? '—'}</TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1">
-                            {row.book_id ? (
-                              <Button asChild variant="ghost" size="sm">
-                                <Link to={`/books/titles/${row.book_id}`}>{t('bookImports.rows.openBook')}</Link>
+                          {rowIsEditing ? (
+                            <div className="flex items-center gap-1">
+                              <Button
+                                variant="brand"
+                                size="icon-sm"
+                                onClick={() => void saveInlineEdit()}
+                                disabled={inlineSaving || !inlineDirty}
+                                aria-label={t('bookImports.rows.save')}
+                              >
+                                <Check />
                               </Button>
-                            ) : null}
-                            {row.book_copy_id ? (
-                              <Button asChild variant="ghost" size="sm">
-                                <Link to={`/books/copies/${row.book_copy_id}`}>{t('bookImports.rows.openCopy')}</Link>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={cancelInlineEdit}
+                                disabled={inlineSaving}
+                                aria-label={t('common.cancel')}
+                              >
+                                <X />
                               </Button>
-                            ) : null}
-                            {!importBusy && (row.status === 'pending' || row.status === 'failed') ? (
-                              <Button variant="ghost" size="icon-sm" onClick={() => setEditingRow(row)} aria-label={t('bookImports.rows.edit')}>
-                                <Pencil />
-                              </Button>
-                            ) : null}
-                          </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1">
+                              {row.book_id ? (
+                                <Button asChild variant="ghost" size="sm">
+                                  <Link to={`/books/titles/${row.book_id}`}>{t('bookImports.rows.openBook')}</Link>
+                                </Button>
+                              ) : null}
+                              {row.book_copy_id ? (
+                                <Button asChild variant="ghost" size="sm">
+                                  <Link to={`/books/copies/${row.book_copy_id}`}>{t('bookImports.rows.openCopy')}</Link>
+                                </Button>
+                              ) : null}
+                              {!importBusy && (row.status === 'pending' || row.status === 'failed') ? (
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  onClick={() => startInlineEdit(row)}
+                                  disabled={inlineEdit !== null}
+                                  aria-label={t('bookImports.rows.edit')}
+                                >
+                                  <Pencil />
+                                </Button>
+                              ) : null}
+                            </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     )
@@ -709,16 +908,36 @@ export function BookImportDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <BookImportRowEditDialog
-        importId={importId}
-        hasInventoryColumn={bookImport.has_inventory_column}
-        row={editingRow}
-        onClose={() => setEditingRow(null)}
-        onSaved={async () => {
-          setEditingRow(null)
-          await queryClient.invalidateQueries({ queryKey: ['book-import-rows', importId] })
-        }}
-      />
+      <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('bookImports.actions.cancelTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('bookImports.actions.cancelText')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={lifecyclePending}>{t('common.cancel')}</AlertDialogCancel>
+            <Button variant="brand" onClick={() => void cancelImport()} disabled={lifecyclePending}>
+              {lifecyclePending ? t('bookImports.saving') : t('bookImports.actions.cancelConfirm')}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('bookImports.actions.deleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('bookImports.actions.deleteText')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={lifecyclePending}>{t('common.cancel')}</AlertDialogCancel>
+            <Button variant="destructive" onClick={() => void deleteImport()} disabled={lifecyclePending}>
+              {lifecyclePending ? t('bookImports.saving') : t('bookImports.actions.deleteConfirm')}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   )
 }
@@ -729,108 +948,5 @@ function SummaryCard({ label, value }: { label: string; value: number }) {
       <p className="text-sm text-muted-foreground">{label}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
     </div>
-  )
-}
-
-interface BookImportRowEditDialogProps {
-  importId: number
-  hasInventoryColumn: boolean
-  row: BookImportRow | null
-  onClose: () => void
-  onSaved: () => Promise<void>
-}
-
-function BookImportRowEditDialog({
-  importId,
-  hasInventoryColumn,
-  row,
-  onClose,
-  onSaved,
-}: BookImportRowEditDialogProps) {
-  const { t } = useTranslation()
-  const [values, setValues] = useState<Record<BookImportField, string>>(() =>
-    Object.fromEntries(IMPORT_FIELDS.map((field) => [field, ''])) as Record<BookImportField, string>,
-  )
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    if (!row) return
-    setValues(Object.fromEntries(
-      IMPORT_FIELDS.map((field) => [field, displayValue(row.effective_input[field])]),
-    ) as Record<BookImportField, string>)
-  }, [row])
-
-  const dirty = useMemo(() => {
-    if (!row) return false
-    return IMPORT_FIELDS.some((field) => values[field] !== displayValue(row.effective_input[field]))
-  }, [row, values])
-
-  const submitEdit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (!row || !dirty) return
-
-    const changes: Partial<Record<BookImportField, string | null>> = {}
-    IMPORT_FIELDS.forEach((field) => {
-      if (field === 'inventory_number' && !hasInventoryColumn) return
-      if (values[field] !== displayValue(row.effective_input[field])) {
-        changes[field] = values[field].trim() === '' ? null : values[field]
-      }
-    })
-
-    setSaving(true)
-    try {
-      await api.patch(apiPaths.bookImportRow(importId, row.id), {
-        input_version: row.input_version,
-        changes,
-      })
-      toast.success(t('bookImports.rows.saved'))
-      await onSaved()
-    } catch (error) {
-      toast.error(getErrorMessage(error, t('errors.unexpected')))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <Dialog open={row !== null} onOpenChange={(open) => (!open ? onClose() : undefined)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl">
-        <form onSubmit={submitEdit} className="space-y-5">
-          <DialogHeader>
-            <DialogTitle>{t('bookImports.rows.editTitle', { row: row?.row_number ?? '' })}</DialogTitle>
-            <DialogDescription>{t('bookImports.rows.editDescription')}</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {IMPORT_FIELDS.map((field) => (
-              <label key={field} className="grid gap-1.5 text-sm">
-                <span>{t(`bookImports.fields.${field}`)}</span>
-                {TEXTAREA_FIELDS.has(field) ? (
-                  <textarea
-                    className="min-h-24 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={values[field]}
-                    onChange={(event) => setValues((current) => ({ ...current, [field]: event.target.value }))}
-                  />
-                ) : (
-                  <Input
-                    value={values[field]}
-                    disabled={field === 'inventory_number' && !hasInventoryColumn}
-                    onChange={(event) => setValues((current) => ({ ...current, [field]: event.target.value }))}
-                  />
-                )}
-              </label>
-            ))}
-          </div>
-          {!hasInventoryColumn ? (
-            <p className="text-sm text-muted-foreground">{t('bookImports.rows.inventoryEditUnavailable')}</p>
-          ) : null}
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>{t('common.cancel')}</Button>
-            <Button type="submit" variant="brand" disabled={!dirty || saving}>
-              {saving ? t('bookImports.saving') : t('bookImports.rows.save')}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   )
 }

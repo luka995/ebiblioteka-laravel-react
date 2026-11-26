@@ -5,12 +5,14 @@ namespace App\Jobs;
 use App\DTOs\BookImportRowDataDTO;
 use App\DTOs\ExcelImportHeaderMapDTO;
 use App\Enums\BookImportFailureEnum;
+use App\Enums\BookImportFailureStageEnum;
 use App\Enums\BookImportRowStatusEnum;
 use App\Enums\BookImportStatusEnum;
 use App\Exceptions\BookImportFileException;
 use App\Http\Middleware\SetLocale;
 use App\Models\BookCopy;
 use App\Models\BookImport;
+use App\Services\BookImports\BookImportCounterService;
 use App\Services\BookImports\BookImportMapper;
 use App\Services\ExcelImports\ExcelImportReader;
 use App\Services\InventoryNumberService;
@@ -48,13 +50,21 @@ class PrepareBookImportJob implements ShouldQueue
         $this->onQueue(config('book_imports.queue'));
     }
 
-    public function handle(ExcelImportReader $reader, BookImportMapper $mapper, InventoryNumberService $numbers): void
-    {
-        $this->withLocale($this->locale, fn () => $this->prepare($reader, $mapper, $numbers));
+    public function handle(
+        ExcelImportReader $reader,
+        BookImportMapper $mapper,
+        InventoryNumberService $numbers,
+        BookImportCounterService $counters,
+    ): void {
+        $this->withLocale($this->locale, fn () => $this->prepare($reader, $mapper, $numbers, $counters));
     }
 
-    private function prepare(ExcelImportReader $reader, BookImportMapper $mapper, InventoryNumberService $numbers): void
-    {
+    private function prepare(
+        ExcelImportReader $reader,
+        BookImportMapper $mapper,
+        InventoryNumberService $numbers,
+        BookImportCounterService $counters,
+    ): void {
         if (! $this->claim()) {
             return;
         }
@@ -92,7 +102,8 @@ class PrepareBookImportJob implements ShouldQueue
                 return;
             }
 
-            $this->withLease(function (BookImport $import) use ($header): void {
+            $this->withLease(function (BookImport $import) use ($header, $counters): void {
+                $counters->update($import);
                 $import->update([
                     'status' => BookImportStatusEnum::Ready,
                     'sheet_name' => $header->sheetName,
@@ -169,8 +180,14 @@ class PrepareBookImportJob implements ShouldQueue
                 'failure_code' => null,
                 'failure_message' => null,
                 'total_rows' => 0,
+                'pending_rows' => 0,
+                'processing_rows' => 0,
+                'preparation_failed_rows' => 0,
+                'import_failed_rows' => 0,
                 'processed_rows' => 0,
+                'imported_rows' => 0,
                 'failed_rows' => 0,
+                'completed_attempts' => 0,
             ]);
             $this->log('info', 'book_import.preparing');
 
@@ -248,6 +265,7 @@ class PrepareBookImportJob implements ShouldQueue
             'title' => $this->searchValue($row->payload['title'] ?? null, 255),
             'inventory_number' => $this->searchValue($inventory, 32),
             'status' => $failure === null ? BookImportRowStatusEnum::Pending->value : BookImportRowStatusEnum::Failed->value,
+            'failure_stage' => $failure === null ? null : BookImportFailureStageEnum::Preparation->value,
             'failure_code' => $failure?->value,
             'failure_message' => $message,
             'created_at' => $now,
@@ -279,6 +297,7 @@ class PrepareBookImportJob implements ShouldQueue
                 if ($record['failure_code'] === null && $record['inventory_number'] !== null
                     && isset($existing[(int) $record['inventory_number']])) {
                     $record['status'] = BookImportRowStatusEnum::Failed->value;
+                    $record['failure_stage'] = BookImportFailureStageEnum::Preparation->value;
                     $record['failure_code'] = BookImportFailureEnum::DuplicateInventoryNumber->value;
                     $record['failure_message'] = BookImportFailureEnum::DuplicateInventoryNumber->getLabel();
                 }
@@ -290,7 +309,8 @@ class PrepareBookImportJob implements ShouldQueue
             $import->rows()->insert($chunk);
             $import->update([
                 'total_rows' => $import->total_rows + count($chunk),
-                'processed_rows' => $import->processed_rows + $failed,
+                'pending_rows' => $import->pending_rows + count($chunk) - $failed,
+                'preparation_failed_rows' => $import->preparation_failed_rows + $failed,
                 'failed_rows' => $import->failed_rows + $failed,
                 'lease_expires_at' => now()->addSeconds((int) config('book_imports.lease_seconds')),
             ]);
@@ -306,8 +326,14 @@ class PrepareBookImportJob implements ShouldQueue
             'failure_code' => $failure,
             'failure_message' => $failure->getLabel(),
             'total_rows' => 0,
+            'pending_rows' => 0,
+            'processing_rows' => 0,
+            'preparation_failed_rows' => 0,
+            'import_failed_rows' => 0,
             'processed_rows' => 0,
+            'imported_rows' => 0,
             'failed_rows' => 0,
+            'completed_attempts' => 0,
             'finished_at' => now(),
             'processing_token' => null,
             'lease_expires_at' => null,

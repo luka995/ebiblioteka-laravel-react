@@ -1188,7 +1188,19 @@
     "backToImports": "Back to imports",
     "emptyTitle": "No imports yet",
     "emptyText": "Upload an .xlsx file to prepare your first import.",
-    "rowCounts": "Imported: {{imported}} · Failed: {{failed}} · Total: {{total}}",
+    "rowCounts": "Available: {{pending}} · Imported: {{imported}} · Failed: {{importFailed}} · Preparation: {{preparationFailed}} · Total: {{total}}",
+    "actions": {
+      "cancel": "Cancel import",
+      "delete": "Delete import",
+      "cancelTitle": "Cancel import?",
+      "cancelText": "The import will be stopped and marked as cancelled. Prepared rows remain stored until deletion.",
+      "cancelConfirm": "Cancel import",
+      "deleteTitle": "Delete import?",
+      "deleteText": "The import record, all prepared rows and the stored Excel file will be deleted. Imported books and copies are not deleted.",
+      "deleteConfirm": "Delete import",
+      "cancelled": "The import was cancelled.",
+      "deleted": "The import was deleted."
+    },
     "retry": "Retry",
     "saving": "Saving...",
     "columns": {
@@ -1197,6 +1209,36 @@
       "rows": "Rows",
       "requestedBy": "Requested by",
       "createdAt": "Uploaded"
+    },
+    "help": {
+      "row": "Excel row number. The checkbox selects rows; the header checkbox selects all rows matching the filters.",
+      "status": "Row status: pending, processing, imported or failed.",
+      "failure": "Failure reason and the phase where it occurred: preparation or import.",
+      "fields": {
+        "isbn": "ISBN from the Excel file. In isbn_check mode it must be valid; in excel_direct mode it is stored as text.",
+        "title": "Book title. Required for excel_direct and for creating a new title.",
+        "authors": "Authors separated by semicolon (;) or pipe (|).",
+        "category": "Primary category. May be a name or a /-separated path.",
+        "category_secondary": "Secondary category; optional.",
+        "description": "Title description; optional.",
+        "cover_url": "HTTP/HTTPS cover URL. The image is not downloaded.",
+        "inventory_number": "Inventory number from the file. If the column exists it is used; an empty cell is an error.",
+        "seq_number": "Copy sequence number; unique within the library, including archived copies.",
+        "publisher": "Publisher.",
+        "publish_place": "Place of publication.",
+        "publish_year": "Publication year, up to 16 characters.",
+        "issue_number": "Issue number.",
+        "num_of_pages": "Number of pages; non-negative integer.",
+        "dimension": "Copy dimensions.",
+        "part": "Volume or part.",
+        "udk": "UDK code or signature.",
+        "binding": "Binding type.",
+        "origin": "Acquisition method.",
+        "book_number": "Internal book number.",
+        "place_on_shelf": "Shelf location.",
+        "price": "Price with two decimals.",
+        "notice": "Copy note."
+      }
     },
     "upload": {
       "button": "Import Excel",
@@ -1216,7 +1258,8 @@
       "processing": "Processing",
       "completed": "Completed",
       "completed_with_errors": "Completed with errors",
-      "failed": "Failed"
+      "failed": "Failed",
+      "cancelled": "Cancelled"
     },
     "rowStatus": {
       "pending": "Pending",
@@ -1225,11 +1268,12 @@
       "failed": "Failed"
     },
     "summary": {
-      "total": "Excel rows",
-      "completedRows": "Currently completed rows",
+      "total": "Loaded rows",
+      "available": "Available for import",
+      "preparationFailed": "Preparation errors",
+      "processing": "Processing",
       "imported": "Imported successfully",
-      "failed": "Failed",
-      "completedAttempts": "Cumulative completed attempts"
+      "importFailed": "Import failed"
     },
     "inventoryGuidance": {
       "noColumn": "The Excel file has no inventory number column. Numbers are assigned when copies are created if the library uses automatic numbering.",
@@ -1275,6 +1319,10 @@
       "assignedInventory": "Assigned inventory number",
       "barcode": "Barcode",
       "actions": "Actions"
+    },
+    "failureStages": {
+      "preparation": "Preparation",
+      "processing": "Import"
     },
     "failureCodes": {
       "missing_isbn": "ISBN is missing",

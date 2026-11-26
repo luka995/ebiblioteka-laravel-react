@@ -19,6 +19,10 @@ return [
         'invalid_changes' => 'Jedno ili više izmenjenih polja nije dozvoljeno.',
         'inventory_column_missing' => 'Inventarni broj može da se menja samo ako postoji kolona u Excel fajlu.',
         'unsupported_parameters' => 'Zahtev sadrži nedozvoljene parametre.',
+        'not_cancellable' => 'Samo uvoz u pripremi, spremni uvoz ili uvoz u obradi može da se otkaže.',
+        'cannot_cancel_imported' => 'Uvoz koji već ima uvezene redove ne može da se otkaže.',
+        'cancel_before_delete' => 'Otkažite uvoz pre brisanja.',
+        'cannot_delete_imported' => 'Uvoz koji već ima uvezene redove ne može da se obriše.',
     ],
 
     'status' => [
@@ -28,6 +32,7 @@ return [
         'completed' => 'Završeno',
         'completed_with_errors' => 'Završeno sa greškama',
         'failed' => 'Neuspešno',
+        'cancelled' => 'Otkazano',
     ],
 
     'row_status' => [
@@ -40,6 +45,11 @@ return [
     'modes' => [
         'isbn_check' => 'Provera preko ISBN-a',
         'excel_direct' => 'Direktan uvoz iz Excel-a',
+    ],
+
+    'failure_stages' => [
+        'preparation' => 'Priprema',
+        'processing' => 'Uvoz',
     ],
 
     'failures' => [

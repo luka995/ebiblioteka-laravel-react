@@ -19,6 +19,7 @@ const IMPORT_STATUS_VARIANTS: Record<BookImportStatus, 'default' | 'secondary' |
   completed: 'default',
   completed_with_errors: 'outline',
   failed: 'destructive',
+  cancelled: 'outline',
 }
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -118,8 +119,10 @@ export function BookImportsPage() {
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
                     {t('bookImports.rowCounts', {
+                      pending: item.pending_rows,
                       imported: item.imported_rows,
-                      failed: item.failed_rows,
+                      importFailed: item.import_failed_rows,
+                      preparationFailed: item.preparation_failed_rows,
                       total: item.total_rows,
                     })}
                   </TableCell>

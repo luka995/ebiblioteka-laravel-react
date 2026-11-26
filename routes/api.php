@@ -219,8 +219,10 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::get('/book-imports/{bookImport}', [BookImportsController::class, 'show'])->middleware('can:view,bookImport');
     Route::get('/book-imports/{bookImport}/rows', [BookImportsController::class, 'rows'])->middleware('can:view,bookImport');
     Route::post('/book-imports/{bookImport}/start', [BookImportsController::class, 'start'])->middleware('can:start,bookImport');
+    Route::post('/book-imports/{bookImport}/cancel', [BookImportsController::class, 'cancel'])->middleware('can:cancel,bookImport');
     Route::patch('/book-imports/{bookImport}/rows/{row}', [BookImportsController::class, 'updateRow'])->middleware('can:updateRow,bookImport');
     Route::post('/book-imports/{bookImport}/retry', [BookImportsController::class, 'retry'])->middleware('can:retry,bookImport');
+    Route::delete('/book-imports/{bookImport}', [BookImportsController::class, 'destroy'])->middleware('can:delete,bookImport');
 
     Route::get('/news', [NewsController::class, 'index'])->middleware('can:viewAny,App\Models\News');
     Route::post('/news', [NewsController::class, 'store'])->middleware('can:create,App\Models\News');
