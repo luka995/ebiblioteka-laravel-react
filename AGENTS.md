@@ -4,6 +4,7 @@
 
 - Sve nove PHP enumeracije imenovati sa sufiksom `Enum` (npr. `ClassTransferRowStatusEnum`).
 - Sve DTO klase imenovati sa sufiksom `DTO` (npr. `ClassTransferResultDTO`).
+- Sve nove PHP job klase koje se izvršavaju preko queue-a imenovati sa sufiksom `Job` (npr. `PrepareBookImportJob`).
 - Postojeće enumeracije i DTO klase ne preimenovati masovno bez posebnog zadatka.
 
 ## Pretrage, query servisi i sortiranje

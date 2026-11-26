@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'errors' => [
+        'active_import' => 'This library already has an active import.',
+        'invalid_field' => 'Invalid value in column ":field".',
+        'filename_too_long' => 'The filename must not exceed 255 characters.',
+    ],
+
     'status' => [
         'pending' => 'Preparing preview',
         'ready' => 'Ready to import',

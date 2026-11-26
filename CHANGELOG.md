@@ -1,5 +1,26 @@
 # Changelog
 
+## [26.11.2026] Excel uvoz: faza 2 — upload i priprema preview-a
+
+### Added
+
+- `POST /api/v1/book-imports`, istorija i detalj importa, sa aktivnom bibliotekom, policy autorizacijom i tipizovanim query DTO/servisom.
+- OpenSpout streaming reader, alias mapiranje svih 23 kolone i čuvanje fizičkog broja Excel reda; podržani su originalni šablon i varijanta bez inventarne kolone.
+- `PrepareBookImportJob`: upis po 500 redova, DB lease sa proverom tokena, bezbedno ponavljanje prekinute pripreme i završetak na `ready`.
+- Ulazna validacija, normalizovano prepoznavanje duplih inventarnih brojeva u fajlu i aktivnom/arhiviranom fondu, lokalizovane greške i privatno čuvanje fajla.
+
+### Behavior
+
+- Upload sinhrono proverava samo zaglavlje; neispravni fajlovi vraćaju `422`, a DB konflikt aktivnog importa `409` uz uklanjanje odbačenog fajla.
+- Priprema ne poziva COBISS, ne kreira knjige/kopije, ne generiše barkodove i ne pomera inventarnu sekvencu. ISBN se još ne proverava po kontrolnoj cifri.
+- Formule se ne izvršavaju; neispravni redovi ostaju u preview stanju sa greškom. Pokušaji stvarne obrade ostaju nula.
+- Stvarni uvoz, recovery komanda, lista/ispravke/izbor redova i UI ostaju za naredne faze.
+
+### Tests
+
+- `BookImportPreparationTest` pokriva stvarne XLSX fajlove, upload/izolaciju biblioteka, ograničenja, normalizaciju, lease/retry i 10.000 redova u tačno 20 insert chunk-ova sa rastom vršne memorije ispod 64 MiB.
+- Fokusirani i susedni regresioni testovi: 85 prolazi / 377 assertiona; uključene su inventarne knjige, štampa barkodova i aktivna biblioteka.
+
 ## [26.11.2026] Excel uvoz: faza 1 — infrastruktura i model
 
 ### Added

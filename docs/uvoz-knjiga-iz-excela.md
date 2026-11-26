@@ -16,9 +16,11 @@ Ovaj dokument objedinjuje:
 
 Cilj je da se jedan dokument može direktno koristiti kao ulaz za implementaciju.
 
-**Status (26.11.2026):** implementirana je faza 1 — zavisnost za XLSX, konfiguracija,
-migracije/modeli, enumeracije, policy/permisije i definicija imports workera.
-Upload, priprema redova, obrada, recovery i UI još nisu implementirani.
+**Status (26.11.2026):** implementirane su faze 1 i 2 — infrastruktura, modeli,
+permisije, upload sa sinhronom proverom zaglavlja i asinhrona priprema redova do
+statusa `ready`. Dostupni su API endpointi `index`, `store` i `show`, bez liste
+pojedinačnih redova i korisničkog ekrana. Obrada knjiga/kopija, COBISS, recovery,
+pokretanje, ispravke i retry ostaju za naredne faze.
 
 ---
 
@@ -262,7 +264,7 @@ Sinhrona provera zaglavlja
    ↓
 book_imports (pending)
    ↓
-PrepareBookImport
+PrepareBookImportJob
    ├─ streaming čitanje redova
    ├─ upis book_import_rows u chunk-ovima
    ├─ detekcija inventarne kolone
@@ -304,7 +306,7 @@ Ne koristiti:
 
 Koristiti:
 
-- `PrepareBookImport` za pripremu,
+- `PrepareBookImportJob` za pripremu,
 - `ProcessBookImport` koji obrađuje batch i ponovo sebe dispečuje dok ima posla,
 - DB lease za vlasništvo nad obradom aktivnog importa biblioteke,
 - kratke transakcije po redu,
@@ -577,6 +579,10 @@ Napomena:
 - `seq_number` je opcion ceo broj sa predznakom (32 bita) i mora biti jedinstven u biblioteci, uključujući arhivirane kopije. Ne generiše se iz inventarnog broja; duplikat daje `duplicate_seq_number`.
 - `cover_url` je opcion HTTP/HTTPS URL do 255 znakova, prema trenutnoj dužini kolone `books.cover_url`. Čuva se adresa bez preuzimanja slike; lokalne putanje i sadržaj slike se ne uvoze.
 - Nova polja poštuju tipove i dužine postojećih kolona; neispravne neprazne vrednosti daju `invalid_field_value` uz naziv polja u detalju greške.
+- Excel formule se ne izvršavaju niti se koristi njihov izračunati rezultat.
+  Formula u podržanoj koloni čuva se kao tekst uz `invalid_field_value`.
+- Provera pripreme ne zahteva validan ISBN ili naslov u svakom redu: konkretni
+  obavezni podaci proveravaju se tek prema korisnički izabranom režimu.
 
 ### 8.5 `raw_payload`
 
@@ -654,14 +660,14 @@ Primer:
    - `status = pending`,
    - `headers`, `column_map`, `has_inventory_column`.
    - Parcijalni unique indeks sprečava istovremene upload-e za istu biblioteku; povreda baš tog ograničenja mapira se u `409`, a sačuvani fajl neuspelog zahteva se uklanja.
-7. Posle commit-a dispečuje se `PrepareBookImport`.
+7. Posle commit-a dispečuje se `PrepareBookImportJob`.
 8. API vraća `201` sa import resursom.
 
 Ako je zaglavlje neispravno, vraća se `422` i fajl se ne zadržava.
 
 ### 9.2 Faza B — priprema
 
-`PrepareBookImport`:
+`PrepareBookImportJob`:
 
 1. Uzima svež import i atomski preuzima DB lease prema odeljku 15.3.
 2. Proverava da je status `pending`; postavlja `started_at` samo pri prvom početku pripreme.
@@ -678,7 +684,13 @@ Ako je zaglavlje neispravno, vraća se `422` i fajl se ne zadržava.
 9. Ako nema nijednog reda:
    - `failed`,
    - `failure_code = no_rows`.
-10. Posle uspešnog čitanja celog fajla proverava ulazni format i normalizovane duplikate brojeva iz fajla. Provera postojećih kopija je informativna za trenutak provere, ne zauzimanje broja.
+10. Tokom mapiranja i upisa chunk-ova proverava ulazni format i normalizovane
+    duplikate inventarnih brojeva iz fajla; kasnija pojava istog normalizovanog
+    broja dobija `duplicate_inventory_number`. Postojeće kopije, uključujući
+    arhivirane, proverava jednim upitom po chunk-u, ne upitom po redu. To je
+    provera stanja u tom trenutku, ne zauzimanje broja; stvarni upis ponavlja
+    proveru jedinstvenosti. Jedinstvenost opcionog `seq_number` proverava se pri
+    stvarnom uvozu, dok priprema proverava njegov 32-bitni celobrojni format.
 11. U kratkoj transakciji postavlja `status = ready` i oslobađa lease, bez promene prvobitnog `started_at`. Ulazne greške mogu imati status reda `failed`, ostali redovi su `pending`, još neizabrani. Odsustvo/nevažeća kontrolna cifra ISBN-a samo po sebi nije greška pripreme, jer režim još nije izabran.
 12. Ne dispečuje automatski procesor: preview prikazuje Excel brojeve ili oznaku automatske dodele pri uvozu, filtere, checkboxove i izbor režima; korisnik pokreće uvoz. Tokom pripreme vide se već učitani chunk-ovi kao nepotpuni, bez mogućnosti pokretanja.
 13. Priprema ne kreira naslove/kopije, ne generiše niti upisuje barkodove i ne poziva generator ili poravnanje inventarne sekvence.
@@ -688,6 +700,15 @@ Ako priprema padne:
 - import dobija `failed`,
 - `failure_code` i `failure_message`,
 - delimično pripremljeni redovi mogu se očistiti pod proverom lease-a; inventarna sekvenca i stvarni fond ostaju nepromenjeni.
+
+Greške fajla (`no_rows`, `too_many_rows`, `file_unreadable` i greške zaglavlja)
+su konačne za pripremu i brišu delimične redove. Neočekivana greška se prijavljuje
+queue mehanizmu; sledeći pokušaj bezbedno resetuje pripremu. Na poslednjem pokušaju
+upisuje se `job_failed`. `failed()` callback ne menja import pod živim lease-om:
+posle nasilnog prekida takav import čeka oporavak isteklog lease-a (recovery komanda
+je deo faze 3). Job zadržava jezik upload zahteva i vraća prethodni jezik workera.
+Trenutni brojači uključuju i ulazno neispravne redove, dok brojači pokušaja ostaju
+nula, jer stvarna obrada još nije počela.
 
 ### 9.3 Faza C — izbor u previewu i standardna obrada
 
@@ -1587,6 +1608,9 @@ Rezultat:
 
 ### Faza 2 — Excel ulaz
 
+**Implementirano i pokriveno testovima.** API priprema podatke za budući preview;
+korisnički ekran i API lista pojedinačnih redova nisu deo ove faze.
+
 Zadaci:
 
 - `BookImportFileReader` — OpenSpout streaming,
@@ -1597,7 +1621,7 @@ Zadaci:
 - `StoreBookImportRequest`,
 - `BookImportsController` — `index`, `store`, `show`,
 - sinhrona provera zaglavlja pri uploadu,
-- `PrepareBookImport` job,
+- `PrepareBookImportJob` job,
 - upis redova u chunk-ovima,
 - detekcija inventarne kolone,
 - provera ulaznih inventarnih vrednosti i normalizovanih duplikata bez promene sekvence,

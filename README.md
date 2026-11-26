@@ -182,11 +182,22 @@ Testovi koriste PostgreSQL bazu `ebiblioteka_testing` (podešeno u `phpunit.xml`
 Host, korisnik i lozinka se preuzimaju iz `.env`; baza se kreira jednom
 (`CREATE DATABASE ebiblioteka_testing OWNER <db_user>`).
 
-## Excel uvoz — faza 1
+## Excel uvoz — faze 1 i 2
 
 Implementirana je infrastruktura prema [specifikaciji uvoza](./docs/uvoz-knjiga-iz-excela.md):
-modeli, migracije, statusi, policy/permisije, OpenSpout i poseban `imports` worker.
-Upload, čitanje Excel redova, obrada i korisnički ekran još nisu implementirani.
+modeli, migracije, statusi, policy/permisije, OpenSpout i poseban `imports` worker,
+kao i upload i asinhrona priprema preview redova. Stvarni uvoz knjiga/kopija,
+COBISS, recovery komanda i korisnički ekran ostaju za naredne faze.
+
+- `POST /api/v1/book-imports` — multipart polje `file`; sinhrona validacija
+  zaglavlja i odgovor `201` sa statusom `pending`. Priprema ide kroz
+  `PrepareBookImportJob` na `imports` queue-u, do statusa `ready`.
+- `GET /api/v1/book-imports` — istorija aktivne biblioteke, paginacija
+  `per_page=1..200` (podrazumevano 25), sortiranje preko `sort`/`direction`.
+- `GET /api/v1/book-imports/{id}` — metapodaci, napredak i eventualna greška.
+  Lista pojedinačnih preview redova i endpointi za pokretanje/ispravke dolaze kasnije.
+- Potrebna je aktivna biblioteka i odgovarajuća staff dozvola. Drugi aktivan
+  import iste biblioteke vraća `409`; neispravan fajl/zaglavlje vraća `422`.
 
 ```bash
 docker compose exec php composer install
@@ -204,6 +215,19 @@ docker compose up -d --build queue-imports
 - DB parcijalni unique indeks dozvoljava samo jedan `pending`/`ready`/`processing`
   import po biblioteci; završeni importi ostaju u istoriji.
 - Preview redovi ne rezervišu inventarne brojeve/barkodove i ne pomeraju sekvencu.
+- Čita se samo prvi list; zaglavlje je u prvih 20 fizičkih redova. Uputstvo,
+  prazni redovi i pomoćni listovi se ne uvoze. Excel formule se ne izvršavaju;
+  formula u podržanoj koloni označava red kao neispravan.
+- DB lease štiti svaki upis chunk-a i završetak pripreme. Istekla priprema može
+  bezbedno ponovo da krene od početka, a dupli job ne prepisuje aktivnog vlasnika.
+- Provera formata i duplikata čuva vodeće nule u originalnom ulazu, ali brojeve
+  poredi normalizovano, uključujući arhivirane kopije. To nije rezervacija broja.
+
+Fokusirani testovi:
+
+```bash
+docker compose exec php php artisan test tests/Feature/BookImportPreparationTest.php tests/Feature/BookImportInfrastructureTest.php
+```
 
 ## Demo podaci za prebacivanje učenika
 

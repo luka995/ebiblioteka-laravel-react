@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'errors' => [
+        'active_import' => 'Ova biblioteka već ima aktivan uvoz.',
+        'invalid_field' => 'Neispravna vrednost u koloni „:field“.',
+        'filename_too_long' => 'Naziv fajla ne sme biti duži od 255 znakova.',
+    ],
+
     'status' => [
         'pending' => 'Priprema pregleda',
         'ready' => 'Spremno za uvoz',

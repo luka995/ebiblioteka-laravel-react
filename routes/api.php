@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthorsController;
 use App\Http\Controllers\BarcodePrintJobsController;
 use App\Http\Controllers\BookCopiesController;
 use App\Http\Controllers\BookHistoryController;
+use App\Http\Controllers\BookImportsController;
 use App\Http\Controllers\BooksController;
 use App\Http\Controllers\BorrowsController;
 use App\Http\Controllers\CatalogController;
@@ -212,6 +213,10 @@ Route::prefix('v1')->middleware('auth')->group(function (): void {
     Route::post('/inventory-books', [InventoryBooksController::class, 'store'])->middleware('can:create,App\Models\InventoryBook');
     Route::get('/inventory-books/{inventoryBook}/download', [InventoryBooksController::class, 'download'])->middleware('can:download,inventoryBook');
     Route::get('/inventory-books/{inventoryBook}', [InventoryBooksController::class, 'show'])->middleware('can:view,inventoryBook');
+
+    Route::get('/book-imports', [BookImportsController::class, 'index'])->middleware('can:viewAny,App\Models\BookImport');
+    Route::post('/book-imports', [BookImportsController::class, 'store'])->middleware('can:create,App\Models\BookImport');
+    Route::get('/book-imports/{bookImport}', [BookImportsController::class, 'show'])->middleware('can:view,bookImport');
 
     Route::get('/news', [NewsController::class, 'index'])->middleware('can:viewAny,App\Models\News');
     Route::post('/news', [NewsController::class, 'store'])->middleware('can:create,App\Models\News');
