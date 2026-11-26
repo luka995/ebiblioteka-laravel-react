@@ -1250,7 +1250,10 @@
       "inventoryGuidance": "Keep the Inventory number column to use the numbers in the file. Remove it for automatic numbering; manual numbering requires a value in every row.",
       "processingGuidance": "Uploading prepares a preview only. Titles and copies are not created until you select rows and start the import.",
       "uploading": "Uploading...",
-      "submit": "Upload file"
+      "submit": "Upload file",
+      "preparing": "Preparing import...",
+      "preparingDescription": "Loading rows and validating data. The preview will open when it is ready.",
+      "preparationFailed": "Import preparation failed."
     },
     "status": {
       "pending": "Preparing",

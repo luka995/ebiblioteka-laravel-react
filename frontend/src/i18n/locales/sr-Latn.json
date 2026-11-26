@@ -1250,7 +1250,10 @@
       "inventoryGuidance": "Ostavite kolonu „Inventarni broj“ ako želite da koristite brojeve iz fajla. Uklonite je za automatsko dodeljivanje; ručni režim biblioteke zahteva broj u svakom redu.",
       "processingGuidance": "Upload priprema pregled. Naslovi i kopije se ne kreiraju dok ne izaberete redove i pokrenete uvoz.",
       "uploading": "Otpremanje...",
-      "submit": "Otpremi fajl"
+      "submit": "Otpremi fajl",
+      "preparing": "Priprema uvoza...",
+      "preparingDescription": "Učitavamo redove i proveravamo podatke. Pregled će se otvoriti kada bude spreman.",
+      "preparationFailed": "Priprema uvoza nije uspela."
     },
     "status": {
       "pending": "U pripremi",

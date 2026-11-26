@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { FileSpreadsheet, Plus } from 'lucide-react'
+import { toast } from 'sonner'
 import { api, apiPaths, ApiError } from '@/lib/api'
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { PageLoader } from '@/components/ui/loader'
+import { PageLoader, Spinner } from '@/components/ui/loader'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { BookImportUploadDialog } from '@/components/books/book-import-upload-dialog'
 import type { BookImport, BookImportStatus, PaginatedResponse } from '@/types'
@@ -39,6 +40,7 @@ export function BookImportsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [preparingImportId, setPreparingImportId] = useState<number | null>(null)
   const libraryId = activeLibrary?.id ?? null
 
   const importsQuery = useQuery({
@@ -48,6 +50,42 @@ export function BookImportsPage() {
     refetchInterval: (query) =>
       query.state.data?.data.some((item) => item.status === 'pending' || item.status === 'processing') ? 5000 : false,
   })
+
+  const preparingQuery = useQuery({
+    queryKey: ['book-import', preparingImportId, libraryId],
+    queryFn: () => api.get<{ data: BookImport }>(apiPaths.bookImport(preparingImportId as number)),
+    enabled: preparingImportId !== null,
+    refetchInterval: (query) => {
+      const status = query.state.data?.data.status
+      return status === 'pending' || status === 'processing' ? 1500 : false
+    },
+  })
+
+  useEffect(() => {
+    if (preparingImportId === null || !preparingQuery.data) return
+
+    const status = preparingQuery.data.data.status
+
+    if (status === 'ready') {
+      setPreparingImportId(null)
+      void queryClient.invalidateQueries({ queryKey: ['book-imports', libraryId] })
+      navigate(`/books/imports/${preparingImportId}`)
+      return
+    }
+
+    if (status === 'failed' || status === 'cancelled') {
+      toast.error(preparingQuery.data.data.failure_message ?? t('bookImports.upload.preparationFailed'))
+      setPreparingImportId(null)
+      void queryClient.invalidateQueries({ queryKey: ['book-imports', libraryId] })
+    }
+  }, [libraryId, navigate, preparingImportId, preparingQuery.data, queryClient, t])
+
+  useEffect(() => {
+    if (!preparingQuery.isError) return
+
+    toast.error(getErrorMessage(preparingQuery.error, t('errors.unexpected')))
+    setPreparingImportId(null)
+  }, [preparingQuery.error, preparingQuery.isError, t])
 
   if (isLoading) return <PageLoader />
 
@@ -135,12 +173,27 @@ export function BookImportsPage() {
         </div>
       )}
 
+      {preparingImportId !== null ? (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 backdrop-blur-sm"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+        >
+          <div className="mx-4 max-w-sm rounded-lg border bg-card p-6 text-center shadow-lg">
+            <Spinner className="mx-auto size-8 text-brand" />
+            <p className="mt-4 font-medium">{t('bookImports.upload.preparing')}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t('bookImports.upload.preparingDescription')}</p>
+          </div>
+        </div>
+      ) : null}
+
       <BookImportUploadDialog
         open={uploadOpen}
         onOpenChange={setUploadOpen}
         onUploaded={(id) => {
+          setPreparingImportId(id)
           void queryClient.invalidateQueries({ queryKey: ['book-imports', libraryId] })
-          navigate(`/books/imports/${id}`)
         }}
       />
     </div>
