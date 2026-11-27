@@ -70,7 +70,7 @@ export function BooksLandingPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <div>
         <h2 className="font-brand-heading text-2xl font-bold tracking-tight">{t('books.title')}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{t('books.subtitle')}</p>
